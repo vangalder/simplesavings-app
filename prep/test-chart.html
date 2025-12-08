@@ -1,0 +1,223 @@
+<!doctype html>
+<html>
+
+<head>
+    <meta charset="utf-8" />
+    <title>ECharts — Sunset Layered Area</title>
+    <style>
+        html,
+        body,
+        #chart {
+            height: 100%;
+            margin: 0;
+            padding: 0;
+        }
+
+        #chart {
+            width: 100%;
+            height: 560px;
+            background: #f6e6cf;
+        }
+
+        body {
+            background: #f2e1c7;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 18px;
+        }
+    </style>
+    <script src="https://cdn.jsdelivr.net/npm/echarts@5/dist/echarts.min.js"></script>
+</head>
+
+<body>
+    <div id="chart"></div>
+
+    <script>
+        const dom = document.getElementById('chart');
+        const chart = echarts.init(dom, null, { renderer: 'canvas' });
+
+        // sample data (0..21 years)
+        const years = Array.from({ length: 22 }, (_, i) => i);
+        // synthetic series to resemble exponential growth shape like the image
+        const seriesA = years.map(x => Math.pow(x / 21, 2.2) * 300 + 30); // dark bottom area
+        const seriesB = years.map(x => Math.pow(x / 21, 3.2) * 950 + 50); // green top area
+
+        const option = {
+            // use a subtle beige framing color as chart container background
+            backgroundColor: 'transparent',
+
+            // Draw a big gradient rectangle behind the chart to simulate that sunset sky
+            graphic: [
+                {
+                    // big gradient rect filling inner plot area (we'll match it to grid bounds later via percentages)
+                    type: 'rect',
+                    left: '8%',
+                    top: '6%',
+                    right: '6%',
+                    bottom: '10%',
+                    z: 0,
+                    style: {
+                        fill: new echarts.graphic.LinearGradient(0, 0, 0, 1, [
+                            { offset: 0, color: '#d9532b' },    // top orange-red
+                            { offset: 0.45, color: '#f6b93b' }, // mid golden
+                            { offset: 1, color: '#ffec8a' }     // bottom yellowish
+                        ])
+                    },
+                    // rounded corner and faint inner border
+                    shape: { r: [8, 8, 0, 0] }
+                },
+
+                // decorative leaf images (replace src with your URLs or local data URLs)
+                {
+                    type: 'image',
+                    left: '9%', bottom: '11%',
+                    z: 10,
+                    style: {
+                        image: 'https://i.imgur.com/6q4gXQF.png', // placeholder leaf (replace)
+                        width: 120,
+                        height: 80,
+                        opacity: 0.95
+                    }
+                },
+                {
+                    type: 'image',
+                    right: '7%', bottom: '9%',
+                    z: 10,
+                    style: {
+                        image: 'https://i.imgur.com/wwc8K5J.png', // placeholder leaf (replace)
+                        width: 140,
+                        height: 100,
+                        opacity: 0.95
+                    }
+                }
+            ],
+
+            grid: {
+                left: '8%',
+                right: '6%',
+                top: '8%',
+                bottom: '12%',
+                containLabel: true
+            },
+
+            tooltip: {
+                trigger: 'axis',
+                axisPointer: { type: 'line' },
+                backgroundColor: 'rgba(50,50,50,0.9)',
+                textStyle: { color: '#fff' },
+                padding: 10,
+            },
+
+            xAxis: {
+                type: 'category',
+                boundaryGap: false,
+                data: years,
+                axisLine: {
+                    show: false
+                },
+                axisTick: { show: false },
+                axisLabel: {
+                    color: '#234944',
+                    fontSize: 18,
+                    margin: 18,
+                },
+                splitLine: { show: false }
+            },
+
+            yAxis: {
+                type: 'value',
+                min: 0,
+                max: 1000,
+                interval: 250,
+                axisLine: { show: false },
+                axisTick: { show: false },
+                axisLabel: {
+                    color: '#234944',
+                    fontSize: 16,
+                    formatter: function (value) {
+                        // format as $250k etc
+                        if (value === 0) return '$0';
+                        if (value >= 1000) return '$1M';
+                        return '$' + (value / 1000 * 1000 >= 1000 ? (value / 1000) + 'M' : (value | 0) + 'k'); // keep simple
+                    }
+                },
+                splitLine: {
+                    show: true,
+                    lineStyle: {
+                        color: 'rgba(255,255,255,0.35)',
+                        width: 2
+                    }
+                },
+                // small gap between axis and labels
+                name: 'value',
+                nameTextStyle: {
+                    align: 'left',
+                    verticalAlign: 'middle',
+                    padding: [0, 0, 20, -40],
+                    color: '#234944',
+                    fontSize: 18
+                }
+            },
+
+            // remove default legend to mimic clean chart; you can add if needed
+            series: [
+                // bottom (darker) area
+                {
+                    name: 'Base',
+                    type: 'line',
+                    smooth: true,
+                    symbol: 'none',
+                    data: seriesA,
+                    stack: 'total',
+                    lineStyle: {
+                        width: 0
+                    },
+                    areaStyle: {
+                        origin: 'start',
+                        // dark teal to transparent gradient
+                        color: new echarts.graphic.LinearGradient(0, 0, 0, 1, [
+                            { offset: 0, color: 'rgba(12,64,58,0.85)' },
+                            { offset: 1, color: 'rgba(10,48,45,0.95)' }
+                        ]),
+                        shadowBlur: 30,
+                        shadowColor: 'rgba(5,30,30,0.6)'
+                    },
+                    emphasis: { focus: 'series' },
+                    z: 3
+                },
+
+                // top (green) area that rises and overlaps
+                {
+                    name: 'Growth',
+                    type: 'line',
+                    smooth: true,
+                    symbol: 'none',
+                    data: seriesB,
+                    stack: 'total',
+                    lineStyle: {
+                        width: 0
+                    },
+                    areaStyle: {
+                        origin: 'start',
+                        color: new echarts.graphic.LinearGradient(0, 0, 0, 1, [
+                            { offset: 0, color: '#7eca6d' },
+                            { offset: 0.5, color: '#5aa94a' },
+                            { offset: 1, color: 'rgba(12,64,58,0.12)' }
+                        ]),
+                        shadowBlur: 40,
+                        shadowColor: 'rgba(4,46,24,0.45)'
+                    },
+                    z: 5
+                }
+            ]
+        };
+
+        chart.setOption(option);
+
+        // make chart responsive
+        window.addEventListener('resize', () => chart.resize());
+    </script>
+</body>
+
+</html>
