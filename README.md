@@ -72,7 +72,7 @@ simplesavings-app/
 
 ## Deployment
 
-See [DEPLOYMENT-README.md](./DEPLOYMENT-README.md) for detailed deployment instructions.
+See [prep/DEPLOYMENT-README.md](./prep/DEPLOYMENT-README.md) for detailed deployment instructions.
 
 ### Quick Deploy to Vercel
 
@@ -99,7 +99,7 @@ See `.env.example` for required environment variables:
 
 ## Design System
 
-The application follows the design system defined in `DESIGN_SYSTEM.md`:
+The application follows the design system defined in `prep/DESIGN_SYSTEM.md`:
 - **Primary Colors**: Teal/Green (#206A5D)
 - **Secondary Colors**: Lime Green (#81B214)
 - **Fonts**: Inter (body), Space Grotesk (headings), Roboto Mono (code)
