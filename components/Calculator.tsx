@@ -289,132 +289,130 @@ export default function Calculator() {
   };
 
   return (
-    <div className="container mx-auto px-4 py-6 relative z-10">
-      <div className="flex flex-col lg:flex-row gap-6">
-        {/* Calculator Form - Left 50% on desktop/tablet, full width on mobile */}
-        <div className="w-full lg:w-1/2">
-          <div className="bg-white rounded-2xl p-6 md:p-8 space-y-6 shadow-lg">
-            {/* Starting Amount */}
-            <div>
-              <label className="block text-sm font-medium text-neutral-700 mb-2">
-                starting amount
-              </label>
-              <AnimatedNumberInput
-                value={state.startingAmount}
-                onChange={(val) => setState({ ...state, startingAmount: val })}
-                step="0.01"
-                placeholder="$0.00"
-                className="w-full px-4 py-3 border-2 border-accent-orange-base rounded-xl text-center text-4xl font-display font-semibold text-accent-orange-base focus:outline-none focus:ring-2 focus:ring-accent-orange-base focus:border-accent-orange-base"
-                shouldAnimate={shouldAnimateInputs}
-              />
-              <p className="text-xs text-neutral-600 mt-1 text-center">your initial savings amount</p>
-            </div>
-
-            {/* Monthly Contribution */}
-            <div>
-              <label className="block text-sm font-medium text-neutral-700 mb-2">
-                monthly contribution
-              </label>
-              <AnimatedNumberInput
-                value={state.monthlyContribution}
-                onChange={(val) => setState({ ...state, monthlyContribution: val })}
-                step="0.01"
-                placeholder="$0.00"
-                className="w-full px-4 py-3 border-2 border-accent-orange-base rounded-xl text-center text-4xl font-display font-semibold text-accent-orange-base focus:outline-none focus:ring-2 focus:ring-accent-orange-base focus:border-accent-orange-base"
-                shouldAnimate={shouldAnimateInputs}
-              />
-              <p className="text-xs text-neutral-600 mt-1 text-center">amount you save each month</p>
-            </div>
-
-            {/* Timeframe and Interest Rate - Side by side */}
-            <div className="grid grid-cols-2 gap-4">
-              <div>
-                <label className="block text-sm font-medium text-neutral-700 mb-2">
-                  timeframe in years
-                </label>
-                <AnimatedNumberInput
-                  value={state.timeframeYears}
-                  onChange={(val) => setState({ ...state, timeframeYears: val })}
-                  step="0.1"
-                  min={0}
-                  placeholder="0"
-                  className="w-full px-4 py-3 border-2 border-accent-orange-base rounded-xl text-center text-4xl font-display font-semibold text-accent-orange-base focus:outline-none focus:ring-2 focus:ring-accent-orange-base focus:border-accent-orange-base"
-                  shouldAnimate={shouldAnimateInputs}
-                />
-                <p className="text-xs text-neutral-600 mt-1 text-center">how long you plan to save</p>
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium text-neutral-700 mb-2">
-                  interest rate
-                </label>
-                <AnimatedNumberInput
-                  value={state.interestRate}
-                  onChange={(val) => setState({ ...state, interestRate: val })}
-                  step="0.1"
-                  min={0}
-                  max={100}
-                  placeholder="0"
-                  className="w-full px-4 py-3 border-2 border-accent-orange-base rounded-xl text-center text-4xl font-display font-semibold text-accent-orange-base focus:outline-none focus:ring-2 focus:ring-accent-orange-base focus:border-accent-orange-base"
-                  shouldAnimate={shouldAnimateInputs}
-                />
-                <p className="text-xs text-neutral-600 mt-1 text-center">estimated annual return</p>
-              </div>
-            </div>
-
-            {/* Results Section */}
-            <div className="border-t-2 border-neutral-200 pt-6 mt-6">
-              <h2 className="text-lg font-display font-semibold text-neutral-800 mb-4 text-center">Total Value</h2>
-              <div className="flex items-center justify-center gap-2 mb-6">
-                <div className="font-display font-bold text-secondary-base">
-                  <AnimatedCurrency value={results.totalValue} size="xl" />
-                </div>
-                <button
-                  onClick={handleShare}
-                  className="p-2 hover:bg-secondary-light/20 rounded-lg transition-colors flex items-center justify-center"
-                  aria-label="Share calculation"
-                  title="Share this calculation"
-                >
-                  <Image
-                    src="/Icon-share.svg"
-                    alt="Share"
-                    width={24}
-                    height={24}
-                    unoptimized
-                  />
-                </button>
-              </div>
-              <div className="flex justify-center gap-4 text-sm mb-6">
-                <div className="text-center">
-                  <p className="text-neutral-600">principal paid</p>
-                  <div className="text-secondary-base font-display font-semibold mt-1">
-                    <AnimatedCurrency value={results.principalPaid} size="lg" />
-                  </div>
-                </div>
-                <div className="text-center">
-                  <p className="text-neutral-600">interest earned</p>
-                  <div className="text-secondary-base font-display font-semibold mt-1">
-                    <AnimatedCurrency value={results.interestEarned} size="lg" />
-                  </div>
-                </div>
-              </div>
-            </div>
-
-            {/* Save Calculation Button */}
-            <button
-              onClick={handleSave}
-              className="w-full py-4 bg-gradient-orange-yellow rounded-xl text-white font-semibold text-lg shadow-lg hover:shadow-xl transition-shadow"
-            >
-              Save Calculation
-            </button>
+    <div className="flex flex-col lg:flex-row gap-6">
+      {/* Calculator Form - Left 50% on desktop/tablet, full width on mobile */}
+      <div className="w-full lg:w-1/2">
+        <div className="bg-white rounded-2xl p-4 md:p-6 space-y-3 shadow-lg">
+          {/* Starting Amount */}
+          <div>
+            <label className="block text-sm font-medium text-neutral-700 mb-1.5">
+              starting amount
+            </label>
+            <AnimatedNumberInput
+              value={state.startingAmount}
+              onChange={(val) => setState({ ...state, startingAmount: val })}
+              step="0.01"
+              placeholder="$0.00"
+              className="w-full px-4 py-3 border-2 border-accent-orange-base rounded-xl text-center text-4xl font-display font-semibold text-accent-orange-base focus:outline-none focus:ring-2 focus:ring-accent-orange-base focus:border-accent-orange-base"
+              shouldAnimate={shouldAnimateInputs}
+            />
+            <p className="text-xs text-neutral-600 mt-0.5 text-center">your initial savings amount</p>
           </div>
+
+          {/* Monthly Contribution */}
+          <div>
+            <label className="block text-sm font-medium text-neutral-700 mb-1.5">
+              monthly contribution
+            </label>
+            <AnimatedNumberInput
+              value={state.monthlyContribution}
+              onChange={(val) => setState({ ...state, monthlyContribution: val })}
+              step="0.01"
+              placeholder="$0.00"
+              className="w-full px-4 py-3 border-2 border-accent-orange-base rounded-xl text-center text-4xl font-display font-semibold text-accent-orange-base focus:outline-none focus:ring-2 focus:ring-accent-orange-base focus:border-accent-orange-base"
+              shouldAnimate={shouldAnimateInputs}
+            />
+            <p className="text-xs text-neutral-600 mt-0.5 text-center">amount you save each month</p>
+          </div>
+
+          {/* Timeframe and Interest Rate - Side by side */}
+          <div className="grid grid-cols-2 gap-3">
+            <div>
+              <label className="block text-sm font-medium text-neutral-700 mb-1.5">
+                timeframe in years
+              </label>
+              <AnimatedNumberInput
+                value={state.timeframeYears}
+                onChange={(val) => setState({ ...state, timeframeYears: val })}
+                step="0.1"
+                min={0}
+                placeholder="0"
+                className="w-full px-4 py-3 border-2 border-accent-orange-base rounded-xl text-center text-4xl font-display font-semibold text-accent-orange-base focus:outline-none focus:ring-2 focus:ring-accent-orange-base focus:border-accent-orange-base"
+                shouldAnimate={shouldAnimateInputs}
+              />
+              <p className="text-xs text-neutral-600 mt-0.5 text-center">how long you plan to save</p>
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-neutral-700 mb-1.5">
+                interest rate
+              </label>
+              <AnimatedNumberInput
+                value={state.interestRate}
+                onChange={(val) => setState({ ...state, interestRate: val })}
+                step="0.1"
+                min={0}
+                max={100}
+                placeholder="0"
+                className="w-full px-4 py-3 border-2 border-accent-orange-base rounded-xl text-center text-4xl font-display font-semibold text-accent-orange-base focus:outline-none focus:ring-2 focus:ring-accent-orange-base focus:border-accent-orange-base"
+                shouldAnimate={shouldAnimateInputs}
+              />
+              <p className="text-xs text-neutral-600 mt-0.5 text-center">estimated annual return</p>
+            </div>
+          </div>
+
+          {/* Results Section */}
+          <div className="border-t-2 border-neutral-200 pt-3 mt-3">
+            <h2 className="text-lg font-display font-semibold text-neutral-800 mb-2 text-center">Total Value</h2>
+            <div className="flex items-center justify-center gap-2 mb-3">
+              <div className="font-display font-bold text-secondary-base">
+                <AnimatedCurrency value={results.totalValue} size="xl" />
+              </div>
+              <button
+                onClick={handleShare}
+                className="p-2 hover:bg-secondary-light/20 rounded-lg transition-colors flex items-center justify-center"
+                aria-label="Share calculation"
+                title="Share this calculation"
+              >
+                <Image
+                  src="/Icon-share.svg"
+                  alt="Share"
+                  width={24}
+                  height={24}
+                  unoptimized
+                />
+              </button>
+            </div>
+            <div className="flex justify-center gap-4 text-sm mb-3">
+              <div className="text-center">
+                <p className="text-neutral-600">principal paid</p>
+                <div className="text-secondary-base font-display font-semibold mt-0.5">
+                  <AnimatedCurrency value={results.principalPaid} size="lg" />
+                </div>
+              </div>
+              <div className="text-center">
+                <p className="text-neutral-600">interest earned</p>
+                <div className="text-secondary-base font-display font-semibold mt-0.5">
+                  <AnimatedCurrency value={results.interestEarned} size="lg" />
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* Save Calculation Button */}
+          <button
+            onClick={handleSave}
+            className="w-full py-3 bg-gradient-orange-yellow rounded-xl text-white font-semibold text-lg shadow-lg hover:shadow-xl transition-shadow mt-2"
+          >
+            Save Calculation
+          </button>
         </div>
+      </div>
 
-        {/* Chart - Right 50% on desktop/tablet, full width below form on mobile */}
-        <div className="w-full lg:w-1/2">
-          <div className="bg-secondary-base rounded-2xl p-6 h-full min-h-[500px] shadow-lg overflow-hidden">
-            <Chart data={results.chartData} />
-          </div>
+      {/* Chart - Right 50% on desktop/tablet, full width below form on mobile */}
+      <div className="w-full lg:w-1/2">
+        <div className="bg-secondary-base rounded-2xl p-6 h-full min-h-[500px] shadow-lg overflow-hidden">
+          <Chart data={results.chartData} />
         </div>
       </div>
     </div>
