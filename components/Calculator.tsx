@@ -3,6 +3,7 @@
 import { useState, useMemo, useEffect, useCallback } from "react";
 import { useSearchParams, useRouter } from "next/navigation";
 import dynamic from "next/dynamic";
+import Image from "next/image";
 import { defaultCalculatorValues, type CalculatorState } from "@/lib/defaultValues";
 import AnimatedCurrency from "@/components/AnimatedCurrency";
 import AnimatedNumberInput from "@/components/AnimatedNumberInput";
@@ -167,36 +168,103 @@ export default function Calculator() {
     }
   };
 
+  const handleShare = async () => {
+    // Build URL with all calculator parameters
+    const params = new URLSearchParams();
+    params.set("sa", state.startingAmount.toString());
+    params.set("mc", state.monthlyContribution.toString());
+    params.set("ty", state.timeframeYears.toString());
+    params.set("ir", state.interestRate.toString());
+
+    const shareUrl = `https://simplesavings.app?${params.toString()}`;
+
+    if (navigator.share) {
+      try {
+        await navigator.share({
+          title: "Simple Savings Calculator",
+          text: "Check out my savings calculation!",
+          url: shareUrl,
+        });
+      } catch (err) {
+        // User cancelled or error occurred
+        console.log("Share cancelled or failed");
+      }
+    } else {
+      // Fallback: copy to clipboard
+      try {
+        await navigator.clipboard.writeText(shareUrl);
+        alert("Link copied to clipboard!");
+      } catch (err) {
+        console.error("Failed to copy:", err);
+        // Final fallback: show URL in alert
+        alert(`Share URL: ${shareUrl}`);
+      }
+    }
+  };
+
   const results = useMemo(() => {
-    const monthlyRate = state.interestRate / 100 / 12;
-    const totalMonths = Math.floor(state.timeframeYears * 12);
+    // Validate and sanitize input values
+    const safeInterestRate = isNaN(state.interestRate) || !isFinite(state.interestRate) ? 0 : Math.max(0, state.interestRate);
+    const safeTimeframeYears = isNaN(state.timeframeYears) || !isFinite(state.timeframeYears) ? 0 : Math.max(0, state.timeframeYears);
+    const safeStartingAmount = isNaN(state.startingAmount) || !isFinite(state.startingAmount) ? 0 : Math.max(0, state.startingAmount);
+    const safeMonthlyContribution = isNaN(state.monthlyContribution) || !isFinite(state.monthlyContribution) ? 0 : Math.max(0, state.monthlyContribution);
+
+    const monthlyRate = safeInterestRate / 100 / 12;
+    const totalMonths = Math.floor(safeTimeframeYears * 12);
+
+    // Handle division by zero when interest rate is 0
+    const calculateFutureValueAnnuity = (months: number) => {
+      if (monthlyRate === 0 || Math.abs(monthlyRate) < 0.0001) {
+        return safeMonthlyContribution * months;
+      }
+      const result = safeMonthlyContribution * ((Math.pow(1 + monthlyRate, months) - 1) / monthlyRate);
+      return isNaN(result) || !isFinite(result) ? safeMonthlyContribution * months : result;
+    };
 
     // Future value of initial amount
-    const futureValueInitial = state.startingAmount * Math.pow(1 + monthlyRate, totalMonths);
+    const futureValueInitial = safeStartingAmount * Math.pow(1 + monthlyRate, totalMonths);
+    const safeFvInitial = isNaN(futureValueInitial) || !isFinite(futureValueInitial) ? safeStartingAmount : futureValueInitial;
 
     // Future value of annuity (monthly contributions)
-    const futureValueAnnuity = state.monthlyContribution *
-      ((Math.pow(1 + monthlyRate, totalMonths) - 1) / monthlyRate);
+    const futureValueAnnuity = calculateFutureValueAnnuity(totalMonths);
+    const safeFvAnnuity = isNaN(futureValueAnnuity) || !isFinite(futureValueAnnuity) ? 0 : futureValueAnnuity;
 
-    const totalValue = futureValueInitial + futureValueAnnuity;
-    const principalPaid = state.startingAmount + (state.monthlyContribution * totalMonths);
+    const totalValue = safeFvInitial + safeFvAnnuity;
+    const principalPaid = safeStartingAmount + (safeMonthlyContribution * totalMonths);
     const interestEarned = totalValue - principalPaid;
 
     // Generate data points for chart
     const chartData = [];
-    const maxYear = Math.ceil(state.timeframeYears);
+    const maxYear = Math.ceil(Math.max(0, safeTimeframeYears));
+
     for (let year = 0; year <= maxYear; year++) {
       const months = year * 12;
-      const fvInitial = state.startingAmount * Math.pow(1 + monthlyRate, months);
-      const fvAnnuity = state.monthlyContribution *
-        ((Math.pow(1 + monthlyRate, months) - 1) / monthlyRate);
+
+      // Calculate future values with safety checks
+      const fvInitial = safeStartingAmount * Math.pow(1 + monthlyRate, months);
+      const safeFvInitial = isNaN(fvInitial) || !isFinite(fvInitial) ? safeStartingAmount : fvInitial;
+
+      const fvAnnuity = calculateFutureValueAnnuity(months);
+      const safeFvAnnuity = isNaN(fvAnnuity) || !isFinite(fvAnnuity) ? 0 : fvAnnuity;
+
+      const totalValue = safeFvInitial + safeFvAnnuity;
+      const principal = safeStartingAmount + (safeMonthlyContribution * months);
+      const interest = totalValue - principal;
+
+      // Ensure all values are valid numbers before adding to chart data
+      const finalPrincipal = isNaN(principal) || !isFinite(principal) ? 0 : Math.max(0, principal);
+      const finalTotal = isNaN(totalValue) || !isFinite(totalValue) ? finalPrincipal : Math.max(finalPrincipal, totalValue);
+      const finalInterest = isNaN(interest) || !isFinite(interest) ? 0 : Math.max(0, finalTotal - finalPrincipal);
+
       chartData.push({
         year,
-        value: fvInitial + fvAnnuity,
-        principal: state.startingAmount + (state.monthlyContribution * months),
-        interest: (fvInitial + fvAnnuity) - (state.startingAmount + (state.monthlyContribution * months)),
+        value: finalTotal,
+        principal: finalPrincipal,
+        interest: finalInterest,
       });
     }
+
+
 
     return {
       totalValue,
@@ -296,36 +364,36 @@ export default function Calculator() {
 
             {/* Results Section */}
             <div className="border-t-2 border-neutral-200 pt-6 mt-6">
-              <h2 className="text-lg font-semibold text-neutral-800 mb-4">Total Value</h2>
-              <div className="flex items-center gap-2 mb-6">
+              <h2 className="text-lg font-display font-semibold text-neutral-800 mb-4 text-center">Total Value</h2>
+              <div className="flex items-center justify-center gap-2 mb-6">
                 <div className="font-display font-bold text-secondary-base">
                   <AnimatedCurrency value={results.totalValue} size="xl" />
                 </div>
-                <svg
-                  width="24"
-                  height="24"
-                  viewBox="0 0 24 24"
-                  fill="none"
-                  stroke="currentColor"
-                  strokeWidth="2"
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  className="text-secondary-base"
+                <button
+                  onClick={handleShare}
+                  className="p-2 hover:bg-secondary-light/20 rounded-lg transition-colors flex items-center justify-center"
+                  aria-label="Share calculation"
+                  title="Share this calculation"
                 >
-                  <line x1="12" y1="19" x2="12" y2="5"></line>
-                  <polyline points="5 12 12 5 19 12"></polyline>
-                </svg>
+                  <Image
+                    src="/Icon-share.svg"
+                    alt="Share"
+                    width={24}
+                    height={24}
+                    unoptimized
+                  />
+                </button>
               </div>
-              <div className="grid grid-cols-2 gap-4 text-sm mb-6">
-                <div>
+              <div className="flex justify-center gap-4 text-sm mb-6">
+                <div className="text-center">
                   <p className="text-neutral-600">principal paid</p>
-                  <div className="text-secondary-base font-semibold mt-1">
+                  <div className="text-secondary-base font-display font-semibold mt-1">
                     <AnimatedCurrency value={results.principalPaid} size="lg" />
                   </div>
                 </div>
-                <div>
+                <div className="text-center">
                   <p className="text-neutral-600">interest earned</p>
-                  <div className="text-secondary-base font-semibold mt-1">
+                  <div className="text-secondary-base font-display font-semibold mt-1">
                     <AnimatedCurrency value={results.interestEarned} size="lg" />
                   </div>
                 </div>
@@ -344,7 +412,7 @@ export default function Calculator() {
 
         {/* Chart - Right 50% on desktop/tablet, full width below form on mobile */}
         <div className="w-full lg:w-1/2">
-          <div className="bg-white rounded-2xl p-6 h-full shadow-lg">
+          <div className="rounded-2xl p-6 h-full min-h-[500px] shadow-lg overflow-hidden">
             <Chart data={results.chartData} />
           </div>
         </div>

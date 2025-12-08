@@ -14,26 +14,10 @@
   }
 
   body {
-    @apply bg-gradient-yellow-orange text-neutral-900 min-h-screen;
+    @apply text-neutral-900 min-h-screen;
+    background: linear-gradient(to bottom, #FFCC29, #F58634);
     background-attachment: fixed;
-  }
-
-  /* Decorative leaf silhouette background patterns */
-  body::before {
-    content: '';
-    position: fixed;
-    top: 0;
-    left: 0;
-    right: 0;
-    bottom: 0;
-    background-image:
-      url("data:image/svg+xml,%3Csvg width='200' height='200' viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M50 20 Q80 10 100 30 Q120 10 150 20 Q160 40 150 60 Q160 80 150 100 Q160 120 150 140 Q160 160 150 180 Q120 170 100 150 Q80 170 50 180 Q40 160 50 140 Q40 120 50 100 Q40 80 50 60 Q40 40 50 20 Z' fill='rgba(255,204,41,0.1)'/%3E%3C/svg%3E"),
-      url("data:image/svg+xml,%3Csvg width='200' height='200' viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M150 20 Q120 10 100 30 Q80 10 50 20 Q40 40 50 60 Q40 80 50 100 Q40 120 50 140 Q40 160 50 180 Q80 170 100 150 Q120 170 150 180 Q160 160 150 140 Q160 120 150 100 Q160 80 150 60 Q160 40 150 20 Z' fill='rgba(245,134,52,0.08)'/%3E%3C/svg%3E");
-    background-size: 300px 300px, 250px 250px;
-    background-position: top left, bottom right;
-    background-repeat: no-repeat;
-    pointer-events: none;
-    z-index: 0;
+    background-size: 100% 100%;
   }
 }
 

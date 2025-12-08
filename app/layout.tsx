@@ -3,6 +3,7 @@ import { Inter, Space_Grotesk, Roboto_Mono } from "next/font/google";
 import "./globals.css";
 import { Analytics } from "@vercel/analytics/react";
 import Script from "next/script";
+import SvgPalmOverlays from "@/components/SvgPalmOverlays";
 
 const inter = Inter({
   subsets: ["latin"],
@@ -49,6 +50,7 @@ export default function RootLayout({
         </Script>
       </head>
       <body className={`${inter.variable} ${spaceGrotesk.variable} ${robotoMono.variable} font-sans antialiased`}>
+        <SvgPalmOverlays />
         {children}
         <Analytics />
       </body>

@@ -60,63 +60,65 @@ export default function Header() {
       <div className="h-6 md:hidden bg-header-dark"></div>
 
       {/* Logo and branding */}
-      <div className="flex items-center justify-between py-4 px-4">
+      <div className="flex items-center justify-between py-2 px-4 md:px-6">
         <div className="flex items-center gap-3">
-          <div className="w-8 h-8 flex items-center justify-center">
+          <div className="w-16 h-16 flex items-center justify-center">
             <Image
-              src="/logo.svg"
+              src="/logo.png"
               alt="Simple Savings Logo"
-              width={32}
-              height={32}
-              className="brightness-0 invert"
+              width={64}
+              height={64}
+              unoptimized
             />
           </div>
-          <span className="text-xl font-display font-semibold text-white">
+          <span
+            className="text-4xl md:text-5xl font-display font-semibold text-secondary-light"
+            style={{ fontFamily: "var(--font-space-grotesk), 'Space Grotesk', sans-serif" }}
+          >
             simplesavings.app
           </span>
         </div>
 
-        {/* Share icon on desktop */}
+        {/* Share icon - Desktop only */}
         <button
           onClick={handleShare}
-          className="hidden md:flex items-center justify-center w-10 h-10 rounded-full hover:bg-primary-base transition-colors"
+          className="hidden md:flex items-center justify-center w-10 h-10 rounded-full hover:bg-primary-base/50 transition-colors"
           aria-label="Share"
         >
-          <svg
-            width="20"
-            height="20"
-            viewBox="0 0 24 24"
-            fill="none"
-            stroke="currentColor"
-            strokeWidth="2"
-            strokeLinecap="round"
-            strokeLinejoin="round"
-            className="text-white"
-          >
-            <circle cx="18" cy="5" r="3"></circle>
-            <circle cx="6" cy="12" r="3"></circle>
-            <circle cx="18" cy="19" r="3"></circle>
-            <line x1="8.59" y1="13.51" x2="15.42" y2="17.49"></line>
-            <line x1="15.41" y1="6.51" x2="8.59" y2="10.49"></line>
-          </svg>
+          <Image
+            src="/Icon-share.svg"
+            alt="Share"
+            width={20}
+            height={20}
+            className="brightness-0 invert"
+            unoptimized
+          />
         </button>
       </div>
 
-      {/* Navigation tabs */}
-      <nav className="border-t border-primary-base">
-        <div className="flex">
-          {tabs.map((tab) => (
-            <button
-              key={tab.id}
-              onClick={() => handleTabClick(tab)}
-              className={`flex-1 py-3 px-4 text-sm font-medium transition-colors ${activeTab === tab.id
-                  ? "bg-accent-orange-base md:bg-primary-base text-white"
-                  : "text-neutral-300 hover:text-white hover:bg-primary-base"
-                }`}
-            >
-              {tab.label}
-            </button>
-          ))}
+      {/* Navigation tabs - Mobile: light green bg with orange active, Desktop: dark green bg with lighter green active */}
+      <nav className={`w-full ${activeTab === "Calculator" && "md:bg-header-dark"} bg-secondary-light md:bg-header-dark`}>
+        <div className="flex w-full">
+          {tabs.map((tab, index) => {
+            const isActive = activeTab === tab.id;
+            const isLast = index === tabs.length - 1;
+            const isFirst = index === 0;
+
+            return (
+              <button
+                key={tab.id}
+                onClick={() => handleTabClick(tab)}
+                className={`flex-1 py-3 px-4 text-sm font-medium transition-colors ${isActive
+                  ? "bg-accent-orange-base md:bg-primary-light text-white rounded-t-lg md:rounded-lg"
+                  : `text-secondary-base md:text-white ${isLast ? "rounded-tr-lg md:rounded-r-lg" : ""
+                  } ${isFirst ? "rounded-tl-lg md:rounded-l-lg" : ""
+                  } hover:bg-primary-base/50`
+                  }`}
+              >
+                {tab.label}
+              </button>
+            );
+          })}
         </div>
       </nav>
     </header>

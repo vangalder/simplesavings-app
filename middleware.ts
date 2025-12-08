@@ -16,6 +16,7 @@
 // Temporary middleware until Clerk is configured
 export function middleware(request: any) {
   // No-op middleware for now
+  return;
 }
 
 export const config = {

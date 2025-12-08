@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useMemo } from "react";
+import { useState, useEffect, useRef, useCallback } from "react";
 import AnimatedNumber from "react-animated-numbers";
 
 interface AnimatedNumberInputProps {
@@ -24,53 +24,19 @@ export default function AnimatedNumberInput({
   className = "",
   shouldAnimate = false,
 }: AnimatedNumberInputProps) {
-  const [isAnimating, setIsAnimating] = useState(false);
-  const [hasAnimated, setHasAnimated] = useState(false);
-  const [displayValue, setDisplayValue] = useState(0);
-
-  // Animate from 0 to target value on initial load
-  useEffect(() => {
-    if (shouldAnimate && !hasAnimated) {
-      if (value !== 0) {
-        setIsAnimating(true);
-        setDisplayValue(0);
-        // Small delay to ensure state is set, then animate to target
-        const timer = setTimeout(() => {
-          setDisplayValue(value);
-          // Animation duration is controlled by AnimatedNumber transitions
-          setTimeout(() => {
-            setIsAnimating(false);
-            setHasAnimated(true);
-          }, 1200);
-        }, 100);
-        return () => clearTimeout(timer);
-      } else {
-        // Value is 0, no need to animate
-        setHasAnimated(true);
-        setDisplayValue(0);
-      }
-    } else if (!shouldAnimate || hasAnimated) {
-      setDisplayValue(value);
+  // Format the number for display (only when not focused)
+  const formatValue = useCallback((val: number): string => {
+    if (step === "1") {
+      return Math.floor(val).toString();
     }
-  }, [value, shouldAnimate, hasAnimated]);
-
-  // Handle manual input changes
-  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const inputValue = e.target.value;
-    if (inputValue === "") {
-      onChange(0);
-      return;
+    if (step === "0.1") {
+      return val.toFixed(1);
     }
-    const numValue = parseFloat(inputValue);
-    if (!isNaN(numValue)) {
-      onChange(numValue);
-      setHasAnimated(true); // Mark as animated so it doesn't re-animate
-    }
-  };
+    return val.toFixed(2);
+  }, [step]);
 
-  // Format the number for display
-  const formatValue = (val: number): string => {
-    if (val === 0) return "";
+  // Helper to format initial value
+  const getInitialValue = (val: number): string => {
     if (step === "1") {
       return Math.floor(val).toString();
     }
@@ -80,18 +46,76 @@ export default function AnimatedNumberInput({
     return val.toFixed(2);
   };
 
-  // Get number parts for animation
-  const getNumberParts = (val: number) => {
-    const num = Math.abs(val);
-    const integer = Math.floor(num);
-    const decimal = Math.round((num - integer) * 100);
-    return { integer, decimal };
+  const [showAnimation, setShowAnimation] = useState(false);
+  const [hasAnimated, setHasAnimated] = useState(false);
+  const [inputValue, setInputValue] = useState<string>(() => getInitialValue(value));
+  const inputRef = useRef<HTMLInputElement>(null);
+  const isFocusedRef = useRef(false);
+
+  // Initialize input value from prop
+  useEffect(() => {
+    if (!isFocusedRef.current) {
+      const formatted = formatValue(value);
+      setInputValue(formatted);
+    }
+  }, [value, formatValue]);
+
+  // Only show animation on initial load when shouldAnimate is true
+  useEffect(() => {
+    if (shouldAnimate && !hasAnimated && value !== 0) {
+      setShowAnimation(true);
+      // After animation completes, switch to normal input
+      const timer = setTimeout(() => {
+        setShowAnimation(false);
+        setHasAnimated(true);
+        const formatted = formatValue(value);
+        setInputValue(formatted);
+      }, 1200);
+      return () => clearTimeout(timer);
+    } else {
+      setShowAnimation(false);
+      setHasAnimated(true);
+    }
+  }, [shouldAnimate, hasAnimated, value, formatValue]);
+
+  // Handle input changes - preserve cursor position
+  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const newValue = e.target.value;
+    setInputValue(newValue);
+
+    if (newValue === "" || newValue === "-") {
+      onChange(0);
+      return;
+    }
+
+    const numValue = parseFloat(newValue);
+    if (!isNaN(numValue)) {
+      // Clamp to min/max if specified
+      let clampedValue = numValue;
+      if (min !== undefined && clampedValue < min) clampedValue = min;
+      if (max !== undefined && clampedValue > max) clampedValue = max;
+      onChange(clampedValue);
+    }
   };
 
-  const { integer, decimal } = getNumberParts(displayValue);
+  // Handle focus - allow free typing
+  const handleFocus = () => {
+    isFocusedRef.current = true;
+  };
 
-  if (isAnimating && shouldAnimate && !hasAnimated && displayValue > 0) {
-    // Show animated display styled like input
+  // Handle blur - format the value
+  const handleBlur = () => {
+    isFocusedRef.current = false;
+    const formatted = formatValue(value);
+    setInputValue(formatted);
+  };
+
+  // Show animation only on initial load
+  if (showAnimation && shouldAnimate && !hasAnimated) {
+    const num = Math.abs(value);
+    const integer = Math.floor(num);
+    const decimal = Math.round((num - integer) * 100);
+
     return (
       <div className={`${className} flex items-center justify-center bg-white`}>
         <div className="inline-flex items-baseline">
@@ -138,15 +162,16 @@ export default function AnimatedNumberInput({
     );
   }
 
-  // Show regular input field
+  // Show normal input field - uncontrolled during typing
   return (
     <input
-      type="number"
-      step={step}
-      min={min}
-      max={max}
-      value={formatValue(value) || ""}
+      ref={inputRef}
+      type="text"
+      inputMode="decimal"
+      value={inputValue}
       onChange={handleInputChange}
+      onFocus={handleFocus}
+      onBlur={handleBlur}
       placeholder={placeholder}
       className={className}
     />
