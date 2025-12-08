@@ -1,8 +1,8 @@
 "use client";
 
 import ReactECharts from "echarts-for-react";
-import { useMemo, useEffect } from "react";
-import ChartPalmLeaves from "@/components/ChartPalmLeaves";
+import { useMemo, useEffect, useState } from "react";
+import * as echarts from "echarts";
 
 interface ChartDataPoint {
   year: number;
@@ -15,7 +15,127 @@ interface ChartProps {
   data: ChartDataPoint[];
 }
 
+interface SvgPath {
+  d: string;
+  id: string;
+  imageUrl?: string; // Data URL of the converted SVG path
+}
+
+// Design system colors
+const ACCENT_DARK = "#E6B825";
+const ACCENT_LIGHT = "#FFD966";
+const ACCENT_BASE = "#FFCC29";
+const SECONDARY_COLORS = ["#81B214", "#5F8510", "#A5D44A"]; // secondary-base, secondary-dark, secondary-light
+
 export default function Chart({ data }: ChartProps) {
+  // State for SVG paths
+  const [svgPaths, setSvgPaths] = useState<{ lowerLeft: SvgPath | null; lowerRight: SvgPath | null }>({
+    lowerLeft: null,
+    lowerRight: null,
+  });
+
+  // Helper function to convert SVG path to data URL image
+  const pathToImageUrl = async (path: SvgPath, color: string, opacity: number, viewBox: string): Promise<string> => {
+    // Create an SVG element with the path
+    const svg = `
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="${viewBox}" width="2000" height="2000">
+        <path d="${path.d}" fill="${color}" opacity="${opacity}" />
+      </svg>
+    `;
+
+    // Convert SVG to blob and then to data URL
+    const blob = new Blob([svg], { type: "image/svg+xml" });
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onloadend = () => resolve(reader.result as string);
+      reader.onerror = reject;
+      reader.readAsDataURL(blob);
+    });
+  };
+
+  // Load SVG and extract paths on mount
+  useEffect(() => {
+    const loadSvgPaths = async () => {
+      try {
+        const response = await fetch("/palm-fronds-and-silhouettes.svg");
+        const svgText = await response.text();
+        const parser = new DOMParser();
+        const svgDoc = parser.parseFromString(svgText, "image/svg+xml");
+        const svgElement = svgDoc.querySelector("svg");
+
+        if (!svgElement) {
+          console.error("Could not parse SVG");
+          return;
+        }
+
+        // Get viewBox from original SVG to preserve dimensions
+        const viewBox = svgElement.getAttribute("viewBox") || "0 0 2000 2000";
+
+        // Find all paths with lower-left or lower-right in their ID or class
+        const allPaths = svgElement.querySelectorAll("path");
+        const lowerLeftPaths: SvgPath[] = [];
+        const lowerRightPaths: SvgPath[] = [];
+
+        allPaths.forEach((path) => {
+          const id = path.getAttribute("id") || "";
+          const className = path.getAttribute("class") || "";
+          const d = path.getAttribute("d") || "";
+
+          if (d && (id.toLowerCase().includes("lower-left") || className.toLowerCase().includes("lower-left"))) {
+            lowerLeftPaths.push({ d, id });
+          }
+          if (d && (id.toLowerCase().includes("lower-right") || className.toLowerCase().includes("lower-right"))) {
+            lowerRightPaths.push({ d, id });
+          }
+        });
+
+        // Randomly select one from each group
+        const selectedLowerLeft =
+          lowerLeftPaths.length > 0
+            ? lowerLeftPaths[Math.floor(Math.random() * lowerLeftPaths.length)]
+            : null;
+        const selectedLowerRight =
+          lowerRightPaths.length > 0
+            ? lowerRightPaths[Math.floor(Math.random() * lowerRightPaths.length)]
+            : null;
+
+        // Convert paths to image URLs
+        const lowerLeftWithImage = selectedLowerLeft
+          ? {
+            ...selectedLowerLeft,
+            imageUrl: await pathToImageUrl(
+              selectedLowerLeft,
+              SECONDARY_COLORS[selectedLowerLeft.id.length % SECONDARY_COLORS.length],
+              0.5, // 50% opacity
+              viewBox
+            ),
+          }
+          : null;
+
+        const lowerRightWithImage = selectedLowerRight
+          ? {
+            ...selectedLowerRight,
+            imageUrl: await pathToImageUrl(
+              selectedLowerRight,
+              SECONDARY_COLORS[selectedLowerRight.id.length % SECONDARY_COLORS.length],
+              0.5, // 50% opacity
+              viewBox
+            ),
+          }
+          : null;
+
+        setSvgPaths({
+          lowerLeft: lowerLeftWithImage,
+          lowerRight: lowerRightWithImage,
+        });
+      } catch (error) {
+        console.error("Failed to load SVG:", error);
+      }
+    };
+
+    loadSvgPaths();
+  }, []);
+
   // Generate a stable key based on data to force remount when data structure changes significantly
   const dataKey = useMemo(() => {
     if (!data || data.length === 0) return 'empty';
@@ -142,8 +262,53 @@ export default function Chart({ data }: ChartProps) {
       }
     }
 
+    // Build graphic array for SVG overlays only
+    const graphic: any[] = [];
+
+    // Add SVG path overlays if available (as images)
+    // Positioned at bottom of chart (0 line of y-axis) and 40% smaller
+    // Bottom edge flush with x-axis
+    // silent: true ensures they don't block mouse events for tooltips
+    if (svgPaths.lowerLeft?.imageUrl) {
+      graphic.push({
+        type: "image",
+        left: "12%",
+        bottom: "19.5%", // Slightly lower to ensure bottom edge is flush with x-axis
+        z: 10,
+        silent: true, // Ignore mouse events to allow tooltips to work
+        style: {
+          image: svgPaths.lowerLeft.imageUrl,
+          width: 120, // Reduced by 40% from 200
+          height: 120, // Reduced by 40% from 200
+          opacity: 1, // Opacity is already applied in the SVG
+        },
+      });
+    }
+
+    if (svgPaths.lowerRight?.imageUrl) {
+      graphic.push({
+        type: "image",
+        right: "12%",
+        bottom: "19.5%", // Slightly lower to ensure bottom edge is flush with x-axis
+        z: 10,
+        silent: true, // Ignore mouse events to allow tooltips to work
+        style: {
+          image: svgPaths.lowerRight.imageUrl,
+          width: 120, // Reduced by 40% from 200
+          height: 120, // Reduced by 40% from 200
+          opacity: 1, // Opacity is already applied in the SVG
+        },
+      });
+    }
 
     return {
+      // Radial gradient background covering entire chart canvas using accent colors
+      // Two-color gradient: dark at center, light at edges for more contrast
+      backgroundColor: new echarts.graphic.RadialGradient(0.5, 0.5, 0.8, [
+        { offset: 0, color: ACCENT_DARK }, // Center: accent-dark
+        { offset: 1, color: ACCENT_LIGHT }, // Edges: accent-light
+      ]),
+      graphic,
       grid: {
         left: "12%",
         right: "12%",
@@ -299,11 +464,7 @@ export default function Chart({ data }: ChartProps) {
           interval: Math.ceil(maxYear / 5),
         },
         splitLine: {
-          show: true,
-          lineStyle: {
-            color: "#E2E8F0",
-            type: "dashed",
-          },
+          show: false,
         },
         axisPointer: {
           show: true,
@@ -337,11 +498,7 @@ export default function Chart({ data }: ChartProps) {
           fontSize: 11,
         },
         splitLine: {
-          show: true,
-          lineStyle: {
-            color: "#E2E8F0",
-            type: "dashed",
-          },
+          show: false,
         },
         axisPointer: {
           show: true,
@@ -399,7 +556,7 @@ export default function Chart({ data }: ChartProps) {
       animationDuration: 1000,
       animationEasing: "cubicOut",
     };
-  }, [data]);
+  }, [data, svgPaths]);
 
   // Debug: Log the complete option object being passed to ECharts
   useEffect(() => {
@@ -453,7 +610,6 @@ export default function Chart({ data }: ChartProps) {
       className="relative w-full rounded-2xl overflow-hidden"
       style={{
         minHeight: "400px",
-        background: "linear-gradient(to bottom, #FFCC29, #F58634)"
       }}
     >
       <ReactECharts
@@ -464,8 +620,6 @@ export default function Chart({ data }: ChartProps) {
         notMerge={true}
         lazyUpdate={false}
       />
-      {/* Decorative palm leaf silhouettes at bottom corners */}
-      <ChartPalmLeaves />
     </div>
   );
 }

@@ -2,7 +2,6 @@
 
 import { useState, useEffect } from "react";
 import {
-  CORNER_SUFFIXES,
   type CornerSuffix,
   selectRandomCorners,
   getRandomLayerForCorner,
@@ -56,15 +55,7 @@ export default function SvgPalmOverlays() {
     // Step 2: Randomly select n distinct corners
     const selectedCorners = selectRandomCorners(n);
 
-    // Step 3: For each corner, randomly select a layer
-    const newSelections: LayerSelection[] = selectedCorners.map((corner) => ({
-      corner,
-      layerId: getRandomLayerForCorner(corner),
-    }));
-
-    setSelections(newSelections);
-
-    // Step 4: Load SVG and extract paths
+    // Step 3: Load SVG and extract paths, filtering by corner name
     fetch("/palm-fronds-and-silhouettes.svg")
       .then((res) => res.text())
       .then((svgText) => {
@@ -77,7 +68,26 @@ export default function SvgPalmOverlays() {
           return;
         }
 
-        // Extract path elements for selected layers
+        // Step 4: For each corner, randomly select a layer that contains the corner name
+        const newSelections: LayerSelection[] = selectedCorners
+          .map((corner) => {
+            const layerId = getRandomLayerForCorner(svgElement, corner);
+            if (!layerId) {
+              console.warn(`No layers found for corner "${corner}"`);
+              return null;
+            }
+            return { corner, layerId };
+          })
+          .filter((selection): selection is LayerSelection => selection !== null);
+
+        if (newSelections.length === 0) {
+          console.error("No valid layer selections found");
+          return;
+        }
+
+        setSelections(newSelections);
+
+        // Step 5: Extract path elements for selected layers
         const extractedPaths: PathData[] = newSelections
           .map((selection) => {
             const pathElement = svgElement.querySelector(`#${selection.layerId}`);
@@ -87,7 +97,7 @@ export default function SvgPalmOverlays() {
             }
 
             const fillRuleAttr = pathElement.getAttribute("fill-rule") || pathElement.getAttribute("fillRule");
-            const fillRule: "inherit" | "evenodd" | "nonzero" | undefined = 
+            const fillRule: "inherit" | "evenodd" | "nonzero" | undefined =
               fillRuleAttr === "inherit" || fillRuleAttr === "evenodd" || fillRuleAttr === "nonzero"
                 ? fillRuleAttr
                 : undefined;
