@@ -304,7 +304,7 @@ export default function Calculator() {
                 onChange={(val) => setState({ ...state, startingAmount: val })}
                 step="0.01"
                 placeholder="$0.00"
-                className="w-full px-4 py-3 border-2 border-accent-orange-base rounded-xl text-center text-lg font-semibold focus:outline-none focus:ring-2 focus:ring-accent-orange-base focus:border-accent-orange-base"
+                className="w-full px-4 py-3 border-2 border-accent-orange-base rounded-xl text-center text-4xl font-display font-semibold text-accent-orange-base focus:outline-none focus:ring-2 focus:ring-accent-orange-base focus:border-accent-orange-base"
                 shouldAnimate={shouldAnimateInputs}
               />
               <p className="text-xs text-neutral-600 mt-1 text-center">your initial savings amount</p>
@@ -320,7 +320,7 @@ export default function Calculator() {
                 onChange={(val) => setState({ ...state, monthlyContribution: val })}
                 step="0.01"
                 placeholder="$0.00"
-                className="w-full px-4 py-3 border-2 border-accent-orange-base rounded-xl text-center text-lg font-semibold focus:outline-none focus:ring-2 focus:ring-accent-orange-base focus:border-accent-orange-base"
+                className="w-full px-4 py-3 border-2 border-accent-orange-base rounded-xl text-center text-4xl font-display font-semibold text-accent-orange-base focus:outline-none focus:ring-2 focus:ring-accent-orange-base focus:border-accent-orange-base"
                 shouldAnimate={shouldAnimateInputs}
               />
               <p className="text-xs text-neutral-600 mt-1 text-center">amount you save each month</p>
@@ -338,7 +338,7 @@ export default function Calculator() {
                   step="0.1"
                   min={0}
                   placeholder="0"
-                  className="w-full px-4 py-3 border-2 border-accent-orange-base rounded-xl text-center text-lg font-semibold focus:outline-none focus:ring-2 focus:ring-accent-orange-base focus:border-accent-orange-base"
+                  className="w-full px-4 py-3 border-2 border-accent-orange-base rounded-xl text-center text-4xl font-display font-semibold text-accent-orange-base focus:outline-none focus:ring-2 focus:ring-accent-orange-base focus:border-accent-orange-base"
                   shouldAnimate={shouldAnimateInputs}
                 />
                 <p className="text-xs text-neutral-600 mt-1 text-center">how long you plan to save</p>
@@ -355,7 +355,7 @@ export default function Calculator() {
                   min={0}
                   max={100}
                   placeholder="0"
-                  className="w-full px-4 py-3 border-2 border-accent-orange-base rounded-xl text-center text-lg font-semibold focus:outline-none focus:ring-2 focus:ring-accent-orange-base focus:border-accent-orange-base"
+                  className="w-full px-4 py-3 border-2 border-accent-orange-base rounded-xl text-center text-4xl font-display font-semibold text-accent-orange-base focus:outline-none focus:ring-2 focus:ring-accent-orange-base focus:border-accent-orange-base"
                   shouldAnimate={shouldAnimateInputs}
                 />
                 <p className="text-xs text-neutral-600 mt-1 text-center">estimated annual return</p>
@@ -412,7 +412,7 @@ export default function Calculator() {
 
         {/* Chart - Right 50% on desktop/tablet, full width below form on mobile */}
         <div className="w-full lg:w-1/2">
-          <div className="rounded-2xl p-6 h-full min-h-[500px] shadow-lg overflow-hidden">
+          <div className="bg-secondary-base rounded-2xl p-6 h-full min-h-[500px] shadow-lg overflow-hidden">
             <Chart data={results.chartData} />
           </div>
         </div>
