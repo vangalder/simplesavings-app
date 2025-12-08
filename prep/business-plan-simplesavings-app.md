@@ -13,6 +13,7 @@ A modern, user-friendly savings calculator web application that helps users visu
 **Key Differentiators**:
 - Beautiful, animated visualizations (Apache ECharts)
 - Low-cost entry point ($0.99) with natural upsell path
+- **Dynamic countdown timeframe** - Real-world simulation with automatic countdown to target dates (unique feature, never seen on other calculators)
 - LLM integration for personalized financial scenario generation
 - Investment type research with real-time rate estimation
 - Native sharing with viral growth potential
@@ -74,6 +75,11 @@ A modern, user-friendly savings calculator web application that helps users visu
   - A pleasure to work with, especially on phone screens
   - Mobile-first design philosophy
   - Competitors have poor UX - this is our primary advantage
+- **Dynamic Countdown Timeframe** (UNIQUE FEATURE):
+  - Real-world simulation with automatic countdown to target dates
+  - Never seen on any other simple savings calculator
+  - Provides ongoing value for paid customers as they monitor progress
+  - Creates engagement and retention for saved calculations
 - Low-cost premium features ($0.99 entry)
 - LLM-powered scenario generation (unique)
 - Investment research integration
@@ -112,6 +118,14 @@ A modern, user-friendly savings calculator web application that helps users visu
    - Native device sharing (Web Share API)
    - Shareable link with command.cash branding
    - Link includes preview of calculation
+   - **Dynamic Countdown Feature** (Unique Differentiator):
+     - Configure "timeframe in years" as a dynamic countdown toward a specific target date
+     - As customers monitor their saved calculation over months and years, the timeframe automatically updates
+     - Provides real-world simulation showing how their money grows as they approach their goal date
+     - Example: Set target date for "Retirement in 2035" - timeframe automatically counts down from 11 years to 10 years, 9 years, etc.
+     - Visual indicator shows remaining time until target date
+     - Calculation updates in real-time as the countdown progresses
+     - **Competitive Advantage**: Never seen on any other simple savings calculator
 
 4. **Authentication** (Seamless, Beautiful)
    - Google OAuth (one-click sign-in)
@@ -145,6 +159,7 @@ A modern, user-friendly savings calculator web application that helps users visu
    - Compare scenarios side-by-side
    - Export to PDF/CSV
    - Scenario templates
+   - **Enhanced with Dynamic Countdown**: All saved scenarios support dynamic countdown to target dates
 
 7. **LLM Usage Credits** ($1.99 one-time purchase)
    - Chat interface with LLM (OpenAI/Anthropic)

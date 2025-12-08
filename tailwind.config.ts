@@ -24,6 +24,8 @@ const config: Config = {
         'accent-orange-base': '#F58634',
         'accent-orange-dark': '#D66B1F',
         'accent-orange-light': '#F8A866',
+        // Header Colors
+        'header-dark': '#164A40',
         // Neutral Colors
         'neutral-900': '#0F172A',
         'neutral-800': '#1E293B',
@@ -49,6 +51,10 @@ const config: Config = {
         sans: ['Inter', 'system-ui', '-apple-system', 'BlinkMacSystemFont', 'Segoe UI', 'sans-serif'],
         display: ['Space Grotesk', 'system-ui', '-apple-system', 'BlinkMacSystemFont', 'Segoe UI', 'sans-serif'],
         mono: ['Roboto Mono', 'Consolas', 'Monaco', 'Courier New', 'monospace'],
+      },
+      backgroundImage: {
+        'gradient-yellow-orange': 'linear-gradient(to bottom, #FFCC29, #F58634)',
+        'gradient-orange-yellow': 'linear-gradient(to bottom, #F58634, #FFCC29)',
       },
     },
   },
