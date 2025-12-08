@@ -59,8 +59,8 @@ Deploy a scalable, reliable web application on Vercel with:
 - SSL certificate: Automatic, typically active within minutes of DNS propagation
 
 **Context Management**:
-- Create `prompt.md` documenting all configuration values and CLI commands
-- Create `.cursor/rules` with project-specific guidelines
+- Create `prep/CONFIGURATION-AND-CLI.md` documenting all configuration values and CLI commands
+- Create `.cursor/rules/project-guidelines.md` with project-specific guidelines
 
 ### Phase 2: Monitoring and Alerting
 
@@ -173,8 +173,8 @@ Deploy a scalable, reliable web application on Vercel with:
    - Monitoring active: Verify in Vercel Dashboard → Analytics
    - DNS resolution: `dig [YOUR_CUSTOM_DOMAIN]` or `nslookup [YOUR_CUSTOM_DOMAIN]`
    - Application accessibility: `curl -I https://[YOUR_CUSTOM_DOMAIN]`
-2. Document deviations in `prompt.md`
-3. Update `.cursor/rules` with lessons learned
+2. Document deviations in `prep/CONFIGURATION-AND-CLI.md`
+3. Update `.cursor/rules/project-guidelines.md` with lessons learned
 
 **Iteration Examples**:
 - **DNS propagation issues**: Wait 24-48 hours or use DNS propagation checker tools
@@ -199,7 +199,7 @@ Deploy a scalable, reliable web application on Vercel with:
 5. ✅ Global edge deployment confirmed (check Vercel regions)
 6. ✅ Infrastructure defined as code (`vercel.json` and environment variables)
 7. ✅ All temporary files cleaned up
-8. ✅ Context documented in `prompt.md` and `.cursor/rules`
+8. ✅ Context documented in `prep/CONFIGURATION-AND-CLI.md` and `.cursor/rules/project-guidelines.md`
 
 **Validation Commands**:
 ```bash
@@ -236,8 +236,8 @@ curl -I https://[YOUR_CUSTOM_DOMAIN]
 ## Context Management
 
 **Required Documentation**:
-- `prompt.md`: Configuration values, CLI commands, deployment history, deviations
-- `.cursor/rules`: Project-specific guidelines, naming conventions, monitoring requirements, Vercel CLI usage patterns
+- `prep/CONFIGURATION-AND-CLI.md`: Configuration values, CLI commands, deployment history, deviations
+- `.cursor/rules/project-guidelines.md`: Project-specific guidelines, naming conventions, monitoring requirements, Vercel CLI usage patterns
 
 **Version Control**:
 - Remind user to commit after major milestones

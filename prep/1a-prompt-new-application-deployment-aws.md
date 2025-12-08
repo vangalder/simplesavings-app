@@ -59,8 +59,8 @@ Deploy a scalable, reliable web application on AWS with:
 - CloudFront distribution creation: 15-20 minutes for initial deployment
 
 **Context Management**:
-- Create `prompt.md` documenting all configuration values and CLI commands
-- Create `.cursor/rules` with project-specific guidelines
+- Create `prep/CONFIGURATION-AND-CLI.md` documenting all configuration values and CLI commands
+- Create `.cursor/rules/project-guidelines.md` with project-specific guidelines
 
 ### Phase 2: Monitoring and Alerting
 
@@ -186,8 +186,8 @@ const alertEmail = new CfnParameter(this, 'AlertEmail', { type: 'String' });
    - CloudWatch alarms active: `aws cloudwatch describe-alarms --alarm-names app-uptime-alarm app-4xx-errors`
    - DNS resolution: `dig [YOUR_CUSTOM_DOMAIN]` or `nslookup [YOUR_CUSTOM_DOMAIN]`
    - Application accessibility: `curl -I https://[YOUR_CUSTOM_DOMAIN]`
-2. Document deviations in `prompt.md`
-3. Update `.cursor/rules` with lessons learned
+2. Document deviations in `@prep/CONFIGURATION-AND-CLI.md`
+3. Update `.cursor/rules/project-guidelines.md` with lessons learned
 
 **Iteration Examples**:
 - **Certificate validation failure**: Re-request certificate or manually add DNS validation records
@@ -212,7 +212,7 @@ const alertEmail = new CfnParameter(this, 'AlertEmail', { type: 'String' });
 5. ✅ Multi-AZ deployment confirmed (if backend deployed)
 6. ✅ Infrastructure defined as code (CDK/CloudFormation templates)
 7. ✅ All temporary files cleaned up
-8. ✅ Context documented in `prompt.md` and `.cursor/rules`
+8. ✅ Context documented in `@prep/CONFIGURATION-AND-CLI.md` and `.cursor`
 
 **Validation Commands**:
 ```bash
@@ -250,8 +250,8 @@ curl -I https://[YOUR_CUSTOM_DOMAIN]
 ## Context Management
 
 **Required Documentation**:
-- `prompt.md`: Configuration values, CLI commands, deployment history, deviations
-- `.cursor/rules`: Project-specific guidelines, naming conventions, monitoring requirements, AWS CLI usage patterns
+- `@prep/CONFIGURATION-AND-CLI.md`: Configuration values, CLI commands, deployment history, deviations
+- `.cursor`: Project-specific guidelines, naming conventions, monitoring requirements, AWS CLI usage patterns
 
 **Version Control**:
 - Remind user to commit after major milestones
