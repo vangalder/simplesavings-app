@@ -26,24 +26,36 @@ export default function AnimatedNumberInput({
 }: AnimatedNumberInputProps) {
   // Format the number for display (only when not focused)
   const formatValue = useCallback((val: number): string => {
+    let formatted: string;
     if (step === "1") {
-      return Math.floor(val).toString();
+      formatted = Math.floor(val).toString();
+    } else if (step === "0.1") {
+      formatted = val.toFixed(1);
+    } else {
+      formatted = val.toFixed(2);
     }
-    if (step === "0.1") {
-      return val.toFixed(1);
-    }
-    return val.toFixed(2);
+
+    // Add comma separators for thousands, millions, etc.
+    const parts = formatted.split('.');
+    parts[0] = parts[0].replace(/\B(?=(\d{3})+(?!\d))/g, ',');
+    return parts.join('.');
   }, [step]);
 
   // Helper to format initial value
   const getInitialValue = (val: number): string => {
+    let formatted: string;
     if (step === "1") {
-      return Math.floor(val).toString();
+      formatted = Math.floor(val).toString();
+    } else if (step === "0.1") {
+      formatted = val.toFixed(1);
+    } else {
+      formatted = val.toFixed(2);
     }
-    if (step === "0.1") {
-      return val.toFixed(1);
-    }
-    return val.toFixed(2);
+
+    // Add comma separators for thousands, millions, etc.
+    const parts = formatted.split('.');
+    parts[0] = parts[0].replace(/\B(?=(\d{3})+(?!\d))/g, ',');
+    return parts.join('.');
   };
 
   const [showAnimation, setShowAnimation] = useState(false);
@@ -81,14 +93,16 @@ export default function AnimatedNumberInput({
   // Handle input changes - preserve cursor position
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const newValue = e.target.value;
-    setInputValue(newValue);
+    // Strip commas for easier editing while typing
+    const valueWithoutCommas = newValue.replace(/,/g, '');
+    setInputValue(valueWithoutCommas);
 
-    if (newValue === "" || newValue === "-") {
+    if (valueWithoutCommas === "" || valueWithoutCommas === "-") {
       onChange(0);
       return;
     }
 
-    const numValue = parseFloat(newValue);
+    const numValue = parseFloat(valueWithoutCommas);
     if (!isNaN(numValue)) {
       // Clamp to min/max if specified
       let clampedValue = numValue;
@@ -98,9 +112,12 @@ export default function AnimatedNumberInput({
     }
   };
 
-  // Handle focus - allow free typing
+  // Handle focus - allow free typing (strip commas for easier editing)
   const handleFocus = () => {
     isFocusedRef.current = true;
+    // Strip commas when focusing for easier editing
+    const valueWithoutCommas = inputValue.replace(/,/g, '');
+    setInputValue(valueWithoutCommas);
   };
 
   // Handle blur - format the value
@@ -118,7 +135,15 @@ export default function AnimatedNumberInput({
 
     return (
       <div className={`${className} flex items-center justify-center bg-white`}>
-        <div className="inline-flex items-baseline">
+        <div
+          className="inline-flex items-baseline"
+          style={{
+            fontSize: '36px',
+            fontFamily: "'Space Grotesk', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif",
+            color: '#F58634',
+            fontWeight: 600,
+          }}
+        >
           <AnimatedNumber
             animateToNumber={integer}
             useThousandsSeparator={true}
@@ -174,6 +199,12 @@ export default function AnimatedNumberInput({
       onBlur={handleBlur}
       placeholder={placeholder}
       className={className}
+      style={{
+        fontSize: '36px',
+        fontFamily: "'Space Grotesk', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif",
+        color: '#F58634',
+        fontWeight: 600,
+      }}
     />
   );
 }
