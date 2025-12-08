@@ -1,7 +1,7 @@
 "use client";
 
-import { useState, useEffect } from "react";
-import { AnimatedNumbers } from "react-animated-numbers";
+import { useState, useEffect, useMemo } from "react";
+import AnimatedNumber from "react-animated-numbers";
 
 interface AnimatedNumberInputProps {
   value: number;
@@ -37,7 +37,7 @@ export default function AnimatedNumberInput({
         // Small delay to ensure state is set, then animate to target
         const timer = setTimeout(() => {
           setDisplayValue(value);
-          // Animation duration is controlled by AnimatedNumbers config
+          // Animation duration is controlled by AnimatedNumber transitions
           setTimeout(() => {
             setIsAnimating(false);
             setHasAnimated(true);
@@ -95,44 +95,41 @@ export default function AnimatedNumberInput({
     return (
       <div className={`${className} flex items-center justify-center bg-white`}>
         <div className="inline-flex items-baseline">
-          <AnimatedNumbers
-            includeComma={true}
+          <AnimatedNumber
             animateToNumber={integer}
+            useThousandsSeparator={true}
             locale="en-US"
-            configs={[
-              { mass: 1, tension: 220, friction: 100 },
-              { mass: 1, tension: 180, friction: 130 },
-              { mass: 1, tension: 280, friction: 90 },
-              { mass: 1, tension: 180, friction: 135 },
-              { mass: 1, tension: 200, friction: 120 },
-            ]}
+            transitions={(index) => ({
+              type: "spring",
+              mass: 1,
+              stiffness: 200 - index * 20,
+              damping: 100 + index * 10,
+            })}
           />
           {step !== "1" && (
             <>
               <span className="mx-0.5">.</span>
-              <AnimatedNumbers
-                includeComma={false}
+              <AnimatedNumber
                 animateToNumber={Math.floor(decimal / 10)}
+                useThousandsSeparator={false}
                 locale="en-US"
-                configs={[
-                  { mass: 1, tension: 220, friction: 100 },
-                  { mass: 1, tension: 180, friction: 130 },
-                  { mass: 1, tension: 280, friction: 90 },
-                  { mass: 1, tension: 180, friction: 135 },
-                  { mass: 1, tension: 200, friction: 120 },
-                ]}
+                transitions={(index) => ({
+                  type: "spring",
+                  mass: 1,
+                  stiffness: 200 - index * 20,
+                  damping: 100 + index * 10,
+                })}
               />
-              <AnimatedNumbers
-                includeComma={false}
+              <AnimatedNumber
                 animateToNumber={decimal % 10}
+                useThousandsSeparator={false}
                 locale="en-US"
-                configs={[
-                  { mass: 1, tension: 220, friction: 100 },
-                  { mass: 1, tension: 180, friction: 130 },
-                  { mass: 1, tension: 280, friction: 90 },
-                  { mass: 1, tension: 180, friction: 135 },
-                  { mass: 1, tension: 200, friction: 120 },
-                ]}
+                transitions={(index) => ({
+                  type: "spring",
+                  mass: 1,
+                  stiffness: 200 - index * 20,
+                  damping: 100 + index * 10,
+                })}
               />
             </>
           )}

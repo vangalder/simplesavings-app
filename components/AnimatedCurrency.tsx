@@ -1,6 +1,6 @@
 "use client";
 
-import { AnimatedNumbers } from "react-animated-numbers";
+import AnimatedNumber from "react-animated-numbers";
 
 interface AnimatedCurrencyProps {
   value: number;
@@ -51,43 +51,40 @@ export default function AnimatedCurrency({ value, className = "", size = "md" }:
   return (
     <div className={`inline-flex items-baseline ${sizeClasses[size]} ${className}`}>
       <span className="mr-1">{currencySymbol}</span>
-      <AnimatedNumbers
-        includeComma={true}
+      <AnimatedNumber
         animateToNumber={integerValue}
+        useThousandsSeparator={true}
         locale="en-US"
-        configs={[
-          { mass: 1, tension: 220, friction: 100 },
-          { mass: 1, tension: 180, friction: 130 },
-          { mass: 1, tension: 280, friction: 90 },
-          { mass: 1, tension: 180, friction: 135 },
-          { mass: 1, tension: 200, friction: 120 },
-        ]}
+        transitions={(index) => ({
+          type: "spring",
+          mass: 1,
+          stiffness: 200 - index * 20,
+          damping: 100 + index * 10,
+        })}
       />
       <span className="mx-0.5">.</span>
       <span className="inline-flex">
-        <AnimatedNumbers
-          includeComma={false}
+        <AnimatedNumber
           animateToNumber={decimalTens}
+          useThousandsSeparator={false}
           locale="en-US"
-          configs={[
-            { mass: 1, tension: 220, friction: 100 },
-            { mass: 1, tension: 180, friction: 130 },
-            { mass: 1, tension: 280, friction: 90 },
-            { mass: 1, tension: 180, friction: 135 },
-            { mass: 1, tension: 200, friction: 120 },
-          ]}
+          transitions={(index) => ({
+            type: "spring",
+            mass: 1,
+            stiffness: 200 - index * 20,
+            damping: 100 + index * 10,
+          })}
         />
-        <AnimatedNumbers
-          includeComma={false}
+        <AnimatedNumber
           animateToNumber={decimalOnes}
+          useThousandsSeparator={false}
           locale="en-US"
-          configs={[
-            { mass: 1, tension: 220, friction: 100 },
-            { mass: 1, tension: 180, friction: 130 },
-            { mass: 1, tension: 280, friction: 90 },
-            { mass: 1, tension: 180, friction: 135 },
-            { mass: 1, tension: 200, friction: 120 },
-          ]}
+          transitions={(index) => ({
+            type: "spring",
+            mass: 1,
+            stiffness: 200 - index * 20,
+            damping: 100 + index * 10,
+          })}
         />
       </span>
     </div>

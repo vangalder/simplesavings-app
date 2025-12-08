@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { usePathname, useRouter } from "next/navigation";
 import Image from "next/image";
 
@@ -9,17 +9,20 @@ export default function Header() {
   const router = useRouter();
   const [activeTab, setActiveTab] = useState("Calculator");
 
-  const tabs = [
-    { id: "Calculator", label: "Calculator", path: "/" },
-    { id: "Insights", label: "Insights ✨", path: "/insights" },
-    { id: "Profile", label: "Profile", path: "/profile" },
-  ];
+  const tabs = useMemo(
+    () => [
+      { id: "Calculator", label: "Calculator", path: "/" },
+      { id: "Insights", label: "Insights ✨", path: "/insights" },
+      { id: "Profile", label: "Profile", path: "/profile" },
+    ],
+    []
+  );
 
   useEffect(() => {
     // Set active tab based on current pathname
     const currentTab = tabs.find(tab => tab.path === pathname) || tabs[0];
     setActiveTab(currentTab.id);
-  }, [pathname]);
+  }, [pathname, tabs]);
 
   const handleTabClick = (tab: typeof tabs[0]) => {
     setActiveTab(tab.id);
