@@ -127,7 +127,7 @@ export default function Calculator() {
     return () => clearTimeout(timeoutId);
   }, [state, isInitialized, updateURL]);
 
-  const handleSave = () => {
+  const handleSave = useCallback(() => {
     try {
       // Get existing save metadata
       const saveMetadataKey = `${STORAGE_KEY}-metadata`;
@@ -166,7 +166,33 @@ export default function Calculator() {
       console.error("Failed to save to localStorage:", err);
       alert("Failed to save calculation. Please check your browser settings.");
     }
-  };
+  }, [state]);
+
+  // Keyboard shortcut handler for Save (Command-S / Control-S)
+  useEffect(() => {
+    const handleKeyDown = (event: KeyboardEvent) => {
+      // Check for Command-S (macOS) or Control-S (Windows/Linux)
+      if ((event.metaKey || event.ctrlKey) && event.key === 's') {
+        // Prevent default browser save behavior
+        event.preventDefault();
+        
+        // Don't trigger if user is typing in an input field
+        const target = event.target as HTMLElement;
+        if (target.tagName === 'INPUT' || target.tagName === 'TEXTAREA' || target.isContentEditable) {
+          return;
+        }
+        
+        // Trigger save action
+        handleSave();
+      }
+    };
+
+    window.addEventListener('keydown', handleKeyDown);
+    
+    return () => {
+      window.removeEventListener('keydown', handleKeyDown);
+    };
+  }, [handleSave]);
 
   const handleShare = async () => {
     // Build URL with all calculator parameters
