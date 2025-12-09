@@ -186,8 +186,7 @@ export default function Calculator() {
           url: shareUrl,
         });
       } catch (err) {
-        // User cancelled or error occurred
-        console.log("Share cancelled or failed");
+        // User cancelled or error occurred - silent failure expected
       }
     } else {
       // Fallback: copy to clipboard
@@ -204,7 +203,7 @@ export default function Calculator() {
 
   const results = useMemo(() => {
     // Validate and sanitize input values
-    const safeInterestRate = isNaN(state.interestRate) || !isFinite(state.interestRate) ? 0 : Math.max(0, state.interestRate);
+    const safeInterestRate = isNaN(state.interestRate) || !isFinite(state.interestRate) ? 0 : state.interestRate;
     const safeTimeframeYears = isNaN(state.timeframeYears) || !isFinite(state.timeframeYears) ? 0 : Math.max(0, state.timeframeYears);
     const safeStartingAmount = isNaN(state.startingAmount) || !isFinite(state.startingAmount) ? 0 : Math.max(0, state.startingAmount);
     const safeMonthlyContribution = isNaN(state.monthlyContribution) || !isFinite(state.monthlyContribution) ? 0 : Math.max(0, state.monthlyContribution);
@@ -351,7 +350,6 @@ export default function Calculator() {
                 value={state.interestRate}
                 onChange={(val) => setState({ ...state, interestRate: val })}
                 step="0.1"
-                min={0}
                 max={100}
                 placeholder="0"
                 className="w-full px-4 py-3 border-2 border-accent-orange-base rounded-xl text-center text-4xl font-display font-semibold text-accent-orange-base focus:outline-none focus:ring-2 focus:ring-accent-orange-base focus:border-accent-orange-base"

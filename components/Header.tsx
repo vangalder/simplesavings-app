@@ -14,8 +14,7 @@ export default function Header() {
           url: url,
         });
       } catch (err) {
-        // User cancelled or error occurred
-        console.log("Share cancelled or failed");
+        // User cancelled or error occurred - silent failure expected
       }
     } else {
       // Fallback: copy to clipboard

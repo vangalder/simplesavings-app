@@ -27,6 +27,13 @@ const ACCENT_LIGHT = "#FFD966";
 const ACCENT_BASE = "#FFCC29";
 const SECONDARY_COLORS = ["#81B214", "#5F8510", "#A5D44A"]; // secondary-base, secondary-dark, secondary-light
 
+/**
+ * Toggle for chart data logging.
+ * Set to `true` to enable verbose logging of chart data and ECharts configuration
+ * for troubleshooting purposes. Set to `false` in production to reduce console noise.
+ */
+const ENABLE_CHART_DATA_LOGGING = false;
+
 export default function Chart({ data }: ChartProps) {
   // State for SVG paths
   const [svgPaths, setSvgPaths] = useState<{ lowerLeft: SvgPath | null; lowerRight: SvgPath | null }>({
@@ -234,11 +241,13 @@ export default function Chart({ data }: ChartProps) {
     const maxYear = Math.max(...validDataPoints.map((p) => p.year), 0);
     const calculatedYAxisMax = Math.ceil(maxValue / 100000) * 100000;
 
-    // Debug: Log the max values
-    console.log('Chart maxValue (total):', maxValue);
-    console.log('Chart maxYear:', maxYear);
-    console.log('Calculated Y-Axis max:', calculatedYAxisMax);
-    console.log('Year 20 data point:', validDataPoints.find(p => p.year === 20));
+    // Log chart data for troubleshooting (controlled by ENABLE_CHART_DATA_LOGGING toggle)
+    if (ENABLE_CHART_DATA_LOGGING) {
+      console.log('Chart maxValue (total):', maxValue);
+      console.log('Chart maxYear:', maxYear);
+      console.log('Calculated Y-Axis max:', calculatedYAxisMax);
+      console.log('Year 20 data point:', validDataPoints.find(p => p.year === 20));
+    }
 
     // Prepare aligned data arrays for both series - use exact values from validDataPoints
     // Create a map for quick lookup by year, then build arrays in year order (0 to maxYear)
@@ -381,15 +390,6 @@ export default function Chart({ data }: ChartProps) {
           color: "#F8FAFC",
           fontSize: 12,
         },
-      },
-      legend: {
-        data: ["Principal", "Interest"],
-        bottom: "5%",
-        textStyle: {
-          color: "#64748B",
-          fontSize: 12,
-        },
-        itemGap: 20,
       },
       toolbox: {
         show: true,
@@ -558,8 +558,13 @@ export default function Chart({ data }: ChartProps) {
     };
   }, [data, svgPaths]);
 
-  // Debug: Log the complete option object being passed to ECharts
+  /**
+   * Log chart configuration and data for troubleshooting.
+   * Only executes when ENABLE_CHART_DATA_LOGGING is set to true.
+   */
   useEffect(() => {
+    if (!ENABLE_CHART_DATA_LOGGING) return;
+
     console.log('=== ECharts Option Object ===');
     console.log(JSON.stringify(option, null, 2));
     console.log('=== Series Data ===');
