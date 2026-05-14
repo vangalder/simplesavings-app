@@ -4,6 +4,7 @@ import "./globals.css";
 import { Analytics } from "@vercel/analytics/react";
 import Script from "next/script";
 import SvgPalmOverlays from "@/components/SvgPalmOverlays";
+import { Toaster } from "sonner";
 
 const inter = Inter({
   subsets: ["latin"],
@@ -52,6 +53,7 @@ export default function RootLayout({
       <body className={`${inter.variable} ${spaceGrotesk.variable} ${robotoMono.variable} font-sans antialiased`}>
         <SvgPalmOverlays />
         {children}
+        <Toaster richColors position="top-right" />
         <Analytics />
       </body>
     </html>

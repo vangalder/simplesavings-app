@@ -4,6 +4,7 @@ import { useState, useMemo, useEffect, useCallback } from "react";
 import { useSearchParams, useRouter } from "next/navigation";
 import dynamic from "next/dynamic";
 import Image from "next/image";
+import { toast } from "sonner";
 import { defaultCalculatorValues, type CalculatorState } from "@/lib/defaultValues";
 import AnimatedCurrency from "@/components/AnimatedCurrency";
 import AnimatedNumberInput from "@/components/AnimatedNumberInput";
@@ -161,10 +162,10 @@ export default function Calculator() {
         })
       );
 
-      alert(`Calculation saved! (Saved ${saveCount} time${saveCount !== 1 ? "s" : ""})`);
+      toast.success(`Saved! (${saveCount} time${saveCount !== 1 ? "s" : ""})`);
     } catch (err) {
       console.error("Failed to save to localStorage:", err);
-      alert("Failed to save calculation. Please check your browser settings.");
+      toast.error("Failed to save. Check your browser settings.");
     }
   }, [state]);
 
@@ -218,11 +219,10 @@ export default function Calculator() {
       // Fallback: copy to clipboard
       try {
         await navigator.clipboard.writeText(shareUrl);
-        alert("Link copied to clipboard!");
+        toast.success("Link copied to clipboard!");
       } catch (err) {
         console.error("Failed to copy:", err);
-        // Final fallback: show URL in alert
-        alert(`Share URL: ${shareUrl}`);
+        toast.info(`Copy this link: ${shareUrl}`, { duration: 10000 });
       }
     }
   };
@@ -260,7 +260,7 @@ export default function Calculator() {
 
     // Generate data points for chart
     const chartData = [];
-    const maxYear = Math.ceil(Math.max(0, safeTimeframeYears));
+    const maxYear = Math.floor(Math.max(0, safeTimeframeYears));
 
     for (let year = 0; year <= maxYear; year++) {
       const months = year * 12;

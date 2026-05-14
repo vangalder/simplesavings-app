@@ -410,21 +410,17 @@ export default function Chart({ data }: ChartProps) {
                 const interestSeries = opt.series?.[1];
                 if (!principalSeries?.data || !interestSeries?.data) return '';
 
-                let html = '<table style="width:100%;text-align:center;border-collapse:collapse;"><thead><tr style="background:#f0f0f0;"><th style="padding:8px;border:1px solid #ddd;">Year</th><th style="padding:8px;border:1px solid #ddd;">Principal</th><th style="padding:8px;border:1px solid #ddd;">Interest</th><th style="padding:8px;border:1px solid #ddd;">Total</th></tr></thead><tbody>';
+                let html = '<table style="width:100%;border-collapse:collapse;font-family:sans-serif;font-size:13px;"><thead><tr style="background:#206A5D;color:#ffffff;"><th style="padding:10px 12px;text-align:center;">Year</th><th style="padding:10px 12px;text-align:right;">Principal</th><th style="padding:10px 12px;text-align:right;">Interest</th><th style="padding:10px 12px;text-align:right;">Total</th></tr></thead><tbody>';
 
                 const maxLen = Math.max(principalSeries.data.length, interestSeries.data.length);
                 for (let i = 0; i < maxLen; i++) {
-                  const principalPoint = principalSeries.data[i] as [number, number] | undefined;
-                  const interestPoint = interestSeries.data[i] as [number, number] | undefined;
-
-                  if (!principalPoint || !interestPoint) continue;
-
-                  const year = principalPoint[0];
-                  const principal = principalPoint[1] || 0;
-                  const interest = interestPoint[1] || 0;
+                  const year = i;
+                  const principal = typeof principalSeries.data[i] === "number" ? (principalSeries.data[i] as number) : 0;
+                  const interest = typeof interestSeries.data[i] === "number" ? (interestSeries.data[i] as number) : 0;
                   const total = principal + interest;
+                  const rowBg = i % 2 === 0 ? "#ffffff" : "#f0fdf4";
 
-                  html += `<tr><td style="padding:8px;border:1px solid #ddd;">${year}</td><td style="padding:8px;border:1px solid #ddd;">$${principal.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</td><td style="padding:8px;border:1px solid #ddd;">$${interest.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</td><td style="padding:8px;border:1px solid #ddd;">$${total.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</td></tr>`;
+                  html += `<tr style="background:${rowBg};"><td style="padding:8px;border:1px solid #d1fae5;text-align:center;">${year}</td><td style="padding:8px;border:1px solid #d1fae5;text-align:right;">$${principal.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</td><td style="padding:8px;border:1px solid #d1fae5;text-align:right;">$${interest.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</td><td style="padding:8px;border:1px solid #d1fae5;text-align:right;font-weight:600;">$${total.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</td></tr>`;
                 }
 
                 html += '</tbody></table>';

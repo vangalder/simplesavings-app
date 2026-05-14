@@ -1,6 +1,7 @@
 "use client";
 
 import Image from "next/image";
+import { toast } from "sonner";
 
 export default function Header() {
   const handleShare = async () => {
@@ -20,7 +21,7 @@ export default function Header() {
       // Fallback: copy to clipboard
       try {
         await navigator.clipboard.writeText(url);
-        alert("Link copied to clipboard!");
+        toast.success("Link copied to clipboard!");
       } catch (err) {
         console.error("Failed to copy:", err);
       }
