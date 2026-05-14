@@ -8,6 +8,9 @@ import { toast } from "sonner";
 import { defaultCalculatorValues, type CalculatorState } from "@/lib/defaultValues";
 import AnimatedCurrency from "@/components/AnimatedCurrency";
 import AnimatedNumberInput from "@/components/AnimatedNumberInput";
+import ShareModal from "@/components/ShareModal";
+
+const isClerkConfigured = !!process.env.NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY;
 
 const Chart = dynamic(() => import("@/components/Chart"), { ssr: false });
 
@@ -19,6 +22,7 @@ export default function Calculator() {
   const [state, setState] = useState<CalculatorState>(defaultCalculatorValues);
   const [isInitialized, setIsInitialized] = useState(false);
   const [shouldAnimateInputs, setShouldAnimateInputs] = useState(false);
+  const [showShareModal, setShowShareModal] = useState(false);
 
   // Load values from URL params, localStorage, or defaults
   useEffect(() => {
@@ -195,36 +199,25 @@ export default function Calculator() {
     };
   }, [handleSave]);
 
-  const handleShare = async () => {
-    // Build URL with all calculator parameters
+  const shareUrl = useMemo(() => {
     const params = new URLSearchParams();
     params.set("sa", state.startingAmount.toString());
     params.set("mc", state.monthlyContribution.toString());
     params.set("ty", state.timeframeYears.toString());
     params.set("ir", state.interestRate.toString());
+    return `https://simplesavings.app?${params.toString()}`;
+  }, [state]);
 
-    const shareUrl = `https://simplesavings.app?${params.toString()}`;
-
-    if (navigator.share) {
-      try {
-        await navigator.share({
-          title: "Simple Savings Calculator",
-          text: "Check out my savings calculation!",
-          url: shareUrl,
-        });
-      } catch (err) {
-        // User cancelled or error occurred - silent failure expected
-      }
-    } else {
-      // Fallback: copy to clipboard
-      try {
-        await navigator.clipboard.writeText(shareUrl);
-        toast.success("Link copied to clipboard!");
-      } catch (err) {
-        console.error("Failed to copy:", err);
-        toast.info(`Copy this link: ${shareUrl}`, { duration: 10000 });
-      }
+  const handleShare = () => {
+    if (isClerkConfigured) {
+      setShowShareModal(true);
+      return;
     }
+    // Fallback when auth is not configured: copy to clipboard
+    navigator.clipboard.writeText(shareUrl).then(
+      () => toast.success("Link copied to clipboard!"),
+      () => toast.info(`Copy this link: ${shareUrl}`, { duration: 10000 })
+    );
   };
 
   const results = useMemo(() => {
@@ -439,6 +432,10 @@ export default function Calculator() {
           <Chart data={results.chartData} />
         </div>
       </div>
+
+      {showShareModal && isClerkConfigured && (
+        <ShareModal url={shareUrl} onClose={() => setShowShareModal(false)} />
+      )}
     </div>
   );
 }

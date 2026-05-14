@@ -1,31 +1,27 @@
 "use client";
 
+import { useState } from "react";
 import Image from "next/image";
 import { toast } from "sonner";
+import ShareModal from "@/components/ShareModal";
+
+const isClerkConfigured = !!process.env.NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY;
 
 export default function Header() {
-  const handleShare = async () => {
-    const url = window.location.href;
+  const [showShareModal, setShowShareModal] = useState(false);
+  const [shareUrl, setShareUrl] = useState("");
 
-    if (navigator.share) {
-      try {
-        await navigator.share({
-          title: "Simple Savings Calculator",
-          text: "Check out this savings calculator!",
-          url: url,
-        });
-      } catch (err) {
-        // User cancelled or error occurred - silent failure expected
-      }
-    } else {
-      // Fallback: copy to clipboard
-      try {
-        await navigator.clipboard.writeText(url);
-        toast.success("Link copied to clipboard!");
-      } catch (err) {
-        console.error("Failed to copy:", err);
-      }
+  const handleShare = () => {
+    if (isClerkConfigured) {
+      setShareUrl(window.location.href);
+      setShowShareModal(true);
+      return;
     }
+    // Fallback when auth is not configured: copy to clipboard
+    navigator.clipboard.writeText(window.location.href).then(
+      () => toast.success("Link copied to clipboard!"),
+      () => {}
+    );
   };
 
   return (
@@ -69,6 +65,10 @@ export default function Header() {
           />
         </button>
       </div>
+
+      {showShareModal && isClerkConfigured && (
+        <ShareModal url={shareUrl} onClose={() => setShowShareModal(false)} />
+      )}
     </header>
   );
 }
