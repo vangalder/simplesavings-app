@@ -1,4 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
+import { ConvexHttpClient } from "convex/browser";
+import { api } from "@/convex/_generated/api";
 
 export async function POST(request: NextRequest) {
   const body = await request.json();
@@ -8,8 +10,13 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: "Missing required fields" }, { status: 400 });
   }
 
-  // Sprint 2: persist to Convex shares table once Convex is initialized
-  console.log("[share recorded]", { sharedBy, sharedWith, url, at: new Date().toISOString() });
+  const convexUrl = process.env.NEXT_PUBLIC_CONVEX_URL;
+  if (convexUrl) {
+    const client = new ConvexHttpClient(convexUrl);
+    await client.mutation(api.shares.recordShare, { sharedBy, sharedWith, url });
+  } else {
+    console.log("[share recorded]", { sharedBy, sharedWith, url, at: new Date().toISOString() });
+  }
 
   return NextResponse.json({ ok: true });
 }

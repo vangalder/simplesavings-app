@@ -10,7 +10,10 @@ import AnimatedCurrency from "@/components/AnimatedCurrency";
 import AnimatedNumberInput from "@/components/AnimatedNumberInput";
 import ShareModal from "@/components/ShareModal";
 
+const SaveButtonWithCloud = dynamic(() => import("@/components/SaveButtonWithCloud"), { ssr: false });
+
 const isClerkConfigured = !!process.env.NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY;
+const isConvexConfigured = !!process.env.NEXT_PUBLIC_CONVEX_URL;
 
 const Chart = dynamic(() => import("@/components/Chart"), { ssr: false });
 
@@ -417,12 +420,20 @@ export default function Calculator() {
           </div>
 
           {/* Save Calculation Button */}
-          <button
-            onClick={handleSave}
-            className="w-full py-3 bg-gradient-orange-yellow rounded-xl text-white font-semibold text-lg shadow-lg hover:shadow-xl transition-shadow mt-2"
-          >
-            Save Calculation
-          </button>
+          {isConvexConfigured ? (
+            <SaveButtonWithCloud
+              state={state}
+              results={results}
+              onLocalSave={handleSave}
+            />
+          ) : (
+            <button
+              onClick={handleSave}
+              className="w-full py-3 bg-gradient-orange-yellow rounded-xl text-white font-semibold text-lg shadow-lg hover:shadow-xl transition-shadow mt-2"
+            >
+              Save Calculation
+            </button>
+          )}
         </div>
       </div>
 
