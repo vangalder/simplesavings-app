@@ -210,16 +210,18 @@ export async function POST(req: NextRequest) {
   if (typeof body.text === "string" && typeof body.targetLocale === "string") {
     const langName = LOCALE_NAMES[body.targetLocale] ?? body.targetLocale;
     try {
+      const t0 = Date.now();
       const result = await callLLM(
         provider, modelId,
         TRANSLATION_PROMPT,
         `Translate the following text to ${langName}:\n\n${body.text}`,
         150,
       );
+      const latencyMs = Date.now() - t0;
       const { blurb, question, pitch } = parseBlurbParts(result.text || String(body.text));
       return NextResponse.json({
         blurb, question, pitch,
-        meta: { provider, model: modelId, tokensIn: result.tokensIn, tokensOut: result.tokensOut, costUsd: calcCost(modelId, result.tokensIn, result.tokensOut) },
+        meta: { provider, model: modelId, tokensIn: result.tokensIn, tokensOut: result.tokensOut, latencyMs, costUsd: calcCost(modelId, result.tokensIn, result.tokensOut) },
       });
     } catch {
       return NextResponse.json({ blurb: String(body.text), question: "", pitch: "" });
@@ -462,12 +464,14 @@ OPEN QUESTION: ${questionHook}
 Write THREE sentences: Mirror, Friction, Question.`;
 
   try {
+    const t0 = Date.now();
     const result = await callLLM(provider, modelId, SYSTEM_PROMPT, userMessage, 180);
+    const latencyMs = Date.now() - t0;
     const { blurb, question, pitch } = parseBlurbParts(result.text);
 
     return NextResponse.json({
       blurb, question, pitch,
-      meta: { provider, model: modelId, tokensIn: result.tokensIn, tokensOut: result.tokensOut, costUsd: calcCost(modelId, result.tokensIn, result.tokensOut) },
+      meta: { provider, model: modelId, tokensIn: result.tokensIn, tokensOut: result.tokensOut, latencyMs, costUsd: calcCost(modelId, result.tokensIn, result.tokensOut) },
     });
   } catch (err) {
     console.error("[ai-blurb] LLM error:", err);
