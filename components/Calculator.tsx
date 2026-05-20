@@ -13,6 +13,7 @@ import AnimatedCurrency from "@/components/AnimatedCurrency";
 import AnimatedNumberInput from "@/components/AnimatedNumberInput";
 import ShareModal from "@/components/ShareModal";
 import AIBlurb, { type BlurbMeta } from "@/components/AIBlurb";
+import ProUpsellModal from "@/components/ProUpsellModal";
 import { useIsAdmin } from "@/hooks/useIsAdmin";
 
 const SaveButtonWithCloud = dynamic(() => import("@/components/SaveButtonWithCloud"), { ssr: false });
@@ -74,6 +75,10 @@ export default function Calculator() {
   const isAdmin = useIsAdmin();
   // Always store the English original so locale changes can translate without regenerating
   const aiBlurbOriginalRef = useRef("");
+  // Keep locale in a ref so the debounced blurb callback always reads the live value
+  const localeRef = useRef(locale);
+  localeRef.current = locale;
+  const [showUpsell, setShowUpsell] = useState(false);
 
   // Load values from URL params, localStorage, or defaults
   useEffect(() => {
@@ -221,17 +226,18 @@ export default function Calculator() {
         if (data.meta) setAiBlurbMeta(data.meta);
 
         // Translate immediately if locale is non-English
-        if (locale !== "en" && englishBlurb) {
+        const currentLocale = localeRef.current;
+        if (currentLocale !== "en" && englishBlurb) {
           const tRes = await fetch("/api/ai-blurb", {
             method: "POST",
             headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ text: englishBlurb, targetLocale: locale }),
+            body: JSON.stringify({ text: englishBlurb, targetLocale: currentLocale }),
           });
           const tData = await tRes.json();
           setAiBlurb(tData.blurb ?? englishBlurb);
           if (tData.meta) setAiBlurbMeta(tData.meta);
         } else {
-          setAiBlurb(englishBlurb);
+          setAiBlurb(englishBlurb); // locale is 'en', no translation needed
         }
       } catch {
         // fail silently
@@ -629,7 +635,7 @@ export default function Calculator() {
             </div>
           </div>
 
-          <AIBlurb blurb={aiBlurb} loading={aiBlurbLoading} meta={aiBlurbMeta} isAdmin={isAdmin} />
+          <AIBlurb blurb={aiBlurb} loading={aiBlurbLoading} meta={aiBlurbMeta} isAdmin={isAdmin} onUpsellClick={() => setShowUpsell(true)} />
 
           {/* Save Calculation Button */}
           {isConvexConfigured ? (
@@ -698,6 +704,7 @@ export default function Calculator() {
       {showShareModal && isClerkConfigured && (
         <ShareModal url={shareUrl} onClose={() => setShowShareModal(false)} />
       )}
+      <ProUpsellModal open={showUpsell} onClose={() => setShowUpsell(false)} />
     </div>
   );
 }

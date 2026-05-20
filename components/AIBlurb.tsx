@@ -15,9 +15,10 @@ interface AIBlurbProps {
   loading: boolean;
   meta?: BlurbMeta;
   isAdmin?: boolean;
+  onUpsellClick?: () => void;
 }
 
-export default function AIBlurb({ blurb, loading, meta, isAdmin }: AIBlurbProps) {
+export default function AIBlurb({ blurb, loading, meta, isAdmin, onUpsellClick }: AIBlurbProps) {
   const [visible, setVisible] = useState(false);
 
   useEffect(() => {
@@ -50,6 +51,14 @@ export default function AIBlurb({ blurb, loading, meta, isAdmin }: AIBlurbProps)
           </p>
         )}
       </div>
+      {onUpsellClick && blurb && !loading && (
+        <button
+          onClick={onUpsellClick}
+          className="ml-6 text-xs text-primary-base/60 hover:text-primary-base transition-colors"
+        >
+          Want deeper analysis? →
+        </button>
+      )}
       {isAdmin && meta && !loading && (
         <p className="ml-6 text-[10px] text-neutral-300 font-mono tabular-nums">
           {meta.provider} · {meta.model} · {meta.tokensIn}↑ {meta.tokensOut}↓ · ${(meta.costCents / 100).toFixed(4)}
