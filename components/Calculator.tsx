@@ -268,7 +268,7 @@ export default function Calculator() {
       setAiBlurbLoading(false);
     };
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [state, isInitialized]);
+  }, [state, goalAmount, isInitialized]);
 
   // Translate existing blurb when locale changes — does not regenerate
   useEffect(() => {
@@ -331,12 +331,12 @@ export default function Calculator() {
 
   const handleSave = useCallback(() => {
     try {
-      localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+      localStorage.setItem(STORAGE_KEY, JSON.stringify({ ...state, timeframeMode, targetDateStr, goalAmount, showGoalInput }));
       toast.success("Saved!");
     } catch {
       toast.error("Failed to save. Check your browser settings.");
     }
-  }, [state]);
+  }, [state, timeframeMode, targetDateStr, goalAmount, showGoalInput]);
 
   // Keyboard shortcut handler for Save (Command-S / Control-S)
   useEffect(() => {
