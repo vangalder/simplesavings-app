@@ -74,6 +74,7 @@ export default function Calculator() {
   const [aiBlurbPitch, setAiBlurbPitch] = useState("");
   const [aiBlurbLoading, setAiBlurbLoading] = useState(false);
   const [aiBlurbMeta, setAiBlurbMeta] = useState<BlurbMeta | undefined>();
+  const [aiBlurbError, setAiBlurbError] = useState<string | undefined>();
   const isAdmin = useIsAdmin();
   // Store English originals separately so locale changes can translate all parts atomically
   const aiBlurbOriginalBodyRef = useRef("");
@@ -111,6 +112,17 @@ export default function Calculator() {
         timeframeYears,
         interestRate: urlParams.ir ? parseFloat(urlParams.ir) || 0 : defaultCalculatorValues.interestRate,
       };
+      // Goal lives only in localStorage — restore it even when URL params take priority
+      try {
+        const stored = localStorage.getItem(STORAGE_KEY);
+        if (stored) {
+          const parsed = JSON.parse(stored);
+          if (typeof parsed.goalAmount === "number" && parsed.goalAmount > 0) {
+            setGoalAmount(parsed.goalAmount);
+            setShowGoalInput(true);
+          }
+        }
+      } catch { /* ignore */ }
       setState({ startingAmount: 0, monthlyContribution: 0, timeframeYears: 0, interestRate: 0 });
       setIsInitialized(true);
       setTimeout(() => {
@@ -237,6 +249,7 @@ export default function Calculator() {
         aiBlurbOriginalQuestionRef.current = englishQuestion;
         aiBlurbOriginalPitchRef.current = englishPitch;
         if (data.meta) setAiBlurbMeta(data.meta);
+        if (data.error) setAiBlurbError(data.error); else setAiBlurbError(undefined);
 
         // Translate immediately if locale is non-English
         const currentLocale = localeRef.current;
@@ -673,7 +686,7 @@ export default function Calculator() {
             </div>
           </div>
 
-          <AIBlurb blurb={aiBlurb} question={aiBlurbQuestion} pitch={aiBlurbPitch} loading={aiBlurbLoading} meta={aiBlurbMeta} isAdmin={isAdmin} onUpsellClick={(ctx) => setUpsellContext(ctx)} />
+          <AIBlurb blurb={aiBlurb} question={aiBlurbQuestion} pitch={aiBlurbPitch} loading={aiBlurbLoading} meta={aiBlurbMeta} error={aiBlurbError} isAdmin={isAdmin} onUpsellClick={(ctx) => setUpsellContext(ctx)} />
 
           {/* Save Calculation Button */}
           {isConvexConfigured ? (

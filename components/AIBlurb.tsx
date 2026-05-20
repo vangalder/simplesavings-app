@@ -22,11 +22,12 @@ interface AIBlurbProps {
   pitch?: string;
   loading: boolean;
   meta?: BlurbMeta;
+  error?: string;
   isAdmin?: boolean;
   onUpsellClick?: (ctx: InsightContext) => void;
 }
 
-export default function AIBlurb({ blurb, question, pitch, loading, meta, isAdmin, onUpsellClick }: AIBlurbProps) {
+export default function AIBlurb({ blurb, question, pitch, loading, meta, error, isAdmin, onUpsellClick }: AIBlurbProps) {
   const [visible, setVisible] = useState(false);
 
   useEffect(() => {
@@ -37,7 +38,8 @@ export default function AIBlurb({ blurb, question, pitch, loading, meta, isAdmin
     }
   }, [blurb]);
 
-  if (!loading && !blurb) return null;
+  // Non-admin: hide silently on failure
+  if (!loading && !blurb && (!isAdmin || !meta)) return null;
 
   return (
     <div className="mt-3 flex flex-col gap-1">
@@ -50,14 +52,18 @@ export default function AIBlurb({ blurb, question, pitch, loading, meta, isAdmin
             <div className="h-3 bg-neutral-200 rounded-full animate-pulse w-3/4" />
             <div className="h-3 bg-neutral-200 rounded-full animate-pulse w-1/2" />
           </div>
-        ) : (
+        ) : blurb ? (
           <p
             className="flex-1 text-sm text-neutral-500 italic leading-snug transition-opacity duration-500"
             style={{ opacity: visible ? 1 : 0 }}
           >
             {blurb}
           </p>
-        )}
+        ) : isAdmin ? (
+          <p className="flex-1 text-xs text-red-400 italic leading-snug">
+            blurb failed{error ? `: ${error}` : ""}
+          </p>
+        ) : null}
       </div>
       {onUpsellClick && blurb && !loading && (
         <button

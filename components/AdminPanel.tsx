@@ -217,6 +217,7 @@ export default function AdminPanel() {
               <Stat label="One-time purchases" value={stats.oneTimePurchases} />
               <Stat label="AI chat responses" value={stats.totalAiMessages} />
               <Stat label="Blurbs generated" value={stats.totalBlurbs} />
+              <StatDecimal label="Avg saves / free user" value={stats.avgSavesPerFreeUser} />
             </div>
             {stats.totalUsers === 0 && (
               <p className="text-xs text-amber-600 bg-amber-50 rounded-lg px-3 py-2 mt-3">
@@ -482,6 +483,15 @@ function Stat({ label, value }: { label: string; value: number }) {
   return (
     <div className="bg-neutral-50 rounded-xl p-3">
       <p className="text-2xl font-bold text-neutral-900">{value.toLocaleString()}</p>
+      <p className="text-xs text-neutral-500 mt-0.5">{label}</p>
+    </div>
+  );
+}
+
+function StatDecimal({ label, value }: { label: string; value: number }) {
+  return (
+    <div className="bg-neutral-50 rounded-xl p-3">
+      <p className="text-2xl font-bold text-neutral-900">{value.toFixed(1)}</p>
       <p className="text-xs text-neutral-500 mt-0.5">{label}</p>
     </div>
   );

@@ -150,8 +150,11 @@ async function callLLM(
       { role: "user", content: userContent },
     ],
   });
+  // Strip <think>...</think> reasoning blocks (DeepSeek R1, QwQ, etc.)
+  const raw = resp.choices[0]?.message?.content ?? "";
+  const text = raw.replace(/<think>[\s\S]*?<\/think>/gi, "").trim();
   return {
-    text: resp.choices[0]?.message?.content?.trim() ?? "",
+    text,
     tokensIn: resp.usage?.prompt_tokens ?? 0,
     tokensOut: resp.usage?.completion_tokens ?? 0,
   };
@@ -184,12 +187,12 @@ const SYSTEM_PROMPT = `You are a conversational financial co-pilot for simplesav
 2. QUESTION: Output the OPEN QUESTION exactly as given — do not rephrase.
 3. PITCH: One sentence that directly addresses or begins to answer the OPEN QUESTION for this specific scenario. Reference their actual numbers or situation. This becomes the modal subtitle the user reads the moment they click — it should feel like the answer is one conversation away. No generic copy, no vague promises.
 
-Output format:
-[Mirror sentence. Friction sentence.]
+Output format — write exactly three blocks separated by a line containing only "---". No brackets, no labels, no extra lines:
+Mirror sentence. Friction sentence.
 ---
-[Question sentence?]
+Question sentence?
 ---
-[Pitch sentence.]
+Pitch sentence.
 
 TERM DEFINITIONS — never confuse these:
 - "Starting balance" or "principal" = the initial lump sum already in the account.
@@ -214,14 +217,18 @@ OTHER RULES:
 
 const TRANSLATION_PROMPT = `You are a precise translator. Output only the translated text — no quotes, no explanation. Preserve all numbers, punctuation, and every "---" separator line exactly as-is.`;
 
+function stripBrackets(s: string): string {
+  return s.replace(/^\[|\]$/g, "").trim();
+}
+
 function parseBlurbParts(raw: string): { blurb: string; question: string; pitch: string } {
   // Try newline-wrapped first (preferred), then space-wrapped (some models omit newlines)
   let parts = raw.split("\n---\n");
   if (parts.length < 2) parts = raw.split(/\s+---\s+/);
   return {
-    blurb:    parts[0]?.trim() ?? raw,
-    question: parts[1]?.trim() ?? "",
-    pitch:    parts[2]?.trim() ?? "",
+    blurb:    stripBrackets(parts[0]?.trim() ?? raw),
+    question: stripBrackets(parts[1]?.trim() ?? ""),
+    pitch:    stripBrackets(parts[2]?.trim() ?? ""),
   };
 }
 
@@ -522,7 +529,12 @@ Write THREE sentences: Mirror, Friction, Question.`;
       meta: { provider, model: modelId, tokensIn: result.tokensIn, tokensOut: result.tokensOut, latencyMs, costUsd },
     });
   } catch (err) {
-    console.error("[ai-blurb] LLM error:", err);
-    return NextResponse.json({ blurb: "", question: "", pitch: "" });
+    const errMsg = err instanceof Error ? err.message : String(err);
+    console.error("[ai-blurb] LLM error:", errMsg);
+    return NextResponse.json({
+      blurb: "", question: "", pitch: "",
+      error: errMsg,
+      meta: { provider, model: modelId, tokensIn: 0, tokensOut: 0, latencyMs: 0, costUsd: 0 },
+    });
   }
 }

@@ -146,14 +146,23 @@ export const getAdminStats = query({
     const allUsers = await ctx.db.query("users").collect();
     const allMessages = await ctx.db.query("messages").collect();
     const allPurchases = await ctx.db.query("purchases").collect();
+    const allScenarios = await ctx.db.query("scenarios").collect();
     const blurbLogs = await ctx.db.query("blurb_logs").collect();
 
     const proCount = allUsers.filter((u) => u.isPro).length;
+    const freeUsers = allUsers.filter((u) => !u.isPro);
     const totalAiCostCents = allUsers.reduce((sum, u) => sum + (u.aiCreditsUsed ?? 0), 0);
     const completedPurchases = allPurchases.filter((p) => p.status === "complete").length;
     const assistantMessages = allMessages.filter((m) => m.role === "assistant").length;
     const totalBlurbs = blurbLogs.length;
     const totalBlurbCostUsd = blurbLogs.reduce((sum, l) => sum + l.costUsd, 0);
+
+    // Average cloud saves per free user
+    const freeUserIds = new Set(freeUsers.map((u) => u._id));
+    const freeScenarios = allScenarios.filter((s) => freeUserIds.has(s.userId));
+    const avgSavesPerFreeUser = freeUsers.length > 0
+      ? freeScenarios.length / freeUsers.length
+      : 0;
 
     return {
       totalUsers: allUsers.length,
@@ -163,6 +172,7 @@ export const getAdminStats = query({
       totalAiCostCents,
       totalBlurbs,
       totalBlurbCostUsd,
+      avgSavesPerFreeUser: Math.round(avgSavesPerFreeUser * 10) / 10,
     };
   },
 });
