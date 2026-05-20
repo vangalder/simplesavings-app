@@ -124,6 +124,19 @@
     "half": "Halfway there! Your money is working hard.",
     "threeQuarters": "75% of the way! Almost at your goal."
   },
+  "upsell": {
+    "title": "AI Insights",
+    "bullet1": "Ask anything — your numbers, your goals, your timeline",
+    "bullet2": "Financial freedom targets, safe withdrawal limits, compounding milestones",
+    "hook0": "See exactly what changing one number does to your timeline, month by month",
+    "hook1": "Run a stress test: what does a 2% return drop in year one actually cost you?",
+    "hook2": "Find out which single variable is doing the most work in your plan",
+    "hook3": "Model what happens if you increase contributions by just $200 a month",
+    "signInFirst": "Sign in first to unlock AI Insights.",
+    "signInButton": "Sign in to continue",
+    "hasPro": "You have Pro — save a scenario to start chatting.",
+    "gotIt": "Got it"
+  },
   "chart": {
     "years": "Years",
     "value": "Value",

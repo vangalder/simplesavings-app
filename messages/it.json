@@ -124,6 +124,19 @@
     "half": "A metà strada! Il tuo denaro sta lavorando sodo.",
     "threeQuarters": "Al 75% del percorso! Sei quasi al tuo obiettivo."
   },
+  "upsell": {
+    "title": "Approfondimenti IA",
+    "bullet1": "Chiedi qualsiasi cosa — i tuoi numeri, i tuoi obiettivi, il tuo piano",
+    "bullet2": "Traguardi di libertà finanziaria, limiti di prelievo sicuri, pietre miliari della capitalizzazione",
+    "hook0": "Vedi esattamente cosa fa cambiare un numero al tuo piano, mese per mese",
+    "hook1": "Fai uno stress test: quanto ti costa davvero un calo del 2% nel primo anno?",
+    "hook2": "Scopri quale variabile sta facendo il lavoro più importante nel tuo piano",
+    "hook3": "Simula cosa succede se aumenti i contributi di soli 200 € al mese",
+    "signInFirst": "Accedi prima per sbloccare gli Approfondimenti IA.",
+    "signInButton": "Accedi per continuare",
+    "hasPro": "Hai Pro — salva uno scenario per iniziare a chattare.",
+    "gotIt": "Capito"
+  },
   "chart": {
     "years": "Anni",
     "value": "Valore",

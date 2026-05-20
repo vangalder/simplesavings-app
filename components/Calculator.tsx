@@ -15,8 +15,13 @@ import ShareModal from "@/components/ShareModal";
 import AIBlurb, { type BlurbMeta, type InsightContext } from "@/components/AIBlurb";
 import ProUpsellModal from "@/components/ProUpsellModal";
 import { useIsAdmin } from "@/hooks/useIsAdmin";
+import { useUser } from "@clerk/nextjs";
+import { useMutation, useQuery } from "convex/react";
+import { api } from "@/convex/_generated/api";
+import type { Id } from "@/convex/_generated/dataModel";
 
 const SaveButtonWithCloud = dynamic(() => import("@/components/SaveButtonWithCloud"), { ssr: false });
+const AIChat = dynamic(() => import("@/components/AIChat"), { ssr: false });
 
 const isClerkConfigured = !!process.env.NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY;
 const isConvexConfigured = !!process.env.NEXT_PUBLIC_CONVEX_URL;
@@ -84,6 +89,23 @@ export default function Calculator() {
   const localeRef = useRef(locale);
   localeRef.current = locale;
   const [upsellContext, setUpsellContext] = useState<InsightContext | null>(null);
+  const [scenarioId, setScenarioId] = useState<Id<"scenarios"> | null>(null);
+
+  // Auth + Convex
+  const { isSignedIn, user } = useUser();
+  const clerkId = user?.id ?? "";
+  const autosaveScenario = useMutation(api.scenarios.autosaveScenario);
+  const updateBlurbCache = useMutation(api.scenarios.updateBlurbCache);
+  const defaultScenario = useQuery(
+    api.scenarios.getDefaultScenario,
+    isSignedIn && clerkId ? { clerkId } : "skip"
+  );
+  const creditBalance = useQuery(
+    api.users.getAiCreditBalance,
+    isSignedIn && clerkId ? { clerkId } : "skip"
+  );
+  const chatFreeTokenBudget = useQuery(api.appConfig.getConfig, { key: "chatFreeTokenBudget" });
+  const freeTokenBudget = chatFreeTokenBudget ? parseInt(chatFreeTokenBudget, 10) : 0;
 
   // Load values from URL params, localStorage, or defaults
   useEffect(() => {
@@ -96,6 +118,7 @@ export default function Calculator() {
       mc: searchParams.get("mc"),
       ty: searchParams.get("ty"),
       ir: searchParams.get("ir"),
+      ga: searchParams.get("ga"),
     };
 
     if (urlParams.sa || urlParams.mc || urlParams.ty || urlParams.ir || tdParam) {
@@ -112,17 +135,22 @@ export default function Calculator() {
         timeframeYears,
         interestRate: urlParams.ir ? parseFloat(urlParams.ir) || 0 : defaultCalculatorValues.interestRate,
       };
-      // Goal lives only in localStorage — restore it even when URL params take priority
-      try {
-        const stored = localStorage.getItem(STORAGE_KEY);
-        if (stored) {
-          const parsed = JSON.parse(stored);
-          if (typeof parsed.goalAmount === "number" && parsed.goalAmount > 0) {
-            setGoalAmount(parsed.goalAmount);
-            setShowGoalInput(true);
+      // Goal: prefer URL param, fall back to localStorage
+      if (urlParams.ga) {
+        const gaVal = parseFloat(urlParams.ga);
+        if (gaVal > 0) { setGoalAmount(gaVal); setShowGoalInput(true); }
+      } else {
+        try {
+          const stored = localStorage.getItem(STORAGE_KEY);
+          if (stored) {
+            const parsed = JSON.parse(stored);
+            if (typeof parsed.goalAmount === "number" && parsed.goalAmount > 0) {
+              setGoalAmount(parsed.goalAmount);
+              setShowGoalInput(true);
+            }
           }
-        }
-      } catch { /* ignore */ }
+        } catch { /* ignore */ }
+      }
       setState({ startingAmount: 0, monthlyContribution: 0, timeframeYears: 0, interestRate: 0 });
       setIsInitialized(true);
       setTimeout(() => {
@@ -172,7 +200,7 @@ export default function Calculator() {
   // Uses window.history.replaceState instead of router.replace to avoid triggering
   // Next.js Suspense re-renders which would unmount Calculator and reset local state.
   const updateURL = useCallback(
-    (newState: CalculatorState, mode: "years" | "date", dateStr: string) => {
+    (newState: CalculatorState, mode: "years" | "date", dateStr: string, goal: number) => {
       const params = new URLSearchParams();
       if (newState.startingAmount !== defaultCalculatorValues.startingAmount) {
         params.set("sa", newState.startingAmount.toString());
@@ -190,6 +218,7 @@ export default function Calculator() {
       if (newState.interestRate !== defaultCalculatorValues.interestRate) {
         params.set("ir", newState.interestRate.toString());
       }
+      if (goal > 0) params.set("ga", goal.toString());
 
       const newURL = params.toString() ? `?${params.toString()}` : window.location.pathname;
       window.history.replaceState(null, "", newURL);
@@ -202,11 +231,11 @@ export default function Calculator() {
     if (!isInitialized) return;
 
     const timeoutId = setTimeout(() => {
-      updateURL(state, timeframeMode, targetDateStr);
+      updateURL(state, timeframeMode, targetDateStr, goalAmount);
     }, 500);
 
     return () => clearTimeout(timeoutId);
-  }, [state, timeframeMode, targetDateStr, isInitialized, updateURL]);
+  }, [state, timeframeMode, targetDateStr, goalAmount, isInitialized, updateURL]);
 
   // Debounced auto-save to localStorage on every state change
   useEffect(() => {
@@ -221,9 +250,80 @@ export default function Calculator() {
     return () => clearTimeout(id);
   }, [state, timeframeMode, targetDateStr, goalAmount, showGoalInput, isInitialized]);
 
+  // Restore from Convex when the default scenario loads (signed-in users, no URL params)
+  useEffect(() => {
+    if (!defaultScenario || !isInitialized) return;
+    if (scenarioId) return; // already tracking a scenario
+    setScenarioId(defaultScenario._id);
+    // Only restore inputs if there are no URL params overriding
+    const hasUrlParams = !!(
+      window.location.search.includes("sa=") ||
+      window.location.search.includes("mc=") ||
+      window.location.search.includes("ir=") ||
+      window.location.search.includes("ty=") ||
+      window.location.search.includes("td=")
+    );
+    if (!hasUrlParams) {
+      setState({
+        startingAmount: defaultScenario.startingAmount,
+        monthlyContribution: defaultScenario.monthlyContribution,
+        timeframeYears: defaultScenario.timeframeYears,
+        interestRate: defaultScenario.interestRate,
+      });
+      if (defaultScenario.goalAmount && defaultScenario.goalAmount > 0) {
+        setGoalAmount(defaultScenario.goalAmount);
+        setShowGoalInput(true);
+      }
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [defaultScenario, isInitialized]);
+
+  // Auto-save to Convex when signed in — immediate on sign-in, debounced on changes
+  useEffect(() => {
+    if (!isSignedIn || !clerkId || !isInitialized || results.totalValue === 0) return;
+    const id = setTimeout(async () => {
+      try {
+        const id = await autosaveScenario({
+          clerkId,
+          startingAmount: state.startingAmount,
+          monthlyContribution: state.monthlyContribution,
+          timeframeYears: state.timeframeYears,
+          interestRate: state.interestRate,
+          totalValue: results.totalValue,
+          principalPaid: results.principalPaid,
+          interestEarned: results.interestEarned,
+          goalAmount: goalAmount > 0 ? goalAmount : undefined,
+          targetDate: timeframeMode === "date" && targetDateStr
+            ? new Date(targetDateStr).getTime() : undefined,
+        });
+        setScenarioId(id);
+      } catch { /* silent */ }
+    }, 4000);
+    return () => clearTimeout(id);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [state, goalAmount, timeframeMode, targetDateStr, isSignedIn, clerkId, isInitialized]);
+
   // Debounced real-time AI blurb — fires 1500ms after inputs settle
   useEffect(() => {
     if (!isInitialized) return;
+
+    // Check blurb cache — skip LLM call if inputs haven't changed since last save
+    const inputsHash = `${state.startingAmount}-${state.monthlyContribution}-${state.interestRate}-${state.timeframeYears}-${goalAmount}`;
+    if (
+      defaultScenario &&
+      defaultScenario.blurbInputsHash === inputsHash &&
+      defaultScenario.blurbEn &&
+      !aiBlurb // only use cache on first load (not on subsequent input changes)
+    ) {
+      aiBlurbOriginalBodyRef.current = defaultScenario.blurbEn;
+      aiBlurbOriginalQuestionRef.current = defaultScenario.blurbQuestionEn ?? "";
+      aiBlurbOriginalPitchRef.current = defaultScenario.blurbPitchEn ?? "";
+      setAiBlurb(defaultScenario.blurbEn);
+      setAiBlurbQuestion(defaultScenario.blurbQuestionEn ?? "");
+      setAiBlurbPitch(defaultScenario.blurbPitchEn ?? "");
+      return;
+    }
+
     setAiBlurbLoading(true);
     const id = setTimeout(async () => {
       try {
@@ -250,6 +350,18 @@ export default function Calculator() {
         aiBlurbOriginalPitchRef.current = englishPitch;
         if (data.meta) setAiBlurbMeta(data.meta);
         if (data.error) setAiBlurbError(data.error); else setAiBlurbError(undefined);
+
+        // Cache blurb on the scenario record (fire and forget)
+        if (scenarioId && englishBlurb) {
+          const hash = `${state.startingAmount}-${state.monthlyContribution}-${state.interestRate}-${state.timeframeYears}-${goalAmount}`;
+          updateBlurbCache({
+            scenarioId,
+            blurbEn: englishBlurb,
+            blurbQuestionEn: englishQuestion,
+            blurbPitchEn: englishPitch,
+            blurbInputsHash: hash,
+          }).catch(() => {});
+        }
 
         // Translate immediately if locale is non-English
         const currentLocale = localeRef.current;
@@ -687,6 +799,30 @@ export default function Calculator() {
           </div>
 
           <AIBlurb blurb={aiBlurb} question={aiBlurbQuestion} pitch={aiBlurbPitch} loading={aiBlurbLoading} meta={aiBlurbMeta} error={aiBlurbError} isAdmin={isAdmin} onUpsellClick={(ctx) => setUpsellContext(ctx)} />
+
+          {/* Inline AI Chat — shown for paid users or when free token budget allows */}
+          {isConvexConfigured && scenarioId && aiBlurb && (() => {
+            const isPro = creditBalance?.isPro;
+            const hasCredits = (creditBalance?.granted ?? 0) > (creditBalance?.used ?? 0);
+            const isChatEligible = isPro || hasCredits || freeTokenBudget > 0;
+            if (!isChatEligible) return null;
+            return (
+              <AIChat
+                scenarioId={scenarioId}
+                clerkId={clerkId}
+                blurbContext={{ body: aiBlurb, question: aiBlurbQuestion, pitch: aiBlurbPitch }}
+                calculatorState={state}
+                results={results}
+                currency={currency}
+                isPaid={!!(isPro || hasCredits)}
+                freeTokenBudget={freeTokenBudget}
+                onUpsellNeeded={() => setUpsellContext({ question: aiBlurbQuestion, pitch: aiBlurbPitch })}
+                onCalculatorUpdate={(field, value) => {
+                  setState((prev) => ({ ...prev, [field]: value }));
+                }}
+              />
+            );
+          })()}
 
           {/* Save Calculation Button */}
           {isConvexConfigured ? (

@@ -124,6 +124,19 @@
     "half": "Na metade do caminho! Seu dinheiro está trabalhando duro.",
     "threeQuarters": "A 75% do caminho! Você está quase na sua meta."
   },
+  "upsell": {
+    "title": "Insights de IA",
+    "bullet1": "Pergunte qualquer coisa — seus números, suas metas, seu cronograma",
+    "bullet2": "Metas de liberdade financeira, limites de retirada seguros, marcos de capitalização",
+    "hook0": "Veja exatamente o que mudar um número faz no seu cronograma, mês a mês",
+    "hook1": "Faça um teste de estresse: quanto custa realmente uma queda de 2% no retorno no primeiro ano?",
+    "hook2": "Descubra qual variável está fazendo mais trabalho no seu plano",
+    "hook3": "Simule o que acontece se você aumentar os aportes em apenas R$200 por mês",
+    "signInFirst": "Entre primeiro para desbloquear os Insights de IA.",
+    "signInButton": "Entrar para continuar",
+    "hasPro": "Você tem Pro — salve um cenário para começar a conversar.",
+    "gotIt": "Entendido"
+  },
   "chart": {
     "years": "Anos",
     "value": "Valor",

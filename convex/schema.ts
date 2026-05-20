@@ -41,6 +41,13 @@ export default defineSchema({
     aiPersonaName: v.optional(v.string()),
     aiPersonaVoice: v.optional(v.string()),
     aiPersonaStyle: v.optional(v.string()),
+    // Cached blurb (English source of truth) — skip LLM call when inputs unchanged
+    blurbEn: v.optional(v.string()),
+    blurbQuestionEn: v.optional(v.string()),
+    blurbPitchEn: v.optional(v.string()),
+    blurbInputsHash: v.optional(v.string()),
+    // Free chat token tracking
+    chatTokensUsedFree: v.optional(v.number()),
     createdAt: v.number(),
     updatedAt: v.number(),
   }).index("by_user", ["userId"]),

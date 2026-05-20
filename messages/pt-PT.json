@@ -124,6 +124,19 @@
     "half": "A meio caminho! O seu dinheiro está a trabalhar muito.",
     "threeQuarters": "A 75% do caminho! Está quase a atingir o seu objetivo."
   },
+  "upsell": {
+    "title": "Análise IA",
+    "bullet1": "Pergunte qualquer coisa — os seus números, os seus objetivos, o seu plano",
+    "bullet2": "Metas de liberdade financeira, limites de levantamento seguros, marcos de capitalização",
+    "hook0": "Veja exatamente o que muda no seu plano ao alterar um número, mês a mês",
+    "hook1": "Faça um teste de stress: quanto custa realmente uma queda de 2% no rendimento no primeiro ano?",
+    "hook2": "Descubra qual variável está a fazer mais trabalho no seu plano",
+    "hook3": "Simule o que acontece se aumentar as contribuições em apenas 200 € por mês",
+    "signInFirst": "Inicie sessão primeiro para desbloquear a Análise IA.",
+    "signInButton": "Iniciar sessão para continuar",
+    "hasPro": "Tem Pro — guarde um cenário para começar a conversar.",
+    "gotIt": "Percebido"
+  },
   "chart": {
     "years": "Anos",
     "value": "Valor",

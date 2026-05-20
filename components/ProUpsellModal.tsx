@@ -3,6 +3,7 @@
 import { useEffect, useRef, useState } from "react";
 import { useUser, SignInButton } from "@clerk/nextjs";
 import { useQuery } from "convex/react";
+import { useTranslations } from "next-intl";
 import { api } from "@/convex/_generated/api";
 import { toast } from "sonner";
 
@@ -38,18 +39,14 @@ async function handleCheckout(type: "one_time" | "subscription") {
 
 const FALLBACK_SUBTITLE = "An interactive, intelligent co-pilot for your financial strategy.";
 
-const MARKETING_HOOKS = [
-  "See exactly what changing one number does to your timeline, month by month",
-  "Run a stress test: what does a 2% return drop in year one actually cost you?",
-  "Find out which single variable is doing the most work in your plan",
-  "Model what happens if you increase contributions by just $200 a month",
-];
+const HOOK_COUNT = 4;
 
-function pickRandom<T>(arr: T[]): T {
-  return arr[Math.floor(Math.random() * arr.length)];
+function pickRandomIndex(): number {
+  return Math.floor(Math.random() * HOOK_COUNT);
 }
 
 export default function ProUpsellModal({ open, onClose, insightContext }: Props) {
+  const t = useTranslations("upsell");
   const pitch = insightContext?.pitch || FALLBACK_SUBTITLE;
   const { isSignedIn, user } = useUser();
   const clerkId = user?.id ?? "";
@@ -59,12 +56,10 @@ export default function ProUpsellModal({ open, onClose, insightContext }: Props)
   );
   const overlayRef = useRef<HTMLDivElement>(null);
 
-  // Pick a new hook each time the modal opens. Stored in state so React
-  // re-renders with the new value, but only updated when `open` flips to true —
-  // no dependency on `hook` itself, so no infinite loop.
-  const [hook, setHook] = useState(() => pickRandom(MARKETING_HOOKS));
+  // Store a hook index so the translated string is looked up at render time.
+  const [hookIdx, setHookIdx] = useState(() => pickRandomIndex());
   useEffect(() => {
-    if (open) setHook(insightContext?.marketingHook ?? pickRandom(MARKETING_HOOKS));
+    if (open) setHookIdx(pickRandomIndex());
   }, [open]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // Close on Escape
@@ -112,11 +107,7 @@ export default function ProUpsellModal({ open, onClose, insightContext }: Props)
 
           {/* What's included */}
           <ul className="mt-4 space-y-2">
-            {[
-              "Ask anything — your numbers, your goals, your timeline",
-              "Financial freedom targets, safe withdrawal limits, compounding milestones",
-              hook,
-            ].map((item) => (
+            {[t("bullet1"), t("bullet2"), t(`hook${hookIdx}` as "hook0" | "hook1" | "hook2" | "hook3")].map((item) => (
               <li key={item} className="flex items-start gap-2 text-sm text-neutral-600">
                 <span className="text-primary-base mt-0.5 shrink-0">✦</span>
                 <span className="leading-snug">{item}</span>
@@ -129,23 +120,23 @@ export default function ProUpsellModal({ open, onClose, insightContext }: Props)
         <div className="px-6 pb-6 space-y-2">
           {!isSignedIn ? (
             <>
-              <p className="text-xs text-neutral-400 text-center mb-3">Sign in first to unlock AI Insights.</p>
+              <p className="text-xs text-neutral-400 text-center mb-3">{t("signInFirst")}</p>
               <SignInButton mode="modal">
                 <button className="w-full py-3 px-4 rounded-xl bg-primary-base text-white font-semibold text-sm hover:opacity-90 transition-opacity">
-                  Sign in to continue
+                  {t("signInButton")}
                 </button>
               </SignInButton>
             </>
           ) : hasAccess ? (
             <>
               <p className="text-xs text-neutral-400 text-center mb-1">
-                {isPro ? "You have Pro — save a scenario to start chatting." : `You have $${(((creditBalance?.granted ?? 0) - (creditBalance?.used ?? 0)) / 100).toFixed(2)} remaining — save a scenario to use it.`}
+                {isPro ? t("hasPro") : `You have $${(((creditBalance?.granted ?? 0) - (creditBalance?.used ?? 0)) / 100).toFixed(2)} remaining — save a scenario to use it.`}
               </p>
               <button
                 onClick={onClose}
                 className="w-full py-3 px-4 rounded-xl bg-primary-base text-white font-semibold text-sm hover:opacity-90 transition-opacity"
               >
-                Got it
+                {t("gotIt")}
               </button>
             </>
           ) : (
