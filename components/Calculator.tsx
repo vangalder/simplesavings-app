@@ -70,10 +70,11 @@ export default function Calculator() {
   const [showGoalInput, setShowGoalInput] = useState(false);
   const dateInputRef = useRef<HTMLInputElement>(null);
   const [aiBlurb, setAiBlurb] = useState("");
+  const [aiBlurbQuestion, setAiBlurbQuestion] = useState("");
   const [aiBlurbLoading, setAiBlurbLoading] = useState(false);
   const [aiBlurbMeta, setAiBlurbMeta] = useState<BlurbMeta | undefined>();
   const isAdmin = useIsAdmin();
-  // Always store the English original so locale changes can translate without regenerating
+  // Store full combined original (blurb ||| question) so locale changes translate both parts
   const aiBlurbOriginalRef = useRef("");
   // Keep locale in a ref so the debounced blurb callback always reads the live value
   const localeRef = useRef(locale);
@@ -222,7 +223,11 @@ export default function Calculator() {
         });
         const data = await res.json();
         const englishBlurb = data.blurb ?? "";
-        aiBlurbOriginalRef.current = englishBlurb;
+        const englishQuestion = data.question ?? "";
+        // Store combined so locale-change effect can translate both parts together
+        aiBlurbOriginalRef.current = englishQuestion
+          ? `${englishBlurb} ||| ${englishQuestion}`
+          : englishBlurb;
         if (data.meta) setAiBlurbMeta(data.meta);
 
         // Translate immediately if locale is non-English
@@ -231,13 +236,15 @@ export default function Calculator() {
           const tRes = await fetch("/api/ai-blurb", {
             method: "POST",
             headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ text: englishBlurb, targetLocale: currentLocale }),
+            body: JSON.stringify({ text: aiBlurbOriginalRef.current, targetLocale: currentLocale }),
           });
           const tData = await tRes.json();
           setAiBlurb(tData.blurb ?? englishBlurb);
+          setAiBlurbQuestion(tData.question ?? englishQuestion);
           if (tData.meta) setAiBlurbMeta(tData.meta);
         } else {
-          setAiBlurb(englishBlurb); // locale is 'en', no translation needed
+          setAiBlurb(englishBlurb);
+          setAiBlurbQuestion(englishQuestion);
         }
       } catch {
         // fail silently
@@ -271,9 +278,10 @@ export default function Calculator() {
       .then((data) => {
         if (cancelled) return;
         setAiBlurb(data.blurb ?? original);
+        setAiBlurbQuestion(data.question ?? "");
         if (data.meta) setAiBlurbMeta(data.meta);
       })
-      .catch(() => { if (!cancelled) setAiBlurb(original); })
+      .catch(() => { if (!cancelled) { setAiBlurb(original); setAiBlurbQuestion(""); } })
       .finally(() => { if (!cancelled) setAiBlurbLoading(false); });
     return () => { cancelled = true; setAiBlurbLoading(false); };
   }, [locale]); // intentionally omits aiBlurbOriginalRef — ref reads are stable
@@ -635,7 +643,7 @@ export default function Calculator() {
             </div>
           </div>
 
-          <AIBlurb blurb={aiBlurb} loading={aiBlurbLoading} meta={aiBlurbMeta} isAdmin={isAdmin} onUpsellClick={() => setShowUpsell(true)} />
+          <AIBlurb blurb={aiBlurb} question={aiBlurbQuestion} loading={aiBlurbLoading} meta={aiBlurbMeta} isAdmin={isAdmin} onUpsellClick={() => setShowUpsell(true)} />
 
           {/* Save Calculation Button */}
           {isConvexConfigured ? (

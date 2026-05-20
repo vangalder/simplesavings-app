@@ -12,13 +12,14 @@ export type BlurbMeta = {
 
 interface AIBlurbProps {
   blurb: string;
+  question?: string;
   loading: boolean;
   meta?: BlurbMeta;
   isAdmin?: boolean;
   onUpsellClick?: () => void;
 }
 
-export default function AIBlurb({ blurb, loading, meta, isAdmin, onUpsellClick }: AIBlurbProps) {
+export default function AIBlurb({ blurb, question, loading, meta, isAdmin, onUpsellClick }: AIBlurbProps) {
   const [visible, setVisible] = useState(false);
 
   useEffect(() => {
@@ -54,9 +55,9 @@ export default function AIBlurb({ blurb, loading, meta, isAdmin, onUpsellClick }
       {onUpsellClick && blurb && !loading && (
         <button
           onClick={onUpsellClick}
-          className="ml-6 text-xs text-primary-base/60 hover:text-primary-base transition-colors"
+          className="ml-6 text-xs text-primary-base/60 hover:text-primary-base transition-colors text-left"
         >
-          Want deeper analysis? →
+          {question || "Want deeper analysis?"} →
         </button>
       )}
       {isAdmin && meta && !loading && (

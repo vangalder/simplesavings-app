@@ -48,15 +48,20 @@ const LOCALE_NAMES: Record<string, string> = {
   "pt-BR": "Brazilian Portuguese",
 };
 
-const SYSTEM_PROMPT = `You are a financial copywriter for simplesavings.app. You receive pre-calculated facts — treat every number and label as ground truth. Write exactly ONE sentence using the LEAD WITH instruction as your angle.
+const SYSTEM_PROMPT = `You are a financial copywriter for simplesavings.app. You receive pre-calculated facts — treat every number and label as ground truth. Write exactly THREE sentences:
+
+1. MIRROR: Use the LEAD WITH fact as your angle. Make the user feel seen — validate what their numbers reveal.
+2. FRICTION: Introduce one concrete financial blindspot or risk this scenario creates. Use the specific numbers provided.
+3. QUESTION: Output the OPEN QUESTION exactly as given — do not rephrase it, do not add punctuation changes.
+
+Output format: sentences 1 and 2 joined normally, then the literal string " ||| ", then sentence 3. Example: "Mirror sentence. Friction sentence. ||| Question sentence?"
 
 Rules:
-- Follow the LEAD WITH directive — that is the chosen insight angle.
 - NEVER recalculate, NEVER contradict GROWING/DEPLETING or SAFE/UNSUSTAINABLE labels.
-- Be specific: use the actual numbers provided, not vague language.
-- Write something that makes the reader want to dig deeper (be provocative, not reassuring).
-- Forbidden: generic praise, em-dashes, starting with "At this rate".
-- Max 32 words.`;
+- Never use the acronym "FIRE" — use "financial freedom target", "work-optional", or "fully self-sustaining" instead.
+- Be specific: use the actual numbers, not vague language.
+- Forbidden: generic praise, em-dashes, starting with "At this rate", moralizing.
+- Max 65 words total across all three sentences.`;
 
 const MODEL = "claude-haiku-4-5";
 const INPUT_RATE = 0.25;  // $0.25/1M input tokens
@@ -64,6 +69,13 @@ const OUTPUT_RATE = 1.25; // $1.25/1M output tokens
 
 function calcCost(tokensIn: number, tokensOut: number) {
   return Math.ceil(((tokensIn * INPUT_RATE + tokensOut * OUTPUT_RATE) / 1_000_000) * 100);
+}
+
+function splitBlurb(raw: string): [string, string] {
+  const sep = " ||| ";
+  const idx = raw.indexOf(sep);
+  if (idx !== -1) return [raw.slice(0, idx).trim(), raw.slice(idx + sep.length).trim()];
+  return [raw, ""];
 }
 
 export async function POST(req: NextRequest) {
@@ -95,15 +107,16 @@ export async function POST(req: NextRequest) {
           content: `Translate the following text to ${langName}. Output only the translated text — no quotes, no explanation, preserve all numbers and punctuation exactly.\n\n${body.text}`,
         }],
       });
-      const blurb = message.content[0]?.type === "text" ? message.content[0].text.trim() : body.text;
+      const raw = message.content[0]?.type === "text" ? message.content[0].text.trim() : String(body.text);
+      const [blurb, question] = splitBlurb(raw);
       const tokensIn = message.usage.input_tokens;
       const tokensOut = message.usage.output_tokens;
       return NextResponse.json({
-        blurb,
+        blurb, question,
         meta: { provider: "anthropic", model: MODEL, tokensIn, tokensOut, costCents: calcCost(tokensIn, tokensOut) },
       });
     } catch {
-      return NextResponse.json({ blurb: body.text }); // fallback: show English
+      return NextResponse.json({ blurb: String(body.text), question: "" }); // fallback: show English
     }
   }
 
@@ -175,29 +188,40 @@ export async function POST(req: NextRequest) {
 
   // ── Select the single most interesting insight hook ─────────────────────
   let leadWith: string;
+  let questionHook: string;
 
   if (isWithdrawal) {
     if (withdrawalRate && withdrawalRate > 4) {
-      leadWith = `Withdrawal rate is ${withdrawalRate.toFixed(1)}% — ${withdrawalMultiple}× the safe 4% rule. Portfolio DEPLETES in ${depletionYears ?? "?"} years. Break-even rate: ${breakEvenRate}%.`;
+      leadWith = `Withdrawal rate is ${withdrawalRate.toFixed(1)}% — ${withdrawalMultiple}× the sustainable 4% threshold. Portfolio depletes in ${depletionYears ?? "?"} years at this pace.`;
+      questionHook = `Want to model the exact monthly income that would make this portfolio last indefinitely?`;
     } else if (withdrawalRate && withdrawalRate > 3) {
-      leadWith = `Withdrawal rate is ${withdrawalRate.toFixed(1)}% — dangerously close to the 4% boundary. A 1–2% drop in returns could tip this into depletion.`;
+      leadWith = `Withdrawal rate is ${withdrawalRate.toFixed(1)}% — dangerously close to the 4% sustainability boundary. A 1–2% drop in returns could tip this into depletion.`;
+      questionHook = `What happens to this plan if markets deliver 4% instead of ${interestRate}% for the first decade?`;
     } else {
-      leadWith = `Withdrawal rate is only ${withdrawalRate?.toFixed(1)}% — well inside the 4% rule. The portfolio generates ${formatCurrency(monthlyInterest, currency)}/month in interest alone.`;
+      leadWith = `Withdrawal rate is only ${withdrawalRate?.toFixed(1)}% — well inside the sustainable 4% threshold. The portfolio generates ${formatCurrency(monthlyInterest, currency)}/month in interest alone.`;
+      questionHook = `Have you stress-tested this against a prolonged stretch of below-average returns?`;
     }
   } else if (interestShare && parseFloat(interestShare) > 75) {
-    leadWith = `${interestShare}% of the final balance is pure compound interest — contributions are almost noise. The rate is doing the heavy lifting.`;
+    leadWith = `${interestShare}% of the final balance is pure compound interest — contributions are almost noise at this rate.`;
+    questionHook = `What would a 10% annual increase in contributions do to this timeline?`;
   } else if (doublingYears && parseFloat(doublingYears) < 8) {
-    leadWith = `Money doubles every ${doublingYears} years at ${interestRate}%. Rule of 72: balance compounds to ${formatCurrency(totalValue, currency)} in ${timeframeYears} years.`;
+    leadWith = `Money doubles every ${doublingYears} years at ${interestRate}%, compounding to ${formatCurrency(totalValue, currency)} over ${timeframeYears} years.`;
+    questionHook = `Have you modeled what sequence-of-returns risk looks like once you start withdrawing?`;
   } else if (fireProgress && parseFloat(fireProgress) >= 80) {
-    leadWith = `Already ${fireProgress}% of the way to a ${formatCurrency(fireNumber!, currency)} FIRE number — roughly ${yearsToFire} years out at this pace.`;
+    leadWith = `Already ${fireProgress}% of the way to a ${formatCurrency(fireNumber!, currency)} fully self-sustaining portfolio — roughly ${yearsToFire} years out at this pace.`;
+    questionHook = `Do you know the exact year your portfolio crosses into work-optional territory?`;
   } else if (fireProgress && parseFloat(fireProgress) < 20 && timeframeYears >= 10) {
-    leadWith = `FIRE target is ${formatCurrency(fireNumber!, currency)} (25× annual contribution). Currently at ${fireProgress}% — ${yearsToFire} years to go.`;
+    leadWith = `Financial freedom target is ${formatCurrency(fireNumber!, currency)} (25× annual contribution) — currently at ${fireProgress}% with ${yearsToFire} years to go.`;
+    questionHook = `What does a modest increase in monthly contributions do to the year you become work-optional?`;
   } else if (interestRate > 12) {
-    leadWith = `${interestRate}% return is ${vsSpNominal}% above the S&P 500 average. If that assumption holds, the result is extraordinary — but verify it.`;
+    leadWith = `${interestRate}% return is ${vsSpNominal}% above the S&P 500 average — if that assumption holds, the result is extraordinary.`;
+    questionHook = `What's your plan if returns come in at half that rate?`;
   } else if (inflationErosion && timeframeYears >= 15) {
-    leadWith = `Inflation at 2.8%/year erodes ${formatCurrency(totalValue, currency)} to a real value of ${formatCurrency(parseFloat(inflationErosion), currency)} — plan for that gap.`;
+    leadWith = `Inflation at 2.8%/year erodes ${formatCurrency(totalValue, currency)} to a real purchasing power of ${formatCurrency(parseFloat(inflationErosion), currency)} — a gap worth planning for.`;
+    questionHook = `Have you mapped out what this balance actually buys in today's dollars?`;
   } else {
-    leadWith = `${formatCurrency(monthlyInterest, currency)}/month in interest alone after ${timeframeYears} years. Contributions account for ${interestShare ? (100 - parseFloat(interestShare)).toFixed(1) : "?"}% of the final balance.`;
+    leadWith = `${formatCurrency(monthlyInterest, currency)}/month in interest alone after ${timeframeYears} years — contributions are only ${interestShare ? (100 - parseFloat(interestShare)).toFixed(1) : "?"}% of the final balance.`;
+    questionHook = `Have you considered what this looks like if you increase contributions alongside your income?`;
   }
 
   const userMessage = `PRE-CALCULATED FACTS — ground truth, do not alter:
@@ -221,23 +245,25 @@ ${fireProgress ? `- FIRE progress: ${fireProgress}% — ${yearsToFire} years to 
 ${inflationErosion ? `- Inflation-adjusted real value (2.8% CPI): ${formatCurrency(parseFloat(inflationErosion), currency)}` : ""}
 
 LEAD WITH: ${leadWith}
+OPEN QUESTION: ${questionHook}
 
-Write ONE sentence.`;
+Write THREE sentences: Mirror, Friction, Question.`;
 
   try {
     const message = await anthropic.messages.create({
       model: MODEL,
-      max_tokens: 80,
+      max_tokens: 150,
       system: SYSTEM_PROMPT,
       messages: [{ role: "user", content: userMessage }],
     });
 
-    const blurb = message.content[0]?.type === "text" ? message.content[0].text.trim() : "";
+    const raw = message.content[0]?.type === "text" ? message.content[0].text.trim() : "";
+    const [blurb, question] = splitBlurb(raw);
     const tokensIn = message.usage.input_tokens;
     const tokensOut = message.usage.output_tokens;
 
     return NextResponse.json({
-      blurb,
+      blurb, question,
       meta: { provider: "anthropic", model: MODEL, tokensIn, tokensOut, costCents: calcCost(tokensIn, tokensOut) },
     });
   } catch (err) {

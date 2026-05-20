@@ -58,7 +58,7 @@ export default function ProUpsellModal({ open, onClose }: Props) {
                 AI Insights ✦
               </h2>
               <p className="text-sm text-neutral-500 mt-0.5">
-                A deeper conversation about your specific numbers.
+                An interactive, intelligent co-pilot for your financial strategy.
               </p>
             </div>
             <button
@@ -75,8 +75,8 @@ export default function ProUpsellModal({ open, onClose }: Props) {
           {/* What's included */}
           <ul className="mt-4 space-y-2">
             {[
-              "Full conversation about your plan — ask anything",
-              "FIRE timeline, safe withdrawal rates, compound milestones",
+              "Ask anything — your numbers, your goals, your timeline",
+              "Financial freedom targets, safe withdrawal limits, compounding milestones",
               "Powered by your choice of AI model",
             ].map((item) => (
               <li key={item} className="flex items-start gap-2 text-sm text-neutral-600">
@@ -117,7 +117,7 @@ export default function ProUpsellModal({ open, onClose }: Props) {
                 className="w-full py-3 px-4 rounded-xl bg-gradient-to-r from-accent-orange-base to-accent-base text-neutral-900 font-bold text-sm hover:opacity-90 transition-opacity"
               >
                 Try it — $4.99
-                <span className="block text-xs font-normal opacity-70 mt-0.5">Unlocks $1.99 of AI conversation on one plan</span>
+                <span className="block text-xs font-normal opacity-70 mt-0.5">Includes up to 30 messages of deep analysis on one plan</span>
               </button>
               <button
                 onClick={() => handleCheckout("subscription")}
