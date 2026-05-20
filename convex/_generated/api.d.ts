@@ -8,9 +8,11 @@
  * @module
  */
 
+import type * as appConfig from "../appConfig.js";
 import type * as http from "../http.js";
 import type * as messages from "../messages.js";
 import type * as providerConfigs from "../providerConfigs.js";
+import type * as purchases from "../purchases.js";
 import type * as scenarios from "../scenarios.js";
 import type * as shares from "../shares.js";
 import type * as users from "../users.js";
@@ -22,9 +24,11 @@ import type {
 } from "convex/server";
 
 declare const fullApi: ApiFromModules<{
+  appConfig: typeof appConfig;
   http: typeof http;
   messages: typeof messages;
   providerConfigs: typeof providerConfigs;
+  purchases: typeof purchases;
   scenarios: typeof scenarios;
   shares: typeof shares;
   users: typeof users;

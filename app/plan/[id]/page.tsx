@@ -146,6 +146,16 @@ export default function PlanDetailPage() {
                 <InsightsPanel
                   scenarioId={scenario._id as Id<"scenarios">}
                   clerkId={clerkId}
+                  scenarioData={{
+                    startingAmount: scenario.startingAmount,
+                    monthlyContribution: scenario.monthlyContribution,
+                    timeframeYears: scenario.timeframeYears,
+                    interestRate: scenario.interestRate,
+                    totalValue: scenario.totalValue,
+                    interestEarned: scenario.interestEarned,
+                    aiProvider: scenario.aiProvider,
+                    aiModel: scenario.aiModel,
+                  }}
                 />
               </div>
             </div>

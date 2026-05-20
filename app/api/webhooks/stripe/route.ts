@@ -1,79 +1,106 @@
 import { NextRequest, NextResponse } from "next/server";
+import Stripe from "stripe";
 import { ConvexHttpClient } from "convex/browser";
 import { api } from "@/convex/_generated/api";
+import type { Id } from "@/convex/_generated/dataModel";
 
-// Stripe sends events as JSON with a Stripe-Signature header.
-// Verify with stripe.webhooks.constructEvent() once stripe SDK is added.
-// For now: basic structural validation + event routing.
+export const dynamic = "force-dynamic";
 
-type StripeEvent = {
-  type: string;
-  data: {
-    object: {
-      id: string;
-      customer: string;
-      status?: string;
-      metadata?: Record<string, string>;
-    };
+function getClients() {
+  const stripeKey = process.env.STRIPE_SECRET_KEY;
+  const webhookSecret = process.env.STRIPE_WEBHOOK_SECRET;
+  const convexUrl = process.env.NEXT_PUBLIC_CONVEX_URL;
+
+  if (!stripeKey || !webhookSecret || !convexUrl) {
+    return null;
+  }
+  return {
+    stripe: new Stripe(stripeKey, { apiVersion: "2025-02-24.acacia" }),
+    webhookSecret,
+    convex: new ConvexHttpClient(convexUrl),
   };
-};
-
-async function getClerkIdByCustomer(
-  client: ConvexHttpClient,
-  stripeCustomerId: string
-): Promise<string | null> {
-  return await client.query(api.users.getClerkIdByStripeCustomer, {
-    stripeCustomerId,
-  });
 }
 
 export async function POST(request: NextRequest) {
-  const stripeWebhookSecret = process.env.STRIPE_WEBHOOK_SECRET;
-  if (!stripeWebhookSecret) {
-    return NextResponse.json({ error: "Stripe webhook secret not configured" }, { status: 500 });
+  const clients = getClients();
+  if (!clients) {
+    return NextResponse.json({ error: "Stripe not configured" }, { status: 500 });
+  }
+  const { stripe, webhookSecret, convex } = clients;
+
+  const sig = request.headers.get("stripe-signature");
+  if (!sig) {
+    return NextResponse.json({ error: "Missing stripe-signature header" }, { status: 400 });
   }
 
-  const convexUrl = process.env.NEXT_PUBLIC_CONVEX_URL;
-  if (!convexUrl) {
-    return NextResponse.json({ error: "Convex not configured" }, { status: 500 });
-  }
+  // Raw body required for signature verification
+  const rawBody = await request.text();
 
-  // TODO: verify signature with stripe.webhooks.constructEvent() after adding stripe SDK
-  let event: StripeEvent;
+  let event: Stripe.Event;
   try {
-    event = await request.json();
-  } catch {
-    return NextResponse.json({ error: "Invalid JSON body" }, { status: 400 });
+    event = stripe.webhooks.constructEvent(rawBody, sig, webhookSecret);
+  } catch (err) {
+    console.error("[stripe webhook] signature verification failed", err);
+    return NextResponse.json({ error: "Invalid signature" }, { status: 400 });
   }
 
-  const client = new ConvexHttpClient(convexUrl);
-  const { type, data } = event;
-  const obj = data.object;
-
   try {
-    if (
-      type === "customer.subscription.created" ||
-      type === "customer.subscription.updated"
-    ) {
-      const isActive = obj.status === "active" || obj.status === "trialing";
-      const clerkId = await getClerkIdByCustomer(client, obj.customer);
-      if (clerkId) {
-        if (isActive) {
-          await client.mutation(api.users.setUserPro, { clerkId });
-        } else {
-          await client.mutation(api.users.unsetUserPro, { clerkId });
+    switch (event.type) {
+      case "checkout.session.completed": {
+        const session = event.data.object as Stripe.Checkout.Session;
+        const clerkId = session.metadata?.clerkId;
+        const checkoutType = session.metadata?.type;
+        if (!clerkId) break;
+
+        if (checkoutType === "one_time") {
+          // $4.99 taste-test: grant $1.99 of AI credits (199 cents)
+          const paymentIntentId =
+            typeof session.payment_intent === "string"
+              ? session.payment_intent
+              : session.payment_intent?.id ?? session.id;
+          const scenarioId = session.metadata?.scenarioId as Id<"scenarios"> | undefined;
+          await convex.mutation(api.purchases.completeTasteTestPurchase, {
+            clerkId,
+            stripePaymentIntentId: paymentIntentId,
+            scenarioId,
+            creditsGranted: 199,
+          });
         }
+        break;
       }
-    }
 
-    if (type === "customer.subscription.deleted") {
-      const clerkId = await getClerkIdByCustomer(client, obj.customer);
-      if (clerkId) {
-        await client.mutation(api.users.unsetUserPro, { clerkId });
+      case "customer.subscription.created":
+      case "customer.subscription.updated": {
+        const sub = event.data.object as Stripe.Subscription;
+        const isActive = sub.status === "active" || sub.status === "trialing";
+        const clerkId = await convex.query(api.users.getClerkIdByStripeCustomer, {
+          stripeCustomerId: typeof sub.customer === "string" ? sub.customer : sub.customer.id,
+        });
+        if (clerkId) {
+          if (isActive) {
+            await convex.mutation(api.users.setUserPro, { clerkId });
+          } else if (sub.status !== "active" && sub.status !== "trialing" && sub.status !== "past_due") {
+            // Don't revoke mid-period — only on actual non-active states (not cancel_at_period_end which stays active)
+            await convex.mutation(api.users.unsetUserPro, { clerkId });
+          }
+        }
+        break;
+      }
+
+      case "customer.subscription.deleted": {
+        // Fires at end of billing period — correct time to revoke Pro
+        const sub = event.data.object as Stripe.Subscription;
+        const clerkId = await convex.query(api.users.getClerkIdByStripeCustomer, {
+          stripeCustomerId: typeof sub.customer === "string" ? sub.customer : sub.customer.id,
+        });
+        if (clerkId) {
+          await convex.mutation(api.users.unsetUserPro, { clerkId });
+        }
+        break;
       }
     }
   } catch (err) {
-    console.error("[stripe webhook] error processing event", type, err);
+    console.error("[stripe webhook] error processing", event.type, err);
     return NextResponse.json({ error: "Internal error" }, { status: 500 });
   }
 
