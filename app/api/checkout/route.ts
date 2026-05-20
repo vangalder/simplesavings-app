@@ -45,7 +45,7 @@ export async function POST(req: NextRequest) {
   const priceId =
     type === "subscription"
       ? process.env.STRIPE_PRO_PRICE_ID
-      : process.env.STRIPE_ONE_TIME_PRICE_ID;
+      : process.env.STRIPE_PRO_SAMPLE_PRICE_ID;
 
   if (!priceId) {
     return NextResponse.json(
@@ -83,7 +83,7 @@ export async function POST(req: NextRequest) {
       customer: stripeCustomerId,
       mode: type === "subscription" ? "subscription" : "payment",
       line_items: [{ price: priceId, quantity: 1 }],
-      success_url: `${origin}${type === "subscription" ? "/profile?upgraded=1" : `/?taste=1${scenarioId ? `&sid=${scenarioId}` : ""}`}`,
+      success_url: `${origin}${type === "subscription" ? "/profile?upgraded=1" : `/profile?sample=1${scenarioId ? `&sid=${scenarioId}` : ""}`}`,
       cancel_url: `${origin}/`,
       metadata: {
         clerkId: userId,

@@ -286,7 +286,7 @@ export default function InsightsPanel({ scenarioId, clerkId, scenarioData }: Pro
                 onClick={() => handleCheckout("one_time")}
                 className="w-full py-2.5 px-4 rounded-xl bg-gradient-to-r from-accent-orange-base to-accent-base text-neutral-900 font-semibold text-sm hover:opacity-90 transition-opacity"
               >
-                Unlock AI Insights — $4.99
+                Try Pro sample — $4.99
               </button>
               <button
                 onClick={() => handleCheckout("subscription")}
