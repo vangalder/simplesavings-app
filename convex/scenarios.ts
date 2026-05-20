@@ -124,6 +124,37 @@ export const updateScenario = mutation({
   },
 });
 
+export const updateScenarioAiConfig = mutation({
+  args: {
+    scenarioId: v.id("scenarios"),
+    clerkId: v.string(),
+    aiProvider: v.optional(v.string()),
+    aiModel: v.optional(v.string()),
+    aiSystemPromptOverride: v.optional(v.string()),
+    aiPersonaName: v.optional(v.string()),
+    aiPersonaVoice: v.optional(v.string()),
+    aiPersonaStyle: v.optional(v.string()),
+  },
+  handler: async (ctx, args) => {
+    const user = await ctx.db
+      .query("users")
+      .withIndex("by_clerk_id", (q) => q.eq("clerkId", args.clerkId))
+      .first();
+    if (!user) throw new Error("User not found");
+
+    const scenario = await ctx.db.get(args.scenarioId);
+    if (!scenario || scenario.userId !== user._id) {
+      throw new Error("Scenario not found or unauthorized");
+    }
+
+    const { scenarioId, clerkId, ...fields } = args;
+    const updates = Object.fromEntries(
+      Object.entries(fields).filter(([, v]) => v !== undefined)
+    );
+    await ctx.db.patch(scenarioId, { ...updates, updatedAt: Date.now() });
+  },
+});
+
 export const deleteScenario = mutation({
   args: { scenarioId: v.id("scenarios"), clerkId: v.string() },
   handler: async (ctx, args) => {

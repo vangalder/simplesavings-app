@@ -10,6 +10,9 @@ export default defineSchema({
     stripeCustomerId: v.optional(v.string()),
     locale: v.optional(v.string()),
     currency: v.optional(v.string()),
+    // Phase 3: AI credit tracking (in cents, e.g. 199 = $1.99)
+    aiCreditsGranted: v.optional(v.number()),
+    aiCreditsUsed: v.optional(v.number()),
     createdAt: v.number(),
     updatedAt: v.number(),
   }).index("by_clerk_id", ["clerkId"]),
@@ -24,13 +27,20 @@ export default defineSchema({
     totalValue: v.number(),
     principalPaid: v.number(),
     interestEarned: v.number(),
-    // Phase 2 additions
     type: v.optional(v.string()),
     description: v.optional(v.string()),
     goals: v.optional(v.string()),
     goalAmount: v.optional(v.number()),
     chartType: v.optional(v.string()),
     targetDate: v.optional(v.number()),
+    // Phase 3: Per-scenario AI config (active this phase)
+    aiProvider: v.optional(v.string()),
+    aiModel: v.optional(v.string()),
+    // Avatar scaffolding (voice/style/persona ship later, schema here now)
+    aiSystemPromptOverride: v.optional(v.string()),
+    aiPersonaName: v.optional(v.string()),
+    aiPersonaVoice: v.optional(v.string()),
+    aiPersonaStyle: v.optional(v.string()),
     createdAt: v.number(),
     updatedAt: v.number(),
   }).index("by_user", ["userId"]),
@@ -60,10 +70,20 @@ export default defineSchema({
     userId: v.id("users"),
     stripePaymentIntentId: v.string(),
     status: v.union(v.literal("pending"), v.literal("complete"), v.literal("refunded")),
+    // Phase 3: link one-time purchase to a scenario + credit amount
+    scenarioId: v.optional(v.id("scenarios")),
+    creditsGranted: v.optional(v.number()),
     createdAt: v.number(),
   })
     .index("by_user", ["userId"])
     .index("by_payment_intent", ["stripePaymentIntentId"]),
+
+  // Phase 3: runtime app configuration (admin-settable)
+  app_config: defineTable({
+    key: v.string(),
+    value: v.string(),
+    updatedAt: v.number(),
+  }).index("by_key", ["key"]),
 
   shares: defineTable({
     sharedBy: v.string(),

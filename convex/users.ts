@@ -83,6 +83,52 @@ export const unsetUserPro = mutation({
   },
 });
 
+export const getAiCreditBalance = query({
+  args: { clerkId: v.string() },
+  handler: async (ctx, args) => {
+    const user = await ctx.db
+      .query("users")
+      .withIndex("by_clerk_id", (q) => q.eq("clerkId", args.clerkId))
+      .first();
+    if (!user) return null;
+    return {
+      granted: user.aiCreditsGranted ?? 0,
+      used: user.aiCreditsUsed ?? 0,
+      isPro: user.isPro,
+    };
+  },
+});
+
+export const incrementAiUsage = mutation({
+  args: { clerkId: v.string(), costInCents: v.number() },
+  handler: async (ctx, args) => {
+    const user = await ctx.db
+      .query("users")
+      .withIndex("by_clerk_id", (q) => q.eq("clerkId", args.clerkId))
+      .first();
+    if (!user) throw new Error("User not found");
+    await ctx.db.patch(user._id, {
+      aiCreditsUsed: (user.aiCreditsUsed ?? 0) + args.costInCents,
+      updatedAt: Date.now(),
+    });
+  },
+});
+
+export const grantAiCredits = mutation({
+  args: { clerkId: v.string(), creditsInCents: v.number() },
+  handler: async (ctx, args) => {
+    const user = await ctx.db
+      .query("users")
+      .withIndex("by_clerk_id", (q) => q.eq("clerkId", args.clerkId))
+      .first();
+    if (!user) throw new Error("User not found");
+    await ctx.db.patch(user._id, {
+      aiCreditsGranted: (user.aiCreditsGranted ?? 0) + args.creditsInCents,
+      updatedAt: Date.now(),
+    });
+  },
+});
+
 export const getClerkIdByStripeCustomer = query({
   args: { stripeCustomerId: v.string() },
   handler: async (ctx, args) => {

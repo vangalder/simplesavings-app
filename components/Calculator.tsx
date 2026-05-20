@@ -12,6 +12,7 @@ import { defaultCalculatorValues, type CalculatorState } from "@/lib/defaultValu
 import AnimatedCurrency from "@/components/AnimatedCurrency";
 import AnimatedNumberInput from "@/components/AnimatedNumberInput";
 import ShareModal from "@/components/ShareModal";
+import AIBlurb from "@/components/AIBlurb";
 
 const SaveButtonWithCloud = dynamic(() => import("@/components/SaveButtonWithCloud"), { ssr: false });
 
@@ -66,6 +67,8 @@ export default function Calculator() {
   const [goalAmount, setGoalAmount] = useState<number>(0);
   const [showGoalInput, setShowGoalInput] = useState(false);
   const dateInputRef = useRef<HTMLInputElement>(null);
+  const [aiBlurb, setAiBlurb] = useState("");
+  const [aiBlurbLoading, setAiBlurbLoading] = useState(false);
 
   // Load values from URL params, localStorage, or defaults
   useEffect(() => {
@@ -187,6 +190,40 @@ export default function Calculator() {
     }, 1000);
     return () => clearTimeout(id);
   }, [state, timeframeMode, targetDateStr, isInitialized]);
+
+  // Debounced real-time AI blurb — fires 1500ms after inputs settle
+  useEffect(() => {
+    if (!isInitialized) return;
+    setAiBlurbLoading(true);
+    const id = setTimeout(async () => {
+      try {
+        const res = await fetch("/api/ai-blurb", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            startingAmount: results.totalValue > 0 ? state.startingAmount : 0,
+            monthlyContribution: state.monthlyContribution,
+            timeframeYears: state.timeframeYears,
+            interestRate: state.interestRate,
+            totalValue: results.totalValue,
+            interestEarned: results.interestEarned,
+            currency,
+          }),
+        });
+        const data = await res.json();
+        setAiBlurb(data.blurb ?? "");
+      } catch {
+        // fail silently
+      } finally {
+        setAiBlurbLoading(false);
+      }
+    }, 1500);
+    return () => {
+      clearTimeout(id);
+      setAiBlurbLoading(false);
+    };
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [state, isInitialized]);
 
   // Recompute timeframeYears from target date (also runs every 24h via interval)
   useEffect(() => {
@@ -544,6 +581,8 @@ export default function Calculator() {
               </div>
             </div>
           </div>
+
+          <AIBlurb blurb={aiBlurb} loading={aiBlurbLoading} />
 
           {/* Save Calculation Button */}
           {isConvexConfigured ? (
