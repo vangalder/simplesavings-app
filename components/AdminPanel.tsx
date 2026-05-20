@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useCallback } from "react";
+import { useState, useCallback, useEffect } from "react";
 import { useQuery, useMutation } from "convex/react";
 import { api } from "@/convex/_generated/api";
 import ProviderPicker, { PROVIDERS } from "@/components/ProviderPicker";
@@ -30,6 +30,23 @@ export default function AdminPanel() {
   const [convoProvider, setConvoProvider] = useState("anthropic");
   const [convoModelId, setConvoModelId] = useState("claude-sonnet-4-6");
   const [configSaved, setConfigSaved] = useState(false);
+
+  // Sync dropdowns from Convex when config loads
+  useEffect(() => {
+    if (blurbModel && typeof blurbModel === "string" && blurbModel.includes(":")) {
+      const [p, m] = blurbModel.split(":", 2);
+      setBlurbProvider(p);
+      setBlurbModelId(m);
+    }
+  }, [blurbModel]);
+
+  useEffect(() => {
+    if (convoModel && typeof convoModel === "string" && convoModel.includes(":")) {
+      const [p, m] = convoModel.split(":", 2);
+      setConvoProvider(p);
+      setConvoModelId(m);
+    }
+  }, [convoModel]);
 
   // Arena state
   const [arenaProvider1, setArenaProvider1] = useState("anthropic");

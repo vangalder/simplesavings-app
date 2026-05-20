@@ -7,6 +7,7 @@ import { api } from "@/convex/_generated/api";
 const anthropic = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
 const openaiClient = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
 const xaiClient = new OpenAI({ apiKey: process.env.XAI_API_KEY, baseURL: "https://api.x.ai/v1" });
+const openrouterClient = new OpenAI({ apiKey: process.env.OPENROUTER_API_KEY, baseURL: "https://openrouter.ai/api/v1" });
 const convex = new ConvexHttpClient(process.env.NEXT_PUBLIC_CONVEX_URL!);
 
 // Simple in-memory rate limiter: max 10 requests per minute per IP
@@ -64,8 +65,13 @@ const RATES: Record<string, { in: number; out: number }> = {
   "gpt-4o":               { in: 2.5,   out: 10.0 },
   "grok-3-mini":          { in: 0.3,   out: 0.5  },
   "grok-3":               { in: 3.0,   out: 15.0 },
-  "gemini-1.5-flash":     { in: 0.075, out: 0.3  },
-  "gemini-1.5-pro":       { in: 1.25,  out: 5.0  },
+  "gemini-1.5-flash":              { in: 0.075, out: 0.3  },
+  "gemini-1.5-pro":                { in: 1.25,  out: 5.0  },
+  "gemini-2.5-flash":              { in: 0.15,  out: 0.6  },
+  "gemini-2.5-pro":                { in: 1.25,  out: 10.0 },
+  "meta-llama/llama-3.3-70b-instruct": { in: 0.12, out: 0.3 },
+  "deepseek/deepseek-r1":          { in: 0.55,  out: 2.19 },
+  "mistralai/mistral-large":       { in: 2.0,   out: 6.0  },
 };
 
 function calcCost(modelId: string, tokensIn: number, tokensOut: number): number {
@@ -96,8 +102,10 @@ async function callLLM(
     };
   }
 
-  // OpenAI-compatible providers (openai, xai)
-  const client = provider === "xai" ? xaiClient : openaiClient;
+  // OpenAI-compatible providers (openai, xai, openrouter)
+  const client = provider === "xai" ? xaiClient
+    : provider === "openrouter" ? openrouterClient
+    : openaiClient;
   const resp = await client.chat.completions.create({
     model: modelId,
     max_tokens: maxTokens,
