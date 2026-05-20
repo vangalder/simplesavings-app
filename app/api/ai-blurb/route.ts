@@ -277,45 +277,132 @@ export async function POST(req: NextRequest) {
   const inflationErosion = timeframeYears > 0
     ? (totalValue / Math.pow(1.028, timeframeYears)).toFixed(0) : null;
 
+  // ── Deterministic variant picker — same inputs → same hook, different inputs → variety ──
+  // Hash is seeded from the actual numbers so output is stable for a given scenario
+  const hookSeed = Math.abs(Math.round(totalValue + startingAmount * 3 + interestRate * 100 + timeframeYears * 7));
+  function pick<T>(arr: T[]): T { return arr[hookSeed % arr.length]; }
+
   // ── Select the single most interesting insight hook ─────────────────────
   let leadWith: string;
   let questionHook: string;
 
   if (isWithdrawal) {
     if (withdrawalRate && withdrawalRate > 4) {
-      leadWith = `Withdrawal rate is ${withdrawalRate.toFixed(1)}% — ${withdrawalMultiple}× the sustainable 4% threshold. Portfolio depletes in ${depletionYears ?? "?"} years at this pace.`;
-      questionHook = `Want to model the exact monthly income that would make this portfolio last indefinitely?`;
+      leadWith = pick([
+        `Withdrawal rate is ${withdrawalRate.toFixed(1)}% — ${withdrawalMultiple}× the sustainable 4% threshold. Portfolio depletes in ${depletionYears ?? "?"} years at this pace.`,
+        `At ${withdrawalRate.toFixed(1)}% annual withdrawals, the portfolio runs out in ${depletionYears ?? "?"} years — the 4% rule exists precisely because of scenarios like this one.`,
+        `${formatCurrency(contributionAbs, currency)}/month out against ${formatCurrency(monthlyInterest, currency)}/month generated: the gap is ${formatCurrency(annualFlow - annualGrowth, currency)}/year, accelerating the depletion clock.`,
+      ]);
+      questionHook = pick([
+        `Want to model the exact monthly income that would make this portfolio last indefinitely?`,
+        `What part-time income or one-time adjustment would flip this from depleting to self-sustaining?`,
+        `Have you stress-tested what happens if returns drop 2% right at the start of this drawdown?`,
+      ]);
     } else if (withdrawalRate && withdrawalRate > 3) {
-      leadWith = `Withdrawal rate is ${withdrawalRate.toFixed(1)}% — dangerously close to the 4% sustainability boundary. A 1–2% drop in returns could tip this into depletion.`;
-      questionHook = `What happens to this plan if markets deliver 4% instead of ${interestRate}% for the first decade?`;
+      leadWith = pick([
+        `Withdrawal rate is ${withdrawalRate.toFixed(1)}% — dangerously close to the 4% sustainability boundary.`,
+        `At ${withdrawalRate.toFixed(1)}%, a single bad-return decade could push this plan past the depletion threshold.`,
+        `${formatCurrency(monthlyInterest, currency)}/month in interest barely covers the ${formatCurrency(contributionAbs, currency)}/month withdrawal at this rate.`,
+      ]);
+      questionHook = pick([
+        `What happens to this plan if markets deliver 4% instead of ${interestRate}% for the first decade?`,
+        `Have you modeled how a 5-year sequence-of-poor-returns affects the long-term depletion timeline?`,
+        `What's the minimum return rate that keeps this portfolio intact for the full ${timeframeYears}-year timeframe?`,
+      ]);
     } else {
-      leadWith = `Withdrawal rate is only ${withdrawalRate?.toFixed(1)}% — well inside the sustainable 4% threshold. The portfolio generates ${formatCurrency(monthlyInterest, currency)}/month in interest alone.`;
-      questionHook = `Have you stress-tested this against a prolonged stretch of below-average returns?`;
+      leadWith = pick([
+        `Withdrawal rate is only ${withdrawalRate?.toFixed(1)}% — well inside the sustainable 4% threshold. The portfolio generates ${formatCurrency(monthlyInterest, currency)}/month in interest alone.`,
+        `At ${withdrawalRate?.toFixed(1)}%, this portfolio is producing ${formatCurrency(monthlyInterest - contributionAbs, currency)}/month more in interest than it's withdrawing.`,
+        `${formatCurrency(monthlyInterest, currency)}/month in interest, ${formatCurrency(contributionAbs, currency)}/month withdrawn — the surplus is quietly compounding.`,
+      ]);
+      questionHook = pick([
+        `Have you stress-tested this against a prolonged stretch of below-average returns?`,
+        `Do you know the maximum withdrawal rate that keeps this portfolio intact indefinitely?`,
+        `What does this plan look like if inflation runs at 4% instead of 2.8% for the next decade?`,
+      ]);
     }
   } else if (hasGoal && yearsToGoal === "already reached") {
-    leadWith = `Starting balance already exceeds the ${formatCurrency(goalAmount!, currency)} goal — the portfolio is funded.`;
-    questionHook = `What's the next milestone worth planning toward from here?`;
+    leadWith = `Starting balance already exceeds the ${formatCurrency(goalAmount!, currency)} goal — the portfolio is fully funded right now.`;
+    questionHook = `What's the next milestone worth targeting from here?`;
   } else if (hasGoal && goalProgress && parseFloat(goalProgress) >= 80) {
-    leadWith = `Already ${goalProgress}% of the way to the ${formatCurrency(goalAmount!, currency)} goal — on track to reach it in ${yearsToGoal} years.`;
-    questionHook = `Do you know exactly how a single lump-sum addition today would shift that arrival date?`;
+    leadWith = pick([
+      `Already ${goalProgress}% of the way to the ${formatCurrency(goalAmount!, currency)} goal — on track to reach it in ${yearsToGoal} years.`,
+      `${goalProgress}% funded toward ${formatCurrency(goalAmount!, currency)}, with ${yearsToGoal} years left to close the gap at this pace.`,
+    ]);
+    questionHook = pick([
+      `Do you know exactly how a single lump-sum addition today would shift that arrival date?`,
+      `What's the gap in dollars between today's balance and the goal, and what's the fastest way to close it?`,
+    ]);
   } else if (hasGoal && yearsToGoal) {
-    leadWith = `At this pace, the ${formatCurrency(goalAmount!, currency)} goal arrives in ${yearsToGoal} years — ${parseFloat(yearsToGoal) > timeframeYears ? `${(parseFloat(yearsToGoal) - timeframeYears).toFixed(1)} years past the current timeframe` : "within the current timeframe"}.`;
-    questionHook = `Want to model what it takes to hit that goal ${Math.ceil(parseFloat(yearsToGoal) * 0.2)} years sooner?`;
+    const overUnder = parseFloat(yearsToGoal) > timeframeYears
+      ? `${(parseFloat(yearsToGoal) - timeframeYears).toFixed(1)} years past the current timeframe`
+      : `within the current timeframe`;
+    leadWith = pick([
+      `At this pace, the ${formatCurrency(goalAmount!, currency)} goal arrives in ${yearsToGoal} years — ${overUnder}.`,
+      `${formatCurrency(goalAmount!, currency)} goal: ${yearsToGoal} years away at current pace, ${overUnder}.`,
+    ]);
+    questionHook = pick([
+      `Want to model what it takes to hit that goal ${Math.ceil(parseFloat(yearsToGoal) * 0.2)} years sooner?`,
+      `What monthly contribution increase closes the gap between current pace and your goal timeline?`,
+      `Have you mapped the exact year-by-year balance curve from now to the goal date?`,
+    ]);
   } else if (interestShare && parseFloat(interestShare) > 75) {
-    leadWith = `${interestShare}% of the final balance is pure compound interest — contributions are almost noise at this rate.`;
-    questionHook = `What would a 10% annual increase in contributions do to this timeline?`;
-  } else if (doublingYears && parseFloat(doublingYears) < 8) {
-    leadWith = `Money doubles every ${doublingYears} years at ${interestRate}%, compounding to ${formatCurrency(totalValue, currency)} over ${timeframeYears} years.`;
-    questionHook = `Have you modeled what sequence-of-returns risk looks like once you start withdrawing?`;
+    leadWith = pick([
+      `${interestShare}% of the final ${formatCurrency(totalValue, currency)} is pure compound interest — contributions are almost background noise.`,
+      `Contributions total ${formatCurrency(totalContributions, currency)}; the rest — ${formatCurrency(interestEarned, currency)} — is interest the market added for free.`,
+      `Every $1 put in becomes $${contributionLeverage} out: at ${interestRate}%, the rate is doing ${interestShare}% of the work over ${timeframeYears} years.`,
+    ]);
+    questionHook = pick([
+      `What would a 10% annual increase in contributions do to this timeline?`,
+      `Have you looked at what the real purchasing power of ${formatCurrency(totalValue, currency)} is after ${timeframeYears} years of 2.8% inflation?`,
+      `Do you know the exact year compound interest overtakes cumulative contributions in this plan?`,
+    ]);
   } else if (interestRate > 12) {
-    leadWith = `${interestRate}% return is ${vsSpNominal}% above the S&P 500 average — if that assumption holds, the result is extraordinary.`;
-    questionHook = `What's your plan if returns come in at half that rate?`;
+    leadWith = pick([
+      `${interestRate}% return is ${vsSpNominal}% above the S&P 500 average — if that assumption holds for ${timeframeYears} years, the result is extraordinary.`,
+      `At ${interestRate}%, this plan outpaces the S&P 500 average by ${vsSpNominal}% annually — that gap compounds dramatically over ${timeframeYears} years.`,
+      `${vsSpNominal}% above long-run S&P averages: the ${formatCurrency(totalValue, currency)} projection is built on an assumption that needs to be verified.`,
+    ]);
+    questionHook = pick([
+      `What's your plan if returns come in at half that rate?`,
+      `Have you modeled what ${formatCurrency(totalValue, currency)} becomes if the actual return is 7% instead of ${interestRate}%?`,
+      `What's the asset class or strategy producing ${interestRate}% consistently, and how does it behave in a downturn?`,
+    ]);
+  } else if (doublingYears && parseFloat(doublingYears) < timeframeYears && timeframeYears >= 5) {
+    // Only use Rule of 72 hook when timeframe is long enough for it to be meaningful
+    const doublesCount = Math.floor(timeframeYears / parseFloat(doublingYears));
+    leadWith = pick([
+      `At ${interestRate}%, the balance doubles every ${doublingYears} years — that's ${doublesCount > 1 ? `${doublesCount} full doublings` : "one full doubling"} inside this ${timeframeYears}-year window.`,
+      `Rule of 72: ${interestRate}% means a doubling every ${doublingYears} years. The last doubling in this plan adds more than all prior contributions combined.`,
+      `Every ${doublingYears} years at ${interestRate}%, the entire balance reinvents itself — starting early captures doublings that late starters can never recover.`,
+    ]);
+    questionHook = pick([
+      `Have you modeled what sequence-of-returns risk does to this doubling schedule once you start withdrawing?`,
+      `What does the doubling clock look like if returns average 7% instead of ${interestRate}% for the first decade?`,
+      `Do you know which specific year in this plan generates more interest than your entire contribution history?`,
+    ]);
   } else if (inflationErosion && timeframeYears >= 15) {
-    leadWith = `Inflation at 2.8%/year erodes ${formatCurrency(totalValue, currency)} to a real purchasing power of ${formatCurrency(parseFloat(inflationErosion), currency)} — a gap worth planning for.`;
-    questionHook = `Have you mapped out what this balance actually buys in today's dollars?`;
+    leadWith = pick([
+      `Inflation at 2.8%/year erodes ${formatCurrency(totalValue, currency)} to a real purchasing power of ${formatCurrency(parseFloat(inflationErosion), currency)} — a ${formatCurrency(totalValue - parseFloat(inflationErosion), currency)} gap worth planning for.`,
+      `${formatCurrency(totalValue, currency)} in ${timeframeYears} years buys what ${formatCurrency(parseFloat(inflationErosion), currency)} buys today — inflation is the silent fee on every dollar saved.`,
+      `Real value after ${timeframeYears} years of 2.8% inflation: ${formatCurrency(parseFloat(inflationErosion), currency)}. The nominal number looks impressive; the real number is what matters.`,
+    ]);
+    questionHook = pick([
+      `Have you mapped out what this balance actually buys in today's dollars?`,
+      `What rate of return would you need to fully offset 2.8% inflation over this timeframe?`,
+      `Have you stress-tested this plan against 4% inflation instead of 2.8%?`,
+    ]);
   } else {
-    leadWith = `${formatCurrency(monthlyInterest, currency)}/month in interest alone after ${timeframeYears} years — contributions are only ${interestShare ? (100 - parseFloat(interestShare)).toFixed(1) : "?"}% of the final balance.`;
-    questionHook = `Have you considered what this looks like if you increase contributions alongside your income?`;
+    leadWith = pick([
+      `${formatCurrency(monthlyInterest, currency)}/month in interest alone — contributions account for only ${interestShare ? (100 - parseFloat(interestShare)).toFixed(1) : "?"}% of the final ${formatCurrency(totalValue, currency)}.`,
+      `Every $1 contributed in this plan returns $${contributionLeverage ?? "?"} — the rate is doing more heavy lifting than the deposits.`,
+      `${formatCurrency(annualGrowth, currency)} in annual interest on the starting balance alone, before a single new contribution is counted.`,
+    ]);
+    questionHook = pick([
+      `Have you considered what this looks like if you increase contributions alongside your income?`,
+      `What does the plan look like if you front-load contributions in the first 5 years instead of spreading them evenly?`,
+      `Do you know what a single extra lump-sum deposit today is worth by the end of the ${timeframeYears}-year window?`,
+    ]);
   }
 
   const noGoalConstraint = !hasGoal
