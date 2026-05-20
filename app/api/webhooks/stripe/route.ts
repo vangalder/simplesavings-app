@@ -87,6 +87,30 @@ export async function POST(request: NextRequest) {
         break;
       }
 
+      case "customer.subscription.paused": {
+        // Payment collection paused — revoke Pro immediately
+        const sub = event.data.object as Stripe.Subscription;
+        const clerkId = await convex.query(api.users.getClerkIdByStripeCustomer, {
+          stripeCustomerId: typeof sub.customer === "string" ? sub.customer : sub.customer.id,
+        });
+        if (clerkId) {
+          await convex.mutation(api.users.unsetUserPro, { clerkId });
+        }
+        break;
+      }
+
+      case "customer.subscription.resumed": {
+        // Subscription active again after pause — restore Pro
+        const sub = event.data.object as Stripe.Subscription;
+        const clerkId = await convex.query(api.users.getClerkIdByStripeCustomer, {
+          stripeCustomerId: typeof sub.customer === "string" ? sub.customer : sub.customer.id,
+        });
+        if (clerkId) {
+          await convex.mutation(api.users.setUserPro, { clerkId });
+        }
+        break;
+      }
+
       case "customer.subscription.deleted": {
         // Fires at end of billing period — correct time to revoke Pro
         const sub = event.data.object as Stripe.Subscription;
