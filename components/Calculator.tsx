@@ -220,6 +220,7 @@ export default function Calculator() {
             totalValue: results.totalValue,
             interestEarned: results.interestEarned,
             currency,
+            goalAmount: goalAmount > 0 ? goalAmount : null,
           }),
         });
         const data = await res.json();

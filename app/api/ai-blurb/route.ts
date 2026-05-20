@@ -213,6 +213,7 @@ export async function POST(req: NextRequest) {
     totalValue,
     interestEarned,
     currency = "USD",
+    goalAmount = null,
   } = body as {
     startingAmount: number;
     monthlyContribution: number;
@@ -221,7 +222,10 @@ export async function POST(req: NextRequest) {
     totalValue: number;
     interestEarned: number;
     currency?: string;
+    goalAmount?: number | null;
   };
+
+  const hasGoal = typeof goalAmount === "number" && goalAmount > 0;
 
   // ── Pre-compute all derived facts ──────────────────────────────────────────
   const isWithdrawal = monthlyContribution < 0;
@@ -237,8 +241,6 @@ export async function POST(req: NextRequest) {
     ? (annualFlow / startingAmount) * 100 : null;
   const withdrawalMultiple = withdrawalRate !== null
     ? (withdrawalRate / 4).toFixed(2) : null;
-  const breakEvenRate = isWithdrawal && startingAmount > 0
-    ? (annualFlow / startingAmount * 100).toFixed(2) : null;
   const sustainabilityStatus = withdrawalRate !== null
     ? (withdrawalRate <= 4 ? "SAFE — below 4% rule" : "UNSUSTAINABLE — above 4% rule") : null;
   const safeAnnualWithdrawal = startingAmount * 0.04;
@@ -251,15 +253,20 @@ export async function POST(req: NextRequest) {
   const contributionLeverage = totalContributions > 0
     ? (totalValue / totalContributions).toFixed(2) : null;
   const doublingYears = interestRate > 0 ? (72 / interestRate).toFixed(1) : null;
-  const freedomNumber = isWithdrawal ? null : annualFlow * 25;
-  const freedomProgress = freedomNumber && freedomNumber > 0
-    ? ((startingAmount / freedomNumber) * 100).toFixed(1) : null;
-  const yearsToFreedom = !isWithdrawal && annualFlow > 0 && interestRate > 0
+
+  // Goal facts — only computed when user has explicitly set a goal
+  const goalProgress = hasGoal && goalAmount! > 0
+    ? ((startingAmount / goalAmount!) * 100).toFixed(1) : null;
+  const yearsToGoal = hasGoal && !isWithdrawal
     ? (() => {
-        const target = annualFlow * 25;
-        if (startingAmount >= target) return "already reached";
-        const y = Math.log(target / Math.max(startingAmount, 1)) / Math.log(1 + interestRate / 100);
-        return y > 0 && y < 200 ? y.toFixed(1) : null;
+        if (startingAmount >= goalAmount!) return "already reached";
+        const monthlyRate = interestRate / 100 / 12;
+        let balance = startingAmount;
+        for (let m = 1; m <= 200 * 12; m++) {
+          balance = balance * (1 + monthlyRate) + contributionAbs;
+          if (balance >= goalAmount!) return (m / 12).toFixed(1);
+        }
+        return null;
       })()
     : null;
 
@@ -285,18 +292,21 @@ export async function POST(req: NextRequest) {
       leadWith = `Withdrawal rate is only ${withdrawalRate?.toFixed(1)}% — well inside the sustainable 4% threshold. The portfolio generates ${formatCurrency(monthlyInterest, currency)}/month in interest alone.`;
       questionHook = `Have you stress-tested this against a prolonged stretch of below-average returns?`;
     }
+  } else if (hasGoal && yearsToGoal === "already reached") {
+    leadWith = `Starting balance already exceeds the ${formatCurrency(goalAmount!, currency)} goal — the portfolio is funded.`;
+    questionHook = `What's the next milestone worth planning toward from here?`;
+  } else if (hasGoal && goalProgress && parseFloat(goalProgress) >= 80) {
+    leadWith = `Already ${goalProgress}% of the way to the ${formatCurrency(goalAmount!, currency)} goal — on track to reach it in ${yearsToGoal} years.`;
+    questionHook = `Do you know exactly how a single lump-sum addition today would shift that arrival date?`;
+  } else if (hasGoal && yearsToGoal) {
+    leadWith = `At this pace, the ${formatCurrency(goalAmount!, currency)} goal arrives in ${yearsToGoal} years — ${parseFloat(yearsToGoal) > timeframeYears ? `${(parseFloat(yearsToGoal) - timeframeYears).toFixed(1)} years past the current timeframe` : "within the current timeframe"}.`;
+    questionHook = `Want to model what it takes to hit that goal ${Math.ceil(parseFloat(yearsToGoal) * 0.2)} years sooner?`;
   } else if (interestShare && parseFloat(interestShare) > 75) {
     leadWith = `${interestShare}% of the final balance is pure compound interest — contributions are almost noise at this rate.`;
     questionHook = `What would a 10% annual increase in contributions do to this timeline?`;
   } else if (doublingYears && parseFloat(doublingYears) < 8) {
     leadWith = `Money doubles every ${doublingYears} years at ${interestRate}%, compounding to ${formatCurrency(totalValue, currency)} over ${timeframeYears} years.`;
     questionHook = `Have you modeled what sequence-of-returns risk looks like once you start withdrawing?`;
-  } else if (freedomProgress && parseFloat(freedomProgress) >= 80) {
-    leadWith = `Already ${freedomProgress}% of the way to a ${formatCurrency(freedomNumber!, currency)} fully self-sustaining portfolio — roughly ${yearsToFreedom} years out at this pace.`;
-    questionHook = `Do you know the exact year your portfolio crosses into work-optional territory?`;
-  } else if (freedomProgress && parseFloat(freedomProgress) < 20 && timeframeYears >= 10) {
-    leadWith = `Financial freedom target is ${formatCurrency(freedomNumber!, currency)} (25× annual contribution) — currently at ${freedomProgress}% with ${yearsToFreedom} years to go.`;
-    questionHook = `What does a modest increase in monthly contributions do to the year you become work-optional?`;
   } else if (interestRate > 12) {
     leadWith = `${interestRate}% return is ${vsSpNominal}% above the S&P 500 average — if that assumption holds, the result is extraordinary.`;
     questionHook = `What's your plan if returns come in at half that rate?`;
@@ -307,6 +317,10 @@ export async function POST(req: NextRequest) {
     leadWith = `${formatCurrency(monthlyInterest, currency)}/month in interest alone after ${timeframeYears} years — contributions are only ${interestShare ? (100 - parseFloat(interestShare)).toFixed(1) : "?"}% of the final balance.`;
     questionHook = `Have you considered what this looks like if you increase contributions alongside your income?`;
   }
+
+  const noGoalConstraint = !hasGoal
+    ? `\nCONSTRAINT: The user has NOT set a savings goal. Do NOT reference any specific target amount, savings goal, or "freedom" number. Focus strictly on accumulation velocity, compound growth, and inflation context.`
+    : `\nUSER GOAL: ${formatCurrency(goalAmount!, currency)} | Progress: ${goalProgress ?? "n/a"}% | Years to reach it: ${yearsToGoal ?? "n/a"}`;
 
   const userMessage = `PRE-CALCULATED FACTS — ground truth, do not alter:
 - Starting balance: ${formatCurrency(startingAmount, currency)}
@@ -324,9 +338,8 @@ ${withdrawalMultiple ? `- Withdrawal is ${withdrawalMultiple}× the 4% safe rate
 ${withdrawalRate !== null ? `- Safe 4% annual withdrawal: ${formatCurrency(safeAnnualWithdrawal, currency)}` : ""}
 ${depletionYears ? `- Portfolio depletes in: ${depletionYears} years` : ""}
 ${doublingYears ? `- Rule of 72: doubles every ${doublingYears} years` : ""}
-${freedomNumber ? `- Financial freedom number (25× annual contribution): ${formatCurrency(freedomNumber, currency)}` : ""}
-${freedomProgress ? `- Progress toward financial freedom: ${freedomProgress}% — ${yearsToFreedom} years to target` : ""}
 ${inflationErosion ? `- Inflation-adjusted real value (2.8% CPI): ${formatCurrency(parseFloat(inflationErosion), currency)}` : ""}
+${noGoalConstraint}
 
 LEAD WITH: ${leadWith}
 OPEN QUESTION: ${questionHook}
