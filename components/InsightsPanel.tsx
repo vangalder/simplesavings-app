@@ -6,6 +6,7 @@ import { useUser, SignInButton } from "@clerk/nextjs";
 import { api } from "@/convex/_generated/api";
 import type { Id } from "@/convex/_generated/dataModel";
 import ProviderPicker, { PROVIDERS } from "@/components/ProviderPicker";
+import { useIsAdmin } from "@/hooks/useIsAdmin";
 
 type ConvexMessage = {
   _id: string;
@@ -34,10 +35,12 @@ type Props = {
   scenarioData?: ScenarioAiConfig;
 };
 
-type LocalMessage = { role: "user" | "assistant"; content: string; streaming?: boolean };
+type UsageMeta = { provider: string; model: string; tokensIn: number; tokensOut: number; costCents: number };
+type LocalMessage = { role: "user" | "assistant"; content: string; streaming?: boolean; meta?: UsageMeta };
 
 export default function InsightsPanel({ scenarioId, clerkId, scenarioData }: Props) {
   const { isSignedIn } = useUser();
+  const isAdmin = useIsAdmin();
 
   // Provider/model — prefer scenario-level config, then default
   const [provider, setProvider] = useState(
@@ -132,6 +135,8 @@ export default function InsightsPanel({ scenarioId, clerkId, scenarioData }: Pro
       const history = localMessages.map((m) => ({ role: m.role, content: m.content }));
       let assistantContent = "";
       let finalCostCents = 0;
+      let finalTokensIn = 0;
+      let finalTokensOut = 0;
 
       try {
         const res = await fetch("/api/insights", {
@@ -181,6 +186,8 @@ export default function InsightsPanel({ scenarioId, clerkId, scenarioData }: Pro
                 });
               } else if (parsed.type === "done") {
                 finalCostCents = parsed.usage?.costCents ?? 0;
+                finalTokensIn = parsed.usage?.inputTokens ?? 0;
+                finalTokensOut = parsed.usage?.outputTokens ?? 0;
               } else if (parsed.type === "error") {
                 throw new Error(parsed.message);
               }
@@ -201,9 +208,10 @@ export default function InsightsPanel({ scenarioId, clerkId, scenarioData }: Pro
       }
 
       // Finalize streaming message
+      const finalMeta: UsageMeta = { provider, model, tokensIn: finalTokensIn, tokensOut: finalTokensOut, costCents: finalCostCents };
       setLocalMessages((prev) => {
         const updated = [...prev];
-        updated[updated.length - 1] = { role: "assistant", content: assistantContent };
+        updated[updated.length - 1] = { role: "assistant", content: assistantContent, meta: finalMeta };
         return updated;
       });
       setIsStreaming(false);
@@ -334,7 +342,7 @@ export default function InsightsPanel({ scenarioId, clerkId, scenarioData }: Pro
         )}
 
         {localMessages.map((msg, i) => (
-          <div key={i} className={`flex ${msg.role === "user" ? "justify-end" : "justify-start"}`}>
+          <div key={i} className={`flex flex-col ${msg.role === "user" ? "items-end" : "items-start"}`}>
             <div
               className={`max-w-[80%] px-4 py-2.5 rounded-2xl text-sm whitespace-pre-wrap ${
                 msg.role === "user"
@@ -344,6 +352,11 @@ export default function InsightsPanel({ scenarioId, clerkId, scenarioData }: Pro
             >
               {msg.content || (msg.streaming ? "▋" : "")}
             </div>
+            {isAdmin && msg.role === "assistant" && msg.meta && !msg.streaming && (
+              <p className="text-[10px] text-neutral-300 font-mono tabular-nums mt-0.5 px-1">
+                {msg.meta.provider} · {msg.meta.model} · {msg.meta.tokensIn}↑ {msg.meta.tokensOut}↓ · ${(msg.meta.costCents / 100).toFixed(4)}
+              </p>
+            )}
           </div>
         ))}
 

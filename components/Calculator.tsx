@@ -12,7 +12,8 @@ import { defaultCalculatorValues, type CalculatorState } from "@/lib/defaultValu
 import AnimatedCurrency from "@/components/AnimatedCurrency";
 import AnimatedNumberInput from "@/components/AnimatedNumberInput";
 import ShareModal from "@/components/ShareModal";
-import AIBlurb from "@/components/AIBlurb";
+import AIBlurb, { type BlurbMeta } from "@/components/AIBlurb";
+import { useIsAdmin } from "@/hooks/useIsAdmin";
 
 const SaveButtonWithCloud = dynamic(() => import("@/components/SaveButtonWithCloud"), { ssr: false });
 
@@ -69,6 +70,10 @@ export default function Calculator() {
   const dateInputRef = useRef<HTMLInputElement>(null);
   const [aiBlurb, setAiBlurb] = useState("");
   const [aiBlurbLoading, setAiBlurbLoading] = useState(false);
+  const [aiBlurbMeta, setAiBlurbMeta] = useState<BlurbMeta | undefined>();
+  const isAdmin = useIsAdmin();
+  // Always store the English original so locale changes can translate without regenerating
+  const aiBlurbOriginalRef = useRef("");
 
   // Load values from URL params, localStorage, or defaults
   useEffect(() => {
@@ -211,7 +216,23 @@ export default function Calculator() {
           }),
         });
         const data = await res.json();
-        setAiBlurb(data.blurb ?? "");
+        const englishBlurb = data.blurb ?? "";
+        aiBlurbOriginalRef.current = englishBlurb;
+        if (data.meta) setAiBlurbMeta(data.meta);
+
+        // Translate immediately if locale is non-English
+        if (locale !== "en" && englishBlurb) {
+          const tRes = await fetch("/api/ai-blurb", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ text: englishBlurb, targetLocale: locale }),
+          });
+          const tData = await tRes.json();
+          setAiBlurb(tData.blurb ?? englishBlurb);
+          if (tData.meta) setAiBlurbMeta(tData.meta);
+        } else {
+          setAiBlurb(englishBlurb);
+        }
       } catch {
         // fail silently
       } finally {
@@ -224,6 +245,32 @@ export default function Calculator() {
     };
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [state, isInitialized]);
+
+  // Translate existing blurb when locale changes — does not regenerate
+  useEffect(() => {
+    const original = aiBlurbOriginalRef.current;
+    if (!original) return;
+    if (locale === "en") {
+      setAiBlurb(original);
+      return;
+    }
+    let cancelled = false;
+    setAiBlurbLoading(true);
+    fetch("/api/ai-blurb", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ text: original, targetLocale: locale }),
+    })
+      .then((r) => r.json())
+      .then((data) => {
+        if (cancelled) return;
+        setAiBlurb(data.blurb ?? original);
+        if (data.meta) setAiBlurbMeta(data.meta);
+      })
+      .catch(() => { if (!cancelled) setAiBlurb(original); })
+      .finally(() => { if (!cancelled) setAiBlurbLoading(false); });
+    return () => { cancelled = true; setAiBlurbLoading(false); };
+  }, [locale]); // intentionally omits aiBlurbOriginalRef — ref reads are stable
 
   // Recompute timeframeYears from target date (also runs every 24h via interval)
   useEffect(() => {
@@ -582,7 +629,7 @@ export default function Calculator() {
             </div>
           </div>
 
-          <AIBlurb blurb={aiBlurb} loading={aiBlurbLoading} />
+          <AIBlurb blurb={aiBlurb} loading={aiBlurbLoading} meta={aiBlurbMeta} isAdmin={isAdmin} />
 
           {/* Save Calculation Button */}
           {isConvexConfigured ? (
