@@ -10,16 +10,22 @@ export type BlurbMeta = {
   costCents: number;
 };
 
+export type InsightContext = {
+  question: string;
+  pitch: string;
+};
+
 interface AIBlurbProps {
   blurb: string;
   question?: string;
+  pitch?: string;
   loading: boolean;
   meta?: BlurbMeta;
   isAdmin?: boolean;
-  onUpsellClick?: () => void;
+  onUpsellClick?: (ctx: InsightContext) => void;
 }
 
-export default function AIBlurb({ blurb, question, loading, meta, isAdmin, onUpsellClick }: AIBlurbProps) {
+export default function AIBlurb({ blurb, question, pitch, loading, meta, isAdmin, onUpsellClick }: AIBlurbProps) {
   const [visible, setVisible] = useState(false);
 
   useEffect(() => {
@@ -54,7 +60,7 @@ export default function AIBlurb({ blurb, question, loading, meta, isAdmin, onUps
       </div>
       {onUpsellClick && blurb && !loading && (
         <button
-          onClick={onUpsellClick}
+          onClick={() => onUpsellClick({ question: question ?? "", pitch: pitch ?? "" })}
           className="ml-6 text-xs text-primary-base/60 hover:text-primary-base transition-colors text-left"
         >
           {question || "Want deeper analysis?"} →

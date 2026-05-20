@@ -5,10 +5,15 @@ import { useUser, SignInButton } from "@clerk/nextjs";
 import { useQuery } from "convex/react";
 import { api } from "@/convex/_generated/api";
 
+type InsightContext = {
+  question: string;
+  pitch: string;
+};
+
 type Props = {
   open: boolean;
   onClose: () => void;
-  pitch?: string;
+  insightContext?: InsightContext | null;
 };
 
 async function handleCheckout(type: "one_time" | "subscription") {
@@ -21,7 +26,10 @@ async function handleCheckout(type: "one_time" | "subscription") {
   if (data.url) window.location.href = data.url;
 }
 
-export default function ProUpsellModal({ open, onClose, pitch }: Props) {
+const FALLBACK_SUBTITLE = "An interactive, intelligent co-pilot for your financial strategy.";
+
+export default function ProUpsellModal({ open, onClose, insightContext }: Props) {
+  const pitch = insightContext?.pitch || FALLBACK_SUBTITLE;
   const { isSignedIn, user } = useUser();
   const clerkId = user?.id ?? "";
   const creditBalance = useQuery(
@@ -59,7 +67,7 @@ export default function ProUpsellModal({ open, onClose, pitch }: Props) {
                 AI Insights ✦
               </h2>
               <p className="text-sm text-neutral-500 mt-0.5">
-                {pitch || "An interactive, intelligent co-pilot for your financial strategy."}
+                {pitch}
               </p>
             </div>
             <button

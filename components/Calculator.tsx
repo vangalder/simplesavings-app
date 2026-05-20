@@ -12,7 +12,7 @@ import { defaultCalculatorValues, type CalculatorState } from "@/lib/defaultValu
 import AnimatedCurrency from "@/components/AnimatedCurrency";
 import AnimatedNumberInput from "@/components/AnimatedNumberInput";
 import ShareModal from "@/components/ShareModal";
-import AIBlurb, { type BlurbMeta } from "@/components/AIBlurb";
+import AIBlurb, { type BlurbMeta, type InsightContext } from "@/components/AIBlurb";
 import ProUpsellModal from "@/components/ProUpsellModal";
 import { useIsAdmin } from "@/hooks/useIsAdmin";
 
@@ -82,7 +82,7 @@ export default function Calculator() {
   // Keep locale in a ref so the debounced blurb callback always reads the live value
   const localeRef = useRef(locale);
   localeRef.current = locale;
-  const [showUpsell, setShowUpsell] = useState(false);
+  const [upsellContext, setUpsellContext] = useState<InsightContext | null>(null);
 
   // Load values from URL params, localStorage, or defaults
   useEffect(() => {
@@ -673,7 +673,7 @@ export default function Calculator() {
             </div>
           </div>
 
-          <AIBlurb blurb={aiBlurb} question={aiBlurbQuestion} loading={aiBlurbLoading} meta={aiBlurbMeta} isAdmin={isAdmin} onUpsellClick={() => setShowUpsell(true)} />
+          <AIBlurb blurb={aiBlurb} question={aiBlurbQuestion} pitch={aiBlurbPitch} loading={aiBlurbLoading} meta={aiBlurbMeta} isAdmin={isAdmin} onUpsellClick={(ctx) => setUpsellContext(ctx)} />
 
           {/* Save Calculation Button */}
           {isConvexConfigured ? (
@@ -742,7 +742,7 @@ export default function Calculator() {
       {showShareModal && isClerkConfigured && (
         <ShareModal url={shareUrl} onClose={() => setShowShareModal(false)} />
       )}
-      <ProUpsellModal open={showUpsell} onClose={() => setShowUpsell(false)} pitch={aiBlurbPitch} />
+      <ProUpsellModal open={upsellContext !== null} onClose={() => setUpsellContext(null)} insightContext={upsellContext} />
     </div>
   );
 }
