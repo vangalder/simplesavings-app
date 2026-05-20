@@ -133,6 +133,10 @@ export default function Calculator() {
           setTimeframeMode("date");
           setTargetDateStr(parsed.targetDateStr);
         }
+        if (typeof parsed.goalAmount === "number" && parsed.goalAmount > 0) {
+          setGoalAmount(parsed.goalAmount);
+          setShowGoalInput(true);
+        }
         setState({ startingAmount: 0, monthlyContribution: 0, timeframeYears: 0, interestRate: 0 });
         setIsInitialized(true);
         setTimeout(() => {
@@ -195,13 +199,13 @@ export default function Calculator() {
     if (!isInitialized) return;
     const id = setTimeout(() => {
       try {
-        localStorage.setItem(STORAGE_KEY, JSON.stringify({ ...state, timeframeMode, targetDateStr }));
+        localStorage.setItem(STORAGE_KEY, JSON.stringify({ ...state, timeframeMode, targetDateStr, goalAmount, showGoalInput }));
       } catch {
         // ignore quota errors silently
       }
     }, 1000);
     return () => clearTimeout(id);
-  }, [state, timeframeMode, targetDateStr, isInitialized]);
+  }, [state, timeframeMode, targetDateStr, goalAmount, showGoalInput, isInitialized]);
 
   // Debounced real-time AI blurb — fires 1500ms after inputs settle
   useEffect(() => {
