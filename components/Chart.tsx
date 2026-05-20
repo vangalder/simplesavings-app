@@ -2,55 +2,57 @@
 
 import ReactECharts from "echarts-for-react";
 import { useMemo, useEffect, useState } from "react";
+import { useTranslations } from "next-intl";
 import * as echarts from "echarts";
+import { formatCurrency, formatCurrencyCompact } from "@/lib/currency";
 
-interface ChartDataPoint {
+export interface ChartDataPoint {
   year: number;
   value: number;
   principal?: number;
   interest?: number;
 }
 
+export type ChartType = "area" | "bar" | "line";
+
 interface ChartProps {
   data: ChartDataPoint[];
+  chartType?: ChartType;
+  goalAmount?: number;
+  locale?: string;
+  currency?: string;
+  xAxisUnit?: "years" | "months";
+  onChartTypeChange?: (type: ChartType) => void;
 }
 
-interface SvgPath {
-  d: string;
-  id: string;
-  imageUrl?: string; // Data URL of the converted SVG path
-}
-
-// Design system colors
+// Local formatters are now replaced by formatCurrency/formatCurrencyCompact from lib/currency.ts.
+// DS colors
 const ACCENT_DARK = "#E6B825";
 const ACCENT_LIGHT = "#FFD966";
-const ACCENT_BASE = "#FFCC29";
-const SECONDARY_COLORS = ["#81B214", "#5F8510", "#A5D44A"]; // secondary-base, secondary-dark, secondary-light
+const COLOR_PRINCIPAL = "#81B214";
+const COLOR_INTEREST = "#F58634";
+const COLOR_TOTAL = "#164A40";
+const SECONDARY_COLORS = ["#81B214", "#5F8510", "#A5D44A"];
 
-/**
- * Toggle for chart data logging.
- * Set to `true` to enable verbose logging of chart data and ECharts configuration
- * for troubleshooting purposes. Set to `false` in production to reduce console noise.
- */
-const ENABLE_CHART_DATA_LOGGING = false;
+interface SvgPath { d: string; id: string; imageUrl?: string }
 
-export default function Chart({ data }: ChartProps) {
-  // State for SVG paths
+// fmt is now a closure built per render using locale+currency (see useMemo below)
+
+const TYPE_ICONS: Record<ChartType, string> = {
+  area: "◿",
+  bar: "▐",
+  line: "⌇",
+};
+
+export default function Chart({ data, chartType = "area", goalAmount = 0, locale = "en", currency = "USD", xAxisUnit = "years", onChartTypeChange }: ChartProps) {
+  const t = useTranslations("chart");
   const [svgPaths, setSvgPaths] = useState<{ lowerLeft: SvgPath | null; lowerRight: SvgPath | null }>({
     lowerLeft: null,
     lowerRight: null,
   });
 
-  // Helper function to convert SVG path to data URL image
   const pathToImageUrl = async (path: SvgPath, color: string, opacity: number, viewBox: string): Promise<string> => {
-    // Create an SVG element with the path
-    const svg = `
-      <svg xmlns="http://www.w3.org/2000/svg" viewBox="${viewBox}" width="2000" height="2000">
-        <path d="${path.d}" fill="${color}" opacity="${opacity}" />
-      </svg>
-    `;
-
-    // Convert SVG to blob and then to data URL
+    const svg = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="${viewBox}" width="2000" height="2000"><path d="${path.d}" fill="${color}" opacity="${opacity}" /></svg>`;
     const blob = new Blob([svg], { type: "image/svg+xml" });
     return new Promise((resolve, reject) => {
       const reader = new FileReader();
@@ -60,567 +62,348 @@ export default function Chart({ data }: ChartProps) {
     });
   };
 
-  // Load SVG and extract paths on mount
   useEffect(() => {
-    const loadSvgPaths = async () => {
+    const load = async () => {
       try {
         const response = await fetch("/palm-fronds-and-silhouettes.svg");
         const svgText = await response.text();
         const parser = new DOMParser();
         const svgDoc = parser.parseFromString(svgText, "image/svg+xml");
         const svgElement = svgDoc.querySelector("svg");
+        if (!svgElement) return;
 
-        if (!svgElement) {
-          console.error("Could not parse SVG");
-          return;
-        }
-
-        // Get viewBox from original SVG to preserve dimensions
         const viewBox = svgElement.getAttribute("viewBox") || "0 0 2000 2000";
-
-        // Find all paths with lower-left or lower-right in their ID or class
         const allPaths = svgElement.querySelectorAll("path");
-        const lowerLeftPaths: SvgPath[] = [];
-        const lowerRightPaths: SvgPath[] = [];
+        const llPaths: SvgPath[] = [];
+        const lrPaths: SvgPath[] = [];
 
-        allPaths.forEach((path) => {
-          const id = path.getAttribute("id") || "";
-          const className = path.getAttribute("class") || "";
-          const d = path.getAttribute("d") || "";
-
-          if (d && (id.toLowerCase().includes("lower-left") || className.toLowerCase().includes("lower-left"))) {
-            lowerLeftPaths.push({ d, id });
-          }
-          if (d && (id.toLowerCase().includes("lower-right") || className.toLowerCase().includes("lower-right"))) {
-            lowerRightPaths.push({ d, id });
-          }
+        allPaths.forEach((p) => {
+          const id = p.getAttribute("id") || "";
+          const cls = p.getAttribute("class") || "";
+          const d = p.getAttribute("d") || "";
+          if (d && (id.toLowerCase().includes("lower-left") || cls.toLowerCase().includes("lower-left"))) llPaths.push({ d, id });
+          if (d && (id.toLowerCase().includes("lower-right") || cls.toLowerCase().includes("lower-right"))) lrPaths.push({ d, id });
         });
 
-        // Randomly select one from each group
-        const selectedLowerLeft =
-          lowerLeftPaths.length > 0
-            ? lowerLeftPaths[Math.floor(Math.random() * lowerLeftPaths.length)]
-            : null;
-        const selectedLowerRight =
-          lowerRightPaths.length > 0
-            ? lowerRightPaths[Math.floor(Math.random() * lowerRightPaths.length)]
-            : null;
-
-        // Convert paths to image URLs
-        const lowerLeftWithImage = selectedLowerLeft
-          ? {
-            ...selectedLowerLeft,
-            imageUrl: await pathToImageUrl(
-              selectedLowerLeft,
-              SECONDARY_COLORS[selectedLowerLeft.id.length % SECONDARY_COLORS.length],
-              0.5, // 50% opacity
-              viewBox
-            ),
-          }
-          : null;
-
-        const lowerRightWithImage = selectedLowerRight
-          ? {
-            ...selectedLowerRight,
-            imageUrl: await pathToImageUrl(
-              selectedLowerRight,
-              SECONDARY_COLORS[selectedLowerRight.id.length % SECONDARY_COLORS.length],
-              0.5, // 50% opacity
-              viewBox
-            ),
-          }
-          : null;
+        const pick = (arr: SvgPath[]) => arr.length > 0 ? arr[Math.floor(Math.random() * arr.length)] : null;
+        const ll = pick(llPaths);
+        const lr = pick(lrPaths);
 
         setSvgPaths({
-          lowerLeft: lowerLeftWithImage,
-          lowerRight: lowerRightWithImage,
+          lowerLeft: ll ? { ...ll, imageUrl: await pathToImageUrl(ll, SECONDARY_COLORS[ll.id.length % 3], 0.5, viewBox) } : null,
+          lowerRight: lr ? { ...lr, imageUrl: await pathToImageUrl(lr, SECONDARY_COLORS[lr.id.length % 3], 0.5, viewBox) } : null,
         });
-      } catch (error) {
-        console.error("Failed to load SVG:", error);
-      }
+      } catch { /* SVG load failures are non-fatal */ }
     };
-
-    loadSvgPaths();
+    load();
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  // Generate a stable key based on data to force remount when data structure changes significantly
+  // Derived milestone calculations
+  const { validData, doublingYear, goalYear } = useMemo(() => {
+    if (!data || data.length === 0) return { validData: [], doublingYear: undefined, goalYear: undefined };
+
+    const validData = data
+      .map((d) => {
+        if (!d || typeof d !== "object") return null;
+        const year = Number(d.year) || 0;
+        const principal = Math.max(0, Number(d.principal) || 0);
+        const total = Math.max(0, Number(d.value) || 0);
+        if (!isFinite(year) || !isFinite(principal) || !isFinite(total)) return null;
+        return { year, principal, total, interest: Math.max(0, total - principal) };
+      })
+      .filter((p): p is { year: number; principal: number; total: number; interest: number } => p !== null)
+      .sort((a, b) => a.year - b.year);
+
+    if (validData.length === 0) return { validData: [], doublingYear: undefined, goalYear: undefined };
+
+    // Derive starting amount and monthly contribution from data shape
+    // When xAxisUnit is "months", each step = 1 month; when "years", each step = 12 months
+    const startingAmount = validData[0]?.principal ?? 0;
+    const stepsPerMonth = xAxisUnit === "months" ? 1 : 12;
+    const monthlyContribution = validData.length > 1
+      ? Math.max(0, (validData[1].principal - validData[0].principal) / stepsPerMonth)
+      : 0;
+    const doublingTarget = 2 * startingAmount + 24 * monthlyContribution;
+
+    const doublingYear = validData.find((d) => d.total >= doublingTarget && doublingTarget > 0)?.year;
+    const goalYear = goalAmount > 0 ? validData.find((d) => d.total >= goalAmount)?.year : undefined;
+
+    return { validData, doublingYear, goalYear };
+  }, [data, goalAmount]);
+
   const dataKey = useMemo(() => {
-    if (!data || data.length === 0) return 'empty';
-    // Create a hash-like key from data length and first/last values
-    const first = data[0];
-    const last = data[data.length - 1];
-    return `${data.length}-${first?.year || 0}-${last?.year || 0}-${Math.round(first?.value || 0)}-${Math.round(last?.value || 0)}`;
-  }, [data]);
+    if (!validData.length) return "empty";
+    const first = validData[0];
+    const last = validData[validData.length - 1];
+    return `${validData.length}-${first.year}-${last.year}-${Math.round(last.total)}-${chartType}-${goalAmount}`;
+  }, [validData, chartType, goalAmount]);
 
   const option = useMemo(() => {
-    if (!data || data.length === 0) {
-      // Return a minimal valid option instead of empty object
+    const fmt = (v: number) => formatCurrency(v, currency, locale);
+    const fmtCompact = (v: number) => formatCurrencyCompact(v, currency, locale);
+    const axisXLabel = xAxisUnit === "months" ? t("months") : t("years");
+    const axisValue = t("value");
+    const goalLabel = t("goalLabel");
+    const pointUnit = xAxisUnit === "months" ? "Month" : "Year";
+
+    if (!validData.length) {
       return {
-        grid: {
-          left: "12%",
-          right: "12%",
-          top: "15%",
-          bottom: "20%",
-        },
-        xAxis: {
-          type: "value",
-          name: "Years",
-        },
-        yAxis: {
-          type: "value",
-          name: "Value",
-        },
+        grid: { left: "12%", right: "12%", top: "15%", bottom: "20%" },
+        xAxis: { type: "value", name: axisXLabel },
+        yAxis: { type: "value", name: axisValue },
         series: [],
       };
     }
 
-    // Prepare data for stacked area chart
-    // Process and validate all data points
-    const validDataPoints = data
-      .map((d, index) => {
-        // Safely extract and convert values, handling undefined/null/NaN
-        if (!d || typeof d !== 'object') {
-          return null;
-        }
+    const maxYear = validData[validData.length - 1].year;
+    const maxValue = Math.max(...validData.map((p) => p.total), 0);
 
-        const year = (typeof d.year === 'number' && !isNaN(d.year))
-          ? d.year
-          : (typeof d.year === 'string' ? parseFloat(d.year) : 0);
-        const principal = (typeof d.principal === 'number' && !isNaN(d.principal))
-          ? d.principal
-          : (typeof d.principal === 'string' ? parseFloat(d.principal) : 0);
-        const total = (typeof d.value === 'number' && !isNaN(d.value))
-          ? d.value
-          : (typeof d.value === 'string' ? parseFloat(d.value) : 0);
-
-        // Final validation - ensure all values are valid, finite numbers
-        const validYear = (isNaN(year) || !isFinite(year)) ? 0 : Math.max(0, year);
-        const validPrincipal = (isNaN(principal) || !isFinite(principal)) ? 0 : Math.max(0, principal);
-        const validTotal = (isNaN(total) || !isFinite(total)) ? 0 : Math.max(0, total);
-
-        // Double-check - if any value is still invalid, skip this point
-        if (isNaN(validYear) || isNaN(validPrincipal) || isNaN(validTotal) ||
-          !isFinite(validYear) || !isFinite(validPrincipal) || !isFinite(validTotal)) {
-          return null;
-        }
-
-        return {
-          year: validYear,
-          principal: validPrincipal,
-          total: validTotal,
-        };
-      })
-      .filter((point): point is { year: number; principal: number; total: number } => point !== null && point.year >= 0) // Filter out nulls and negative years
-      .sort((a, b) => a.year - b.year); // Sort by year
-
-    // Create a lookup map for tooltip
-    const dataMap = new Map(validDataPoints.map((p) => [p.year, p]));
-
-    // Ensure we have valid data points
-    if (validDataPoints.length === 0) {
-      return {
-        grid: {
-          left: "12%",
-          right: "12%",
-          top: "15%",
-          bottom: "20%",
-        },
-        xAxis: {
-          type: "value",
-          name: "Years",
-        },
-        yAxis: {
-          type: "value",
-          name: "Value",
-        },
-        series: [],
-      };
+    // Build aligned arrays
+    const byYear = new Map(validData.map((p) => [p.year, p]));
+    const aligned: { principal: number; interest: number; total: number }[] = [];
+    for (let y = 0; y <= maxYear; y++) {
+      const p = byYear.get(y);
+      aligned.push(p ? { principal: p.principal, interest: p.interest, total: p.total } : { principal: 0, interest: 0, total: 0 });
     }
 
-    const maxValue = Math.max(...validDataPoints.map((p) => p.total), 0);
-    const maxYear = Math.max(...validDataPoints.map((p) => p.year), 0);
-    const calculatedYAxisMax = Math.ceil(maxValue / 100000) * 100000;
+    const xCategories = Array.from({ length: maxYear + 1 }, (_, i) => i.toString());
 
-    // Log chart data for troubleshooting (controlled by ENABLE_CHART_DATA_LOGGING toggle)
-    if (ENABLE_CHART_DATA_LOGGING) {
-      console.log('Chart maxValue (total):', maxValue);
-      console.log('Chart maxYear:', maxYear);
-      console.log('Calculated Y-Axis max:', calculatedYAxisMax);
-      console.log('Year 20 data point:', validDataPoints.find(p => p.year === 20));
-    }
-
-    // Prepare aligned data arrays for both series - use exact values from validDataPoints
-    // Create a map for quick lookup by year, then build arrays in year order (0 to maxYear)
-    const dataByYear = new Map(validDataPoints.map((point) => {
-      const interest = Math.max(0, point.total - point.principal);
-      return [point.year, {
-        principal: point.principal,
-        interest: interest,
-      }];
-    }));
-
-    // Build aligned arrays in year order (0 to maxYear) to match xAxis.data
-    const alignedData: Array<{ principal: number; interest: number }> = [];
-    for (let year = 0; year <= maxYear; year++) {
-      const dataPoint = dataByYear.get(year);
-      if (dataPoint) {
-        alignedData.push(dataPoint);
-      } else {
-        // Fill missing years with zeros
-        alignedData.push({ principal: 0, interest: 0 });
-      }
-    }
-
-    // Build graphic array for SVG overlays only
-    const graphic: any[] = [];
-
-    // Add SVG path overlays if available (as images)
-    // Positioned at bottom of chart (0 line of y-axis) and 40% smaller
-    // Bottom edge flush with x-axis
-    // silent: true ensures they don't block mouse events for tooltips
+    // Graphic overlays
+    const graphic: object[] = [];
     if (svgPaths.lowerLeft?.imageUrl) {
-      graphic.push({
-        type: "image",
-        left: "12%",
-        bottom: "19.5%", // Slightly lower to ensure bottom edge is flush with x-axis
-        z: 10,
-        silent: true, // Ignore mouse events to allow tooltips to work
-        style: {
-          image: svgPaths.lowerLeft.imageUrl,
-          width: 120, // Reduced by 40% from 200
-          height: 120, // Reduced by 40% from 200
-          opacity: 1, // Opacity is already applied in the SVG
-        },
-      });
+      graphic.push({ type: "image", left: "12%", bottom: "19.5%", z: 10, silent: true, style: { image: svgPaths.lowerLeft.imageUrl, width: 120, height: 120, opacity: 1 } });
+    }
+    if (svgPaths.lowerRight?.imageUrl) {
+      graphic.push({ type: "image", right: "12%", bottom: "19.5%", z: 10, silent: true, style: { image: svgPaths.lowerRight.imageUrl, width: 120, height: 120, opacity: 1 } });
     }
 
-    if (svgPaths.lowerRight?.imageUrl) {
-      graphic.push({
-        type: "image",
-        right: "12%",
-        bottom: "19.5%", // Slightly lower to ensure bottom edge is flush with x-axis
-        z: 10,
-        silent: true, // Ignore mouse events to allow tooltips to work
-        style: {
-          image: svgPaths.lowerRight.imageUrl,
-          width: 120, // Reduced by 40% from 200
-          height: 120, // Reduced by 40% from 200
-          opacity: 1, // Opacity is already applied in the SVG
+    // markPoint for doubling milestone on phantom total series
+    const doublingMarkPoint = doublingYear !== undefined ? {
+      symbolSize: 40,
+      data: [{
+        name: "2× Growth",
+        coord: [doublingYear.toString(), aligned[doublingYear]?.total ?? 0],
+        label: { formatter: "2×", color: "white", fontWeight: "bold", fontSize: 11 },
+        itemStyle: { color: COLOR_TOTAL },
+      }],
+    } : undefined;
+
+    // markLine for goal amount on phantom total series
+    const goalMarkLine = goalAmount > 0 ? {
+      silent: true,
+      symbol: "none",
+      lineStyle: { color: "#F59E0B", width: 2, type: "dashed" },
+      label: { formatter: `${goalLabel}: ${fmt(goalAmount)}`, position: "insideEndTop", color: "#92400E", fontWeight: "bold", fontSize: 11 },
+      data: [{ yAxis: goalAmount }],
+    } : undefined;
+
+    // Phantom total series (transparent, carries markers)
+    const phantomSeries = {
+      name: "_total",
+      type: "line",
+      data: aligned.map((d) => d.total),
+      lineStyle: { width: 0, opacity: 0 },
+      itemStyle: { color: "transparent" },
+      symbol: "none",
+      z: -1,
+      ...(doublingMarkPoint ? { markPoint: doublingMarkPoint } : {}),
+      ...(goalMarkLine ? { markLine: goalMarkLine } : {}),
+    };
+
+    // Series based on chart type
+    const isBar = chartType === "bar";
+    const isUnstackedLine = chartType === "line";
+
+    let mainSeries: object[];
+
+    if (isUnstackedLine) {
+      mainSeries = [
+        {
+          name: "Total Value",
+          type: "line",
+          data: aligned.map((d) => d.total),
+          smooth: true,
+          lineStyle: { width: 3, color: COLOR_INTEREST },
+          itemStyle: { color: COLOR_INTEREST },
+          symbol: "circle",
+          symbolSize: 4,
+          emphasis: { focus: "series" },
         },
-      });
+        {
+          name: "Principal",
+          type: "line",
+          data: aligned.map((d) => d.principal),
+          smooth: true,
+          lineStyle: { width: 2, color: COLOR_PRINCIPAL },
+          itemStyle: { color: COLOR_PRINCIPAL },
+          areaStyle: { color: COLOR_PRINCIPAL, opacity: 0.15 },
+          symbol: "circle",
+          symbolSize: 4,
+          emphasis: { focus: "series" },
+        },
+      ];
+    } else {
+      mainSeries = [
+        {
+          name: "Principal",
+          type: isBar ? "bar" : "line",
+          stack: "total",
+          data: aligned.map((d) => d.principal),
+          ...(isBar ? {} : { areaStyle: { color: COLOR_PRINCIPAL, opacity: 0.8 }, lineStyle: { width: 0 } }),
+          itemStyle: { color: COLOR_PRINCIPAL },
+          emphasis: { focus: "series" },
+        },
+        {
+          name: "Interest",
+          type: isBar ? "bar" : "line",
+          stack: "total",
+          data: aligned.map((d) => d.interest),
+          ...(isBar ? {} : { areaStyle: { color: COLOR_INTEREST, opacity: 0.9 }, lineStyle: { width: 0 } }),
+          itemStyle: { color: COLOR_INTEREST },
+          emphasis: { focus: "series" },
+        },
+      ];
     }
 
     return {
-      // Radial gradient background covering entire chart canvas using accent colors
-      // Two-color gradient: dark at center, light at edges for more contrast
       backgroundColor: new echarts.graphic.RadialGradient(0.5, 0.5, 0.8, [
-        { offset: 0, color: ACCENT_DARK }, // Center: accent-dark
-        { offset: 1, color: ACCENT_LIGHT }, // Edges: accent-light
+        { offset: 0, color: ACCENT_DARK },
+        { offset: 1, color: ACCENT_LIGHT },
       ]),
       graphic,
-      grid: {
-        left: "12%",
-        right: "12%",
-        top: "15%",
-        bottom: "20%",
-      },
+      grid: { left: "12%", right: "12%", top: "15%", bottom: "20%" },
       tooltip: {
         trigger: "axis",
-        axisPointer: {
-          type: "cross",
-          label: {
-            backgroundColor: "#6a7985",
-          },
-        },
-        formatter: (params: any) => {
-          // For stacked charts with category axis, params is an array with one entry per series
-          const paramsArray = Array.isArray(params) ? params : [params];
-          if (paramsArray.length === 0) return "";
-
-          const firstParam = paramsArray[0];
-          // With category axis, the axis value is the category name (year as string)
-          const yearStr = firstParam.axisValue || firstParam.value?.[0] || firstParam.name;
-          const year = typeof yearStr === 'string' ? parseInt(yearStr, 10) : yearStr;
-
-          // Find the corresponding data point using the lookup map
-          const dataPoint = dataMap.get(year);
-          if (!dataPoint) return "";
-
-          const principal = dataPoint.principal;
-          const interest = dataPoint.total - dataPoint.principal;
-          const total = dataPoint.total;
-
+        axisPointer: { type: "cross", label: { backgroundColor: "#6a7985" } },
+        backgroundColor: "rgba(15,23,42,0.95)",
+        borderColor: COLOR_TOTAL,
+        borderWidth: 2,
+        textStyle: { color: "#F8FAFC", fontSize: 12 },
+        formatter: (params: { axisValue?: string | number; name?: string }[]) => {
+          const arr = Array.isArray(params) ? params : [params];
+          if (!arr.length) return "";
+          const yearStr = arr[0].axisValue ?? arr[0].name ?? "0";
+          const year = typeof yearStr === "string" ? parseInt(yearStr, 10) : yearStr;
+          const pt = byYear.get(year);
+          if (!pt) return "";
           return `
-            <div style="padding: 8px;">
-              <div style="font-weight: bold; margin-bottom: 4px;">Year ${year}</div>
-              <div style="margin: 2px 0;">
-                <span style="display: inline-block; width: 10px; height: 10px; background: #F58634; margin-right: 5px;"></span>
-                Total: ${new Intl.NumberFormat("en-US", {
-            style: "currency",
-            currency: "USD",
-            minimumFractionDigits: 0,
-            maximumFractionDigits: 0,
-          }).format(total)}
+            <div style="padding:8px;min-width:160px;">
+              <div style="font-weight:700;margin-bottom:6px;font-size:13px;">${pointUnit} ${year}</div>
+              <div style="margin:3px 0;display:flex;justify-content:space-between;gap:12px;">
+                <span><span style="display:inline-block;width:10px;height:10px;background:${COLOR_INTEREST};border-radius:2px;margin-right:5px;"></span>Total</span>
+                <span style="font-weight:600;">${fmt(pt.total)}</span>
               </div>
-              <div style="margin: 2px 0;">
-                <span style="display: inline-block; width: 10px; height: 10px; background: #FFCC29; margin-right: 5px;"></span>
-                Principal: ${new Intl.NumberFormat("en-US", {
-            style: "currency",
-            currency: "USD",
-            minimumFractionDigits: 0,
-            maximumFractionDigits: 0,
-          }).format(principal)}
+              <div style="margin:3px 0;display:flex;justify-content:space-between;gap:12px;">
+                <span><span style="display:inline-block;width:10px;height:10px;background:${COLOR_PRINCIPAL};border-radius:2px;margin-right:5px;"></span>Principal</span>
+                <span>${fmt(pt.principal)}</span>
               </div>
-              <div style="margin: 2px 0;">
-                <span style="display: inline-block; width: 10px; height: 10px; background: #81B214; margin-right: 5px;"></span>
-                Interest: ${new Intl.NumberFormat("en-US", {
-            style: "currency",
-            currency: "USD",
-            minimumFractionDigits: 0,
-            maximumFractionDigits: 0,
-          }).format(interest)}
+              <div style="margin:3px 0;display:flex;justify-content:space-between;gap:12px;">
+                <span><span style="display:inline-block;width:10px;height:10px;background:#FFCC29;border-radius:2px;margin-right:5px;"></span>Interest</span>
+                <span>${fmt(pt.interest)}</span>
               </div>
+              ${goalAmount > 0 && pt.total >= goalAmount ? `<div style="margin-top:6px;padding-top:4px;border-top:1px solid rgba(255,255,255,0.2);color:#FCD34D;font-size:11px;">🎯 Goal reached!</div>` : ""}
+              ${doublingYear === year ? `<div style="margin-top:4px;color:#6EE7B7;font-size:11px;">🎉 2× growth milestone</div>` : ""}
             </div>
           `;
-        },
-        backgroundColor: "rgba(15, 23, 42, 0.95)",
-        borderColor: "#164A40",
-        borderWidth: 2,
-        textStyle: {
-          color: "#F8FAFC",
-          fontSize: 12,
         },
       },
       toolbox: {
         show: true,
         feature: {
-          saveAsImage: {
-            title: "Save as Image",
-            name: "savings-chart",
-          },
-          restore: {
-            title: "Restore",
-          },
-          dataView: {
-            title: "Data View",
-            readOnly: false,
-            optionToContent: (opt: any) => {
-              try {
-                const principalSeries = opt.series?.[0];
-                const interestSeries = opt.series?.[1];
-                if (!principalSeries?.data || !interestSeries?.data) return '';
-
-                let html = '<table style="width:100%;border-collapse:collapse;font-family:sans-serif;font-size:13px;"><thead><tr style="background:#206A5D;color:#ffffff;"><th style="padding:10px 12px;text-align:center;">Year</th><th style="padding:10px 12px;text-align:right;">Principal</th><th style="padding:10px 12px;text-align:right;">Interest</th><th style="padding:10px 12px;text-align:right;">Total</th></tr></thead><tbody>';
-
-                const maxLen = Math.max(principalSeries.data.length, interestSeries.data.length);
-                for (let i = 0; i < maxLen; i++) {
-                  const year = i;
-                  const principal = typeof principalSeries.data[i] === "number" ? (principalSeries.data[i] as number) : 0;
-                  const interest = typeof interestSeries.data[i] === "number" ? (interestSeries.data[i] as number) : 0;
-                  const total = principal + interest;
-                  const rowBg = i % 2 === 0 ? "#ffffff" : "#f0fdf4";
-
-                  html += `<tr style="background:${rowBg};"><td style="padding:8px;border:1px solid #d1fae5;text-align:center;">${year}</td><td style="padding:8px;border:1px solid #d1fae5;text-align:right;">$${principal.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</td><td style="padding:8px;border:1px solid #d1fae5;text-align:right;">$${interest.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</td><td style="padding:8px;border:1px solid #d1fae5;text-align:right;font-weight:600;">$${total.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</td></tr>`;
-                }
-
-                html += '</tbody></table>';
-                return html;
-              } catch (error) {
-                return '<p>Error displaying data</p>';
-              }
-            },
-          },
+          saveAsImage: { title: "Save as Image", name: "savings-chart" },
+          restore: { title: "Restore" },
         },
         right: "5%",
         top: "5%",
-        iconStyle: {
-          borderColor: "#64748B",
-        },
-        emphasis: {
-          iconStyle: {
-            borderColor: "#164A40",
-          },
-        },
+        iconStyle: { borderColor: "#64748B" },
+        emphasis: { iconStyle: { borderColor: COLOR_TOTAL } },
       },
       xAxis: {
         type: "category",
-        data: Array.from({ length: maxYear + 1 }, (_, i) => i.toString()),
-        boundaryGap: false,
-        name: "Years",
+        data: xCategories,
+        boundaryGap: isBar,
+        name: axisXLabel,
         nameLocation: "middle",
         nameGap: 30,
-        nameTextStyle: {
-          fontSize: 12,
-          color: "#64748B",
-          fontWeight: "bold",
-        },
-        axisLabel: {
-          color: "#64748B",
-          fontSize: 11,
-          interval: Math.ceil(maxYear / 5),
-        },
-        splitLine: {
-          show: false,
-        },
-        axisPointer: {
-          show: true,
-          type: "line",
-          lineStyle: {
-            color: "#164A40",
-            width: 1,
-            type: "dashed",
-          },
-        },
+        nameTextStyle: { fontSize: 12, color: "#64748B", fontWeight: "bold" },
+        axisLabel: { color: "#64748B", fontSize: 11, interval: Math.ceil(maxYear / 5) },
+        splitLine: { show: false },
+        axisPointer: { show: true, type: "line", lineStyle: { color: COLOR_TOTAL, width: 1, type: "dashed" } },
       },
       yAxis: {
         type: "value",
-        name: "Value",
+        name: axisValue,
         nameLocation: "middle",
         nameGap: 60,
-        nameTextStyle: {
-          fontSize: 12,
-          color: "#64748B",
-          fontWeight: "bold",
-        },
+        nameTextStyle: { fontSize: 12, color: "#64748B", fontWeight: "bold" },
         min: 0,
-        max: Math.ceil(maxValue / 100000) * 100000 || 1200000, // Ensure at least $1.2M if calculation fails
+        max: Math.ceil(Math.max(maxValue, goalAmount) / 100000) * 100000 || 1200000,
         axisLabel: {
-          formatter: (value: number) => {
-            if (value >= 1000000) return `$${value / 1000000}M`;
-            if (value >= 1000) return `$${value / 1000}k`;
-            return `$${value}`;
-          },
+          formatter: (v: number) => fmtCompact(v),
           color: "#64748B",
           fontSize: 11,
         },
-        splitLine: {
-          show: false,
-        },
-        axisPointer: {
-          show: true,
-          type: "line",
-          lineStyle: {
-            color: "#164A40",
-            width: 1,
-            type: "dashed",
-          },
-        },
+        splitLine: { show: false },
+        axisPointer: { show: true, type: "line", lineStyle: { color: COLOR_TOTAL, width: 1, type: "dashed" } },
       },
-      series: [
-        {
-          name: "Principal",
-          type: "line",
-          stack: "total",
-          // With category axis, provide just the y-values (ECharts will match them to xAxis.data by index)
-          data: alignedData.map((point) => point.principal),
-          areaStyle: {
-            color: "#81B214",
-            opacity: 0.8,
-          },
-          lineStyle: {
-            width: 0,
-          },
-          itemStyle: {
-            color: "#81B214",
-          },
-          emphasis: {
-            focus: "series",
-          },
-        },
-        {
-          name: "Interest",
-          type: "line",
-          stack: "total",
-          // With category axis, provide just the y-values (ECharts will match them to xAxis.data by index)
-          data: alignedData.map((point) => point.interest),
-          areaStyle: {
-            color: "#F58634",
-            opacity: 0.9,
-          },
-          lineStyle: {
-            width: 0,
-          },
-          itemStyle: {
-            color: "#81B214",
-          },
-          emphasis: {
-            focus: "series",
-          },
-        },
-      ],
+      series: [...mainSeries, phantomSeries],
       animation: true,
-      animationDuration: 1000,
+      animationDuration: 800,
       animationEasing: "cubicOut",
     };
-  }, [data, svgPaths]);
-
-  /**
-   * Log chart configuration and data for troubleshooting.
-   * Only executes when ENABLE_CHART_DATA_LOGGING is set to true.
-   */
-  useEffect(() => {
-    if (!ENABLE_CHART_DATA_LOGGING) return;
-
-    console.log('=== ECharts Option Object ===');
-    console.log(JSON.stringify(option, null, 2));
-    console.log('=== Series Data ===');
-    if (option && option.series) {
-      option.series.forEach((series: any, index: number) => {
-        console.log(`Series ${index} (${series.name}):`, {
-          type: series.type,
-          stack: series.stack,
-          dataLength: series.data?.length,
-          first3DataPoints: series.data?.slice(0, 3),
-          last3DataPoints: series.data?.slice(-3),
-          hasAreaStyle: !!series.areaStyle,
-        });
-      });
-    }
-    console.log('=== Y-Axis Max ===');
-    if (option && option.yAxis) {
-      console.log('Y-Axis max:', option.yAxis.max);
-    }
-  }, [option]);
-
-  // Ensure option is always valid
-  const validOption = useMemo(() => {
-    if (!option || Object.keys(option).length === 0) {
-      return {
-        grid: {
-          left: "12%",
-          right: "12%",
-          top: "15%",
-          bottom: "20%",
-        },
-        xAxis: {
-          type: "value",
-          name: "Years",
-        },
-        yAxis: {
-          type: "value",
-          name: "Value",
-        },
-        series: [],
-      };
-    }
-    return option;
-  }, [option]);
+  }, [validData, chartType, goalAmount, locale, currency, xAxisUnit, svgPaths, doublingYear, goalYear, t]);
 
   return (
-    <div
-      className="relative w-full rounded-2xl overflow-hidden"
-      style={{
-        minHeight: "400px",
-      }}
-    >
-      <ReactECharts
-        key={dataKey}
-        option={validOption}
-        style={{ height: "100%", minHeight: "400px", width: "100%" }}
-        opts={{ renderer: "canvas" }}
-        notMerge={true}
-        lazyUpdate={false}
-      />
+    <div className="flex flex-col gap-2">
+      {/* Chart type switcher */}
+      <div className="flex items-center justify-between px-1">
+        <div className="flex gap-1">
+          {(["area", "bar", "line"] as ChartType[]).map((type) => (
+            <button
+              key={type}
+              onClick={() => onChartTypeChange?.(type)}
+              className={`px-3 py-1 rounded-lg text-xs font-semibold transition-colors ${
+                chartType === type
+                  ? "bg-white text-secondary-dark shadow-sm"
+                  : "text-white/70 hover:text-white hover:bg-white/10"
+              }`}
+            >
+              {TYPE_ICONS[type]} {t(type)}
+            </button>
+          ))}
+        </div>
+        {doublingYear !== undefined && (
+          <span className="text-xs text-white/70 hidden sm:inline">
+            {t("doublingMilestone", { year: doublingYear })}
+          </span>
+        )}
+      </div>
+
+      {/* ECharts canvas */}
+      <div className="relative w-full rounded-2xl overflow-hidden" style={{ minHeight: "400px" }}>
+        <ReactECharts
+          key={dataKey}
+          option={option}
+          style={{ height: "100%", minHeight: "400px", width: "100%" }}
+          opts={{ renderer: "canvas" }}
+          notMerge={true}
+          lazyUpdate={false}
+        />
+      </div>
+
+      {/* Goal callout */}
+      {goalAmount > 0 && (
+        <div className={`text-xs text-center font-medium px-3 py-1.5 rounded-lg ${
+          goalYear !== undefined
+            ? "bg-amber-500/20 text-amber-100"
+            : "bg-white/10 text-white/60"
+        }`}>
+          {goalYear !== undefined
+            ? t("goalReached", { amount: formatCurrency(goalAmount, currency, locale), year: goalYear })
+            : t("goalNotReached", { amount: formatCurrency(goalAmount, currency, locale) })}
+        </div>
+      )}
     </div>
   );
 }

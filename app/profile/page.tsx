@@ -9,48 +9,24 @@ import Header from "@/components/Header";
 import Footer from "@/components/Footer";
 import TabNavigation from "@/components/TabNavigation";
 import TabContentContainer from "@/components/TabContentContainer";
+import ScenarioCard from "@/components/ScenarioCard";
+import SkeletonCard from "@/components/SkeletonCard";
 import { api } from "@/convex/_generated/api";
 import type { Id } from "@/convex/_generated/dataModel";
 
 const isClerkConfigured = !!process.env.NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY;
 const isConvexConfigured = !!process.env.NEXT_PUBLIC_CONVEX_URL;
 
-type Scenario = {
-  _id: Id<"scenarios">;
-  name: string;
-  startingAmount: number;
-  monthlyContribution: number;
-  timeframeYears: number;
-  interestRate: number;
-  totalValue: number;
-  updatedAt: number;
-};
-
-function formatCurrency(value: number) {
-  return new Intl.NumberFormat("en-US", {
-    style: "currency",
-    currency: "USD",
-    minimumFractionDigits: 0,
-    maximumFractionDigits: 0,
-  }).format(value);
-}
-
-function formatDate(ts: number) {
-  return new Date(ts).toLocaleDateString("en-US", {
-    month: "short",
-    day: "numeric",
-    year: "numeric",
-  });
-}
+import type { ScenarioCardData } from "@/components/ScenarioCard";
 
 function SignedInProfile({ clerkId }: { clerkId: string }) {
   const { user } = useUser();
   const router = useRouter();
-  const scenarios = useQuery(api.scenarios.getScenariosByUser, { clerkId }) as Scenario[] | undefined;
+  const scenarios = useQuery(api.scenarios.getScenariosByUser, { clerkId }) as ScenarioCardData[] | undefined;
   const deleteScenario = useMutation(api.scenarios.deleteScenario);
   const [deletingId, setDeletingId] = useState<string | null>(null);
 
-  const handleLoad = (scenario: Scenario) => {
+  const handleLoad = (scenario: ScenarioCardData) => {
     const params = new URLSearchParams({
       sa: scenario.startingAmount.toString(),
       mc: scenario.monthlyContribution.toString(),
@@ -61,7 +37,11 @@ function SignedInProfile({ clerkId }: { clerkId: string }) {
     toast.success(`Loaded "${scenario.name}"`);
   };
 
-  const handleDelete = async (scenario: Scenario) => {
+  const handleOpen = (scenario: ScenarioCardData) => {
+    router.push(`/plan/${scenario._id}`);
+  };
+
+  const handleDelete = async (scenario: ScenarioCardData) => {
     if (deletingId) return;
     setDeletingId(scenario._id);
     try {
@@ -107,7 +87,10 @@ function SignedInProfile({ clerkId }: { clerkId: string }) {
         </h2>
 
         {scenarios === undefined && (
-          <div className="text-neutral-400 text-sm py-4">Loading…</div>
+          <div className="space-y-3">
+            <SkeletonCard />
+            <SkeletonCard lines={2} />
+          </div>
         )}
 
         {scenarios?.length === 0 && (
@@ -122,33 +105,14 @@ function SignedInProfile({ clerkId }: { clerkId: string }) {
         {scenarios && scenarios.length > 0 && (
           <div className="space-y-3">
             {scenarios.map((scenario) => (
-              <div
+              <ScenarioCard
                 key={scenario._id}
-                className="bg-white rounded-2xl border border-neutral-200 p-4 flex items-center gap-4"
-              >
-                <div className="flex-1 min-w-0">
-                  <p className="font-semibold text-neutral-900 truncate">{scenario.name}</p>
-                  <p className="text-sm text-neutral-500">
-                    {formatCurrency(scenario.totalValue)} · {scenario.timeframeYears}yr · {scenario.interestRate}%
-                  </p>
-                  <p className="text-xs text-neutral-400 mt-0.5">Saved {formatDate(scenario.updatedAt)}</p>
-                </div>
-                <div className="flex items-center gap-2 shrink-0">
-                  <button
-                    onClick={() => handleLoad(scenario)}
-                    className="px-3 py-1.5 text-sm font-medium text-white bg-primary-base rounded-xl hover:bg-primary-base/90 transition-colors"
-                  >
-                    Load
-                  </button>
-                  <button
-                    onClick={() => handleDelete(scenario)}
-                    disabled={deletingId === scenario._id}
-                    className="px-3 py-1.5 text-sm font-medium text-neutral-500 border border-neutral-200 rounded-xl hover:border-red-300 hover:text-red-500 transition-colors disabled:opacity-50"
-                  >
-                    {deletingId === scenario._id ? "…" : "Delete"}
-                  </button>
-                </div>
-              </div>
+                scenario={scenario}
+                onLoad={handleLoad}
+                onOpen={handleOpen}
+                onDelete={handleDelete}
+                isDeleting={deletingId === scenario._id}
+              />
             ))}
           </div>
         )}

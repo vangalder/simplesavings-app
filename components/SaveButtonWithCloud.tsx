@@ -37,9 +37,10 @@ export default function SaveButtonWithCloud({ state, results, onLocalSave }: Pro
 
     if (!isSignedIn) return;
 
-    // If user has a saved scenario, overwrite it silently
+    // If user has a saved scenario, overwrite it silently (preserve name/description/goals)
     if (scenarios && scenarios.length > 0) {
-      handleCloudSave(scenarios[0].name);
+      const existing = scenarios[0] as { name: string; description?: string; goals?: string };
+      handleCloudSave(existing.name, existing.description ?? "", existing.goals ?? "");
       return;
     }
 
@@ -47,13 +48,15 @@ export default function SaveButtonWithCloud({ state, results, onLocalSave }: Pro
     setShowModal(true);
   };
 
-  const handleCloudSave = async (name: string) => {
+  const handleCloudSave = async (name: string, description = "", goals = "") => {
     if (!clerkId) return;
     setSaving(true);
     try {
       await saveScenario({
         clerkId,
         name,
+        description: description || undefined,
+        goals: goals || undefined,
         startingAmount: state.startingAmount,
         monthlyContribution: state.monthlyContribution,
         timeframeYears: state.timeframeYears,

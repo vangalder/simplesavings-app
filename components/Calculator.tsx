@@ -5,6 +5,9 @@ import { useSearchParams, useRouter } from "next/navigation";
 import dynamic from "next/dynamic";
 import Image from "next/image";
 import { toast } from "sonner";
+import { useTranslations } from "next-intl";
+import { useLocaleAndCurrency } from "@/lib/hooks/useLocaleAndCurrency";
+import { isCryptoCurrency } from "@/lib/currency";
 import { defaultCalculatorValues, type CalculatorState } from "@/lib/defaultValues";
 import AnimatedCurrency from "@/components/AnimatedCurrency";
 import AnimatedNumberInput from "@/components/AnimatedNumberInput";
@@ -26,6 +29,14 @@ export default function Calculator() {
   const [isInitialized, setIsInitialized] = useState(false);
   const [shouldAnimateInputs, setShouldAnimateInputs] = useState(false);
   const [showShareModal, setShowShareModal] = useState(false);
+  const [timeframeMode, setTimeframeMode] = useState<"years" | "date">("years");
+  const [targetDateStr, setTargetDateStr] = useState("");
+  const t = useTranslations("calculator");
+  const tSave = useTranslations("save");
+  const { locale, currency } = useLocaleAndCurrency();
+  const [chartType, setChartType] = useState<"area" | "bar" | "line">("area");
+  const [goalAmount, setGoalAmount] = useState<number>(0);
+  const [showGoalInput, setShowGoalInput] = useState(false);
 
   // Load values from URL params, localStorage, or defaults
   useEffect(() => {
@@ -135,43 +146,37 @@ export default function Calculator() {
     return () => clearTimeout(timeoutId);
   }, [state, isInitialized, updateURL]);
 
+  // Debounced auto-save to localStorage on every state change
+  useEffect(() => {
+    if (!isInitialized) return;
+    const id = setTimeout(() => {
+      try {
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+      } catch {
+        // ignore quota errors silently
+      }
+    }, 1000);
+    return () => clearTimeout(id);
+  }, [state, isInitialized]);
+
+  // Recompute timeframeYears from target date (also runs every 24h via interval)
+  useEffect(() => {
+    if (timeframeMode !== "date" || !targetDateStr) return;
+    const compute = () => {
+      const diff = new Date(targetDateStr).getTime() - Date.now();
+      const years = Math.max(0, diff / (365.25 * 24 * 3600 * 1000));
+      setState((prev) => ({ ...prev, timeframeYears: parseFloat(years.toFixed(2)) }));
+    };
+    compute();
+    const id = setInterval(compute, 24 * 60 * 60 * 1000);
+    return () => clearInterval(id);
+  }, [timeframeMode, targetDateStr]);
+
   const handleSave = useCallback(() => {
     try {
-      // Get existing save metadata
-      const saveMetadataKey = `${STORAGE_KEY}-metadata`;
-      let saveCount = 0;
-      let lastSaveTime = "";
-
-      try {
-        const existingMetadata = localStorage.getItem(saveMetadataKey);
-        if (existingMetadata) {
-          const parsed = JSON.parse(existingMetadata);
-          saveCount = (parsed.saveCount || 0) + 1;
-        } else {
-          saveCount = 1;
-        }
-      } catch (err) {
-        saveCount = 1;
-      }
-
-      // Get current timestamp
-      lastSaveTime = new Date().toISOString();
-
-      // Save calculator state
       localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
-
-      // Save metadata
-      localStorage.setItem(
-        saveMetadataKey,
-        JSON.stringify({
-          saveCount,
-          lastSaveTime,
-        })
-      );
-
-      toast.success(`Saved! (${saveCount} time${saveCount !== 1 ? "s" : ""})`);
-    } catch (err) {
-      console.error("Failed to save to localStorage:", err);
+      toast.success("Saved!");
+    } catch {
       toast.error("Failed to save. Check your browser settings.");
     }
   }, [state]);
@@ -255,43 +260,37 @@ export default function Calculator() {
     const interestEarned = totalValue - principalPaid;
 
     // Generate data points for chart
-    const chartData = [];
+    // Use monthly granularity when timeframe < 2 years so the chart is meaningful
     const maxYear = Math.floor(Math.max(0, safeTimeframeYears));
+    const chartMonthly = totalMonths < 24;
+    const chartPoints = chartMonthly ? totalMonths : maxYear;
+    const chartData = [];
 
-    for (let year = 0; year <= maxYear; year++) {
-      const months = year * 12;
+    for (let i = 0; i <= chartPoints; i++) {
+      const months = chartMonthly ? i : i * 12;
 
-      // Calculate future values with safety checks
       const fvInitial = safeStartingAmount * Math.pow(1 + monthlyRate, months);
-      const safeFvInitial = isNaN(fvInitial) || !isFinite(fvInitial) ? safeStartingAmount : fvInitial;
-
+      const safeFvI = isNaN(fvInitial) || !isFinite(fvInitial) ? safeStartingAmount : fvInitial;
       const fvAnnuity = calculateFutureValueAnnuity(months);
-      const safeFvAnnuity = isNaN(fvAnnuity) || !isFinite(fvAnnuity) ? 0 : fvAnnuity;
+      const safeFvA = isNaN(fvAnnuity) || !isFinite(fvAnnuity) ? 0 : fvAnnuity;
 
-      const totalValue = safeFvInitial + safeFvAnnuity;
+      const totalValue = safeFvI + safeFvA;
       const principal = safeStartingAmount + (safeMonthlyContribution * months);
       const interest = totalValue - principal;
 
-      // Ensure all values are valid numbers before adding to chart data
       const finalPrincipal = isNaN(principal) || !isFinite(principal) ? 0 : Math.max(0, principal);
       const finalTotal = isNaN(totalValue) || !isFinite(totalValue) ? finalPrincipal : Math.max(finalPrincipal, totalValue);
       const finalInterest = isNaN(interest) || !isFinite(interest) ? 0 : Math.max(0, finalTotal - finalPrincipal);
 
-      chartData.push({
-        year,
-        value: finalTotal,
-        principal: finalPrincipal,
-        interest: finalInterest,
-      });
+      chartData.push({ year: i, value: finalTotal, principal: finalPrincipal, interest: finalInterest });
     }
-
-
 
     return {
       totalValue,
       principalPaid,
       interestEarned,
       chartData,
+      chartXUnit: chartMonthly ? "months" as const : "years" as const,
     };
   }, [state]);
 
@@ -314,10 +313,16 @@ export default function Calculator() {
       {/* Calculator Form - Left 50% on desktop/tablet, full width on mobile */}
       <div className="w-full lg:w-1/2">
         <div className="bg-white rounded-2xl p-4 md:p-6 space-y-3 shadow-lg">
+          {/* Crypto denomination notice */}
+          {isCryptoCurrency(currency) && (
+            <div className="bg-amber-50 border border-amber-200 rounded-xl px-3 py-2 text-xs text-amber-800">
+              {t("cryptoNotice", { symbol: currency })}
+            </div>
+          )}
           {/* Starting Amount */}
           <div>
             <label className="block text-sm font-medium text-neutral-700 mb-1.5">
-              starting amount
+              {t("startingAmount")}
             </label>
             <AnimatedNumberInput
               value={state.startingAmount}
@@ -327,13 +332,13 @@ export default function Calculator() {
               className="w-full px-4 py-3 border-2 border-accent-orange-base rounded-xl text-center text-4xl font-display font-semibold text-accent-orange-base focus:outline-none focus:ring-2 focus:ring-accent-orange-base focus:border-accent-orange-base"
               shouldAnimate={shouldAnimateInputs}
             />
-            <p className="text-xs text-neutral-600 mt-0.5 text-center">your initial savings amount</p>
+            <p className="text-xs text-neutral-600 mt-0.5 text-center">{t("startingAmountHint")}</p>
           </div>
 
           {/* Monthly Contribution */}
           <div>
             <label className="block text-sm font-medium text-neutral-700 mb-1.5">
-              monthly contribution
+              {t("monthlyContribution")}
             </label>
             <AnimatedNumberInput
               value={state.monthlyContribution}
@@ -343,30 +348,74 @@ export default function Calculator() {
               className="w-full px-4 py-3 border-2 border-accent-orange-base rounded-xl text-center text-4xl font-display font-semibold text-accent-orange-base focus:outline-none focus:ring-2 focus:ring-accent-orange-base focus:border-accent-orange-base"
               shouldAnimate={shouldAnimateInputs}
             />
-            <p className="text-xs text-neutral-600 mt-0.5 text-center">amount you save each month</p>
+            <p className="text-xs text-neutral-600 mt-0.5 text-center">{t("monthlyContributionHint")}</p>
           </div>
 
           {/* Timeframe and Interest Rate - Side by side */}
           <div className="grid grid-cols-2 gap-3">
             <div>
-              <label className="block text-sm font-medium text-neutral-700 mb-1.5">
-                timeframe in years
-              </label>
-              <AnimatedNumberInput
-                value={state.timeframeYears}
-                onChange={(val) => setState({ ...state, timeframeYears: val })}
-                step="0.1"
-                min={0}
-                placeholder="0"
-                className="w-full px-4 py-3 border-2 border-accent-orange-base rounded-xl text-center text-4xl font-display font-semibold text-accent-orange-base focus:outline-none focus:ring-2 focus:ring-accent-orange-base focus:border-accent-orange-base"
-                shouldAnimate={shouldAnimateInputs}
-              />
-              <p className="text-xs text-neutral-600 mt-0.5 text-center">how long you plan to save</p>
+              <div className="flex items-center justify-between mb-1.5">
+                <label className="text-sm font-medium text-neutral-700">
+                  {timeframeMode === "years" ? t("timeframeYears") : t("timeframeDate")}
+                </label>
+                <button
+                  type="button"
+                  onClick={() => {
+                    if (timeframeMode === "years") {
+                      const years = Math.max(1, state.timeframeYears);
+                      const d = new Date();
+                      d.setFullYear(d.getFullYear() + Math.floor(years));
+                      setTargetDateStr(d.toISOString().slice(0, 10));
+                      setTimeframeMode("date");
+                    } else {
+                      setTimeframeMode("years");
+                    }
+                  }}
+                  className="text-xs text-primary-base hover:underline"
+                >
+                  {timeframeMode === "years" ? t("switchToDateMode") : t("switchToYearsMode")}
+                </button>
+              </div>
+
+              {timeframeMode === "years" ? (
+                <>
+                  <AnimatedNumberInput
+                    value={state.timeframeYears}
+                    onChange={(val) => setState({ ...state, timeframeYears: val })}
+                    step="0.1"
+                    min={0}
+                    placeholder="0"
+                    className="w-full px-4 py-3 border-2 border-accent-orange-base rounded-xl text-center text-4xl font-display font-semibold text-accent-orange-base focus:outline-none focus:ring-2 focus:ring-accent-orange-base focus:border-accent-orange-base"
+                    shouldAnimate={shouldAnimateInputs}
+                  />
+                  <p className="text-xs text-neutral-600 mt-0.5 text-center">{t("timeframeYearsHint")}</p>
+                </>
+              ) : (
+                <>
+                  <input
+                    type="date"
+                    value={targetDateStr}
+                    min={new Date().toISOString().slice(0, 10)}
+                    onChange={(e) => setTargetDateStr(e.target.value)}
+                    className="w-full px-3 py-3 border-2 border-accent-orange-base rounded-xl text-center text-lg font-display font-semibold text-accent-orange-base focus:outline-none focus:ring-2 focus:ring-accent-orange-base"
+                  />
+                  <p className="text-xs text-neutral-600 mt-0.5 text-center">
+                    {state.timeframeYears > 0
+                      ? (() => {
+                          const totalMonths = Math.round(state.timeframeYears * 12);
+                          const y = Math.floor(totalMonths / 12);
+                          const m = totalMonths % 12;
+                          return t("timeframeRemaining", { years: y, months: m });
+                        })()
+                      : t("timeframeDateHint")}
+                  </p>
+                </>
+              )}
             </div>
 
             <div>
               <label className="block text-sm font-medium text-neutral-700 mb-1.5">
-                interest rate
+                {t("interestRate")}
               </label>
               <AnimatedNumberInput
                 value={state.interestRate}
@@ -377,16 +426,18 @@ export default function Calculator() {
                 className="w-full px-4 py-3 border-2 border-accent-orange-base rounded-xl text-center text-4xl font-display font-semibold text-accent-orange-base focus:outline-none focus:ring-2 focus:ring-accent-orange-base focus:border-accent-orange-base"
                 shouldAnimate={shouldAnimateInputs}
               />
-              <p className="text-xs text-neutral-600 mt-0.5 text-center">estimated annual return</p>
+              <p className="text-xs text-neutral-600 mt-0.5 text-center">
+                {isCryptoCurrency(currency) ? t("interestRateCryptoHint") : t("interestRateHint")}
+              </p>
             </div>
           </div>
 
           {/* Results Section */}
           <div className="border-t-2 border-neutral-200 pt-3 mt-3">
-            <h2 className="text-lg font-display font-semibold text-neutral-800 mb-2 text-center">Total Value</h2>
+            <h2 className="text-lg font-display font-semibold text-neutral-800 mb-2 text-center">{t("totalValue")}</h2>
             <div className="flex items-center justify-center gap-2 mb-3">
               <div className="font-display font-bold text-secondary-base">
-                <AnimatedCurrency value={results.totalValue} size="xl" />
+                <AnimatedCurrency value={results.totalValue} size="xl" locale={locale} currency={currency} />
               </div>
               <button
                 onClick={handleShare}
@@ -405,15 +456,15 @@ export default function Calculator() {
             </div>
             <div className="flex justify-center gap-4 text-sm mb-3">
               <div className="text-center">
-                <p className="text-neutral-600">principal paid</p>
+                <p className="text-neutral-600">{t("principalPaid")}</p>
                 <div className="text-secondary-base font-display font-semibold mt-0.5">
-                  <AnimatedCurrency value={results.principalPaid} size="lg" />
+                  <AnimatedCurrency value={results.principalPaid} size="lg" locale={locale} currency={currency} />
                 </div>
               </div>
               <div className="text-center">
-                <p className="text-neutral-600">interest earned</p>
+                <p className="text-neutral-600">{t("interestEarned")}</p>
                 <div className="text-secondary-base font-display font-semibold mt-0.5">
-                  <AnimatedCurrency value={results.interestEarned} size="lg" />
+                  <AnimatedCurrency value={results.interestEarned} size="lg" locale={locale} currency={currency} />
                 </div>
               </div>
             </div>
@@ -431,7 +482,7 @@ export default function Calculator() {
               onClick={handleSave}
               className="w-full py-3 bg-gradient-orange-yellow rounded-xl text-white font-semibold text-lg shadow-lg hover:shadow-xl transition-shadow mt-2"
             >
-              Save Calculation
+              {tSave("save")}
             </button>
           )}
         </div>
@@ -439,8 +490,47 @@ export default function Calculator() {
 
       {/* Chart - Right 50% on desktop/tablet, full width below form on mobile */}
       <div className="w-full lg:w-1/2">
-        <div className="bg-secondary-base rounded-2xl p-6 h-full min-h-[500px] shadow-lg overflow-hidden">
-          <Chart data={results.chartData} />
+        <div className="bg-secondary-base rounded-2xl p-4 h-full min-h-[500px] shadow-lg overflow-hidden flex flex-col gap-2">
+          <Chart
+            data={results.chartData}
+            chartType={chartType}
+            goalAmount={goalAmount}
+            locale={locale}
+            currency={currency}
+            xAxisUnit={results.chartXUnit}
+            onChartTypeChange={setChartType}
+          />
+
+          {/* Goal amount toggle + input */}
+          <div className="mt-auto pt-2">
+            {!showGoalInput ? (
+              <button
+                onClick={() => setShowGoalInput(true)}
+                className="text-xs text-white/60 hover:text-white/90 transition-colors"
+              >
+                + {t("setGoal")}
+              </button>
+            ) : (
+              <div className="flex items-center gap-2">
+                <label className="text-xs text-white/70 shrink-0">Goal $</label>
+                <input
+                  type="number"
+                  min={0}
+                  step={10000}
+                  value={goalAmount || ""}
+                  onChange={(e) => setGoalAmount(parseFloat(e.target.value) || 0)}
+                  placeholder="e.g. 1000000"
+                  className="flex-1 px-2 py-1 text-xs bg-white/10 border border-white/20 rounded-lg text-white placeholder:text-white/30 focus:outline-none focus:border-white/50"
+                />
+                <button
+                  onClick={() => { setGoalAmount(0); setShowGoalInput(false); }}
+                  className="text-xs text-white/50 hover:text-white/80"
+                >
+                  ✕
+                </button>
+              </div>
+            )}
+          </div>
         </div>
       </div>
 

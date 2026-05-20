@@ -2,19 +2,21 @@
 
 import { useState, useEffect, useMemo } from "react";
 import { usePathname, useRouter } from "next/navigation";
+import { useTranslations } from "next-intl";
 
 export default function TabNavigation() {
   const pathname = usePathname();
   const router = useRouter();
+  const t = useTranslations("nav");
   const [activeTab, setActiveTab] = useState("Calculator");
 
   const tabs = useMemo(
     () => [
-      { id: "Calculator", label: "Calculator", path: "/" },
-      { id: "Insights", label: "Insights ✨", path: "/insights" },
-      { id: "Profile", label: "Profile", path: "/profile" },
+      { id: "Calculator", label: t("calculator"), path: "/" },
+      { id: "Insights", label: `${t("insights")} ✨`, path: "/insights" },
+      { id: "Profile", label: t("profile"), path: "/profile" },
     ],
-    []
+    [t]
   );
 
   useEffect(() => {

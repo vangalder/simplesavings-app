@@ -1,74 +1,64 @@
 "use client";
 
-import { useState } from "react";
 import Image from "next/image";
-import { toast } from "sonner";
-import ShareModal from "@/components/ShareModal";
+import { UserButton, SignInButton, useUser } from "@clerk/nextjs";
+import CurrencyPicker from "@/components/CurrencyPicker";
+import LanguagePicker from "@/components/LanguagePicker";
 
 const isClerkConfigured = !!process.env.NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY;
 
-export default function Header() {
-  const [showShareModal, setShowShareModal] = useState(false);
-  const [shareUrl, setShareUrl] = useState("");
+function AuthControls() {
+  const { isSignedIn, isLoaded } = useUser();
 
-  const handleShare = () => {
-    if (isClerkConfigured) {
-      setShareUrl(window.location.href);
-      setShowShareModal(true);
-      return;
-    }
-    // Fallback when auth is not configured: copy to clipboard
-    navigator.clipboard.writeText(window.location.href).then(
-      () => toast.success("Link copied to clipboard!"),
-      () => {}
+  if (!isLoaded) return <div className="w-8 h-8 rounded-full bg-primary-base/30 animate-pulse" />;
+
+  if (isSignedIn) {
+    return (
+      <UserButton
+        appearance={{
+          elements: { avatarBox: "w-8 h-8" },
+        }}
+      />
     );
-  };
+  }
 
   return (
-    <header className="w-full bg-header-dark text-white relative z-10">
-      {/* Status bar placeholder for mobile */}
-      <div className="h-6 md:hidden bg-header-dark"></div>
+    <SignInButton mode="modal">
+      <button className="text-sm font-medium text-white bg-primary-base/40 hover:bg-primary-base/60 px-3 py-1.5 rounded-lg transition-colors">
+        Sign in
+      </button>
+    </SignInButton>
+  );
+}
 
-      {/* Logo and branding */}
-      <div className="flex items-center justify-between py-2 px-4 md:px-6">
-        <div className="flex items-center gap-3">
-          <div className="w-16 h-16 flex items-center justify-center">
+export default function Header() {
+  return (
+    <header className="w-full bg-header-dark text-white relative z-50">
+      <div className="flex items-center justify-between py-2 px-3 md:px-6">
+        <div className="flex items-center gap-2 md:gap-3">
+          <div className="w-9 h-9 md:w-14 md:h-14 flex items-center justify-center shrink-0">
             <Image
               src="/logo.png"
               alt="Simple Savings Logo"
-              width={64}
-              height={64}
+              width={56}
+              height={56}
               unoptimized
             />
           </div>
           <span
-            className="text-4xl md:text-5xl font-display font-semibold text-secondary-light"
+            className="text-xl md:text-4xl lg:text-5xl font-display font-semibold text-secondary-light leading-none"
             style={{ fontFamily: "var(--font-space-grotesk), 'Space Grotesk', sans-serif" }}
           >
             simplesavings.app
           </span>
         </div>
 
-        {/* Share icon - Desktop only */}
-        <button
-          onClick={handleShare}
-          className="hidden md:flex items-center justify-center w-10 h-10 rounded-full hover:bg-primary-base/50 transition-colors"
-          aria-label="Share"
-        >
-          <Image
-            src="/Icon-share.svg"
-            alt="Share"
-            width={20}
-            height={20}
-            className="brightness-0 invert"
-            unoptimized
-          />
-        </button>
+        <div className="flex items-center gap-1.5 md:gap-2 shrink-0">
+          <LanguagePicker compact />
+          <CurrencyPicker compact />
+          {isClerkConfigured && <AuthControls />}
+        </div>
       </div>
-
-      {showShareModal && isClerkConfigured && (
-        <ShareModal url={shareUrl} onClose={() => setShowShareModal(false)} />
-      )}
     </header>
   );
 }

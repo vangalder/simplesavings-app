@@ -1,0 +1,135 @@
+{
+  "app": {
+    "name": "simplesavings.app",
+    "tagline": "Calculate your savings growth with compound interest"
+  },
+  "header": {
+    "share": "Share",
+    "signIn": "Sign in",
+    "signOut": "Sign out"
+  },
+  "calculator": {
+    "startingAmount": "starting amount",
+    "startingAmountHint": "your initial savings amount",
+    "startingAmountPlaceholder": "0.00",
+    "monthlyContribution": "monthly contribution",
+    "monthlyContributionHint": "amount you save each month",
+    "monthlyContributionPlaceholder": "0.00",
+    "timeframeYears": "timeframe in years",
+    "timeframeYearsHint": "how long you plan to save",
+    "timeframeDate": "target date",
+    "timeframeDateHint": "when you want to reach your goal",
+    "timeframeRemaining": "{years} years {months} months remaining",
+    "interestRate": "interest rate",
+    "interestRateHint": "estimated annual return",
+    "interestRateCryptoHint": "expected annual return (crypto returns are highly variable)",
+    "goalAmount": "savings goal",
+    "goalAmountHint": "target amount you want to reach",
+    "setGoal": "Set a savings goal",
+    "totalValue": "Total Value",
+    "principalPaid": "principal paid",
+    "interestEarned": "interest earned",
+    "hitGoalAt": "You hit your goal in Year {year}",
+    "extendForGoal": "Extend {years} more years to reach your goal",
+    "switchToDateMode": "Switch to target date",
+    "switchToYearsMode": "Switch to years",
+    "cryptoNotice": "Amounts are in {symbol}. Enter your investment in {symbol} units."
+  },
+  "results": {
+    "totalValue": "Total Value",
+    "principalPaid": "principal paid",
+    "interestEarned": "interest earned"
+  },
+  "save": {
+    "save": "Save",
+    "saving": "Saving…",
+    "saved": "Saved!",
+    "savedCount": "Saved! ({count} {count, plural, one {time} other {times}})",
+    "saveLocally": "Save locally",
+    "saveToCloud": "Save to cloud",
+    "signInToSave": "Sign in to save",
+    "failedToSave": "Failed to save. Check your browser settings.",
+    "scenarioName": "Scenario name",
+    "scenarioNamePlaceholder": "e.g. Retirement Fund",
+    "description": "Description",
+    "descriptionPlaceholder": "What is this savings plan for?",
+    "goals": "Goals",
+    "goalsPlaceholder": "What are you trying to achieve?",
+    "cancel": "Cancel",
+    "confirm": "Save scenario"
+  },
+  "share": {
+    "share": "Share",
+    "shareCalculation": "Share this calculation",
+    "linkCopied": "Link copied to clipboard!",
+    "copyLink": "Copy link",
+    "shareVia": "Share via",
+    "close": "Close"
+  },
+  "profile": {
+    "title": "My Scenarios",
+    "noScenarios": "No saved scenarios yet",
+    "noScenariosHint": "Save a calculation to see it here",
+    "signInPrompt": "Sign in to view your saved scenarios",
+    "load": "Load",
+    "delete": "Delete",
+    "deleteConfirm": "Delete this scenario?",
+    "lastUpdated": "Updated {date}",
+    "created": "Created {date}"
+  },
+  "insights": {
+    "title": "Insights",
+    "comingSoon": "Insights coming soon",
+    "comingSoonHint": "AI-powered analysis of your savings plan will be available here.",
+    "askPlaceholder": "Ask about your savings plan…",
+    "send": "Send",
+    "refresh": "Refresh insights",
+    "provider": "AI Provider",
+    "model": "Model",
+    "cryptoNote": "Crypto asset returns are highly volatile. Insights will factor in this risk."
+  },
+  "tiers": {
+    "anonymous": "Free",
+    "registered": "Registered",
+    "pro": "Pro",
+    "upgradeTitle": "Upgrade to Pro",
+    "upgradeDescription": "Unlock {feature} with a Pro subscription.",
+    "upgrade": "Upgrade",
+    "maybeLater": "Maybe later"
+  },
+  "currency": {
+    "label": "Currency",
+    "fiat": "Fiat",
+    "crypto": "Crypto"
+  },
+  "language": {
+    "label": "Language"
+  },
+  "nav": {
+    "calculator": "Calculator",
+    "insights": "Insights",
+    "profile": "Profile"
+  },
+  "errors": {
+    "generic": "Something went wrong. Please try again.",
+    "networkError": "Network error. Please check your connection.",
+    "authRequired": "Please sign in to continue."
+  },
+  "milestones": {
+    "quarter": "You're 25% of the way to your goal! Keep it up.",
+    "half": "Halfway there! Your money is working hard.",
+    "threeQuarters": "75% of the way! Almost at your goal."
+  },
+  "chart": {
+    "years": "Years",
+    "value": "Value",
+    "area": "Area",
+    "bar": "Bar",
+    "line": "Line",
+    "doublingMilestone": "2× at year {year}",
+    "goalReached": "🎯 You hit your goal of {amount} in Year {year}",
+    "goalNotReached": "📈 Extend your timeframe to reach your goal of {amount}",
+    "months": "Months",
+    "goalLabel": "Goal"
+  }
+}

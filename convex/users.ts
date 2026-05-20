@@ -68,3 +68,52 @@ export const setUserPro = mutation({
     await ctx.db.patch(user._id, { isPro: true, updatedAt: Date.now() });
   },
 });
+
+export const unsetUserPro = mutation({
+  args: { clerkId: v.string() },
+  handler: async (ctx, args) => {
+    const user = await ctx.db
+      .query("users")
+      .withIndex("by_clerk_id", (q) => q.eq("clerkId", args.clerkId))
+      .first();
+
+    if (!user) throw new Error("User not found");
+
+    await ctx.db.patch(user._id, { isPro: false, updatedAt: Date.now() });
+  },
+});
+
+export const getClerkIdByStripeCustomer = query({
+  args: { stripeCustomerId: v.string() },
+  handler: async (ctx, args) => {
+    const user = await ctx.db
+      .query("users")
+      .filter((q) => q.eq(q.field("stripeCustomerId"), args.stripeCustomerId))
+      .first();
+    return user?.clerkId ?? null;
+  },
+});
+
+export const updateUserPreferences = mutation({
+  args: {
+    clerkId: v.string(),
+    locale: v.optional(v.string()),
+    currency: v.optional(v.string()),
+    stripeCustomerId: v.optional(v.string()),
+  },
+  handler: async (ctx, args) => {
+    const user = await ctx.db
+      .query("users")
+      .withIndex("by_clerk_id", (q) => q.eq("clerkId", args.clerkId))
+      .first();
+
+    if (!user) throw new Error("User not found");
+
+    const { clerkId, ...updates } = args;
+    const patch = Object.fromEntries(
+      Object.entries(updates).filter(([, v]) => v !== undefined)
+    );
+
+    await ctx.db.patch(user._id, { ...patch, updatedAt: Date.now() });
+  },
+});

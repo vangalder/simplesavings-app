@@ -12,8 +12,9 @@ const convex = convexUrl ? new ConvexReactClient(convexUrl) : null;
 
 function ConvexWrapper({ children }: { children: React.ReactNode }) {
   if (!convex) return <>{children}</>;
+  const useAuthAny = useAuth as unknown as Parameters<typeof ConvexProviderWithClerk>[0]["useAuth"];
   return (
-    <ConvexProviderWithClerk client={convex} useAuth={useAuth}>
+    <ConvexProviderWithClerk client={convex} useAuth={useAuthAny}>
       {children}
     </ConvexProviderWithClerk>
   );

@@ -1,0 +1,135 @@
+{
+  "app": {
+    "name": "simplesavings.app",
+    "tagline": "Calcula el crecimiento de tus ahorros con interés compuesto"
+  },
+  "header": {
+    "share": "Compartir",
+    "signIn": "Iniciar sesión",
+    "signOut": "Cerrar sesión"
+  },
+  "calculator": {
+    "startingAmount": "cantidad inicial",
+    "startingAmountHint": "tu monto inicial de ahorros",
+    "startingAmountPlaceholder": "0.00",
+    "monthlyContribution": "aportación mensual",
+    "monthlyContributionHint": "cantidad que ahorras cada mes",
+    "monthlyContributionPlaceholder": "0.00",
+    "timeframeYears": "plazo en años",
+    "timeframeYearsHint": "cuánto tiempo planeas ahorrar",
+    "timeframeDate": "fecha objetivo",
+    "timeframeDateHint": "cuándo quieres alcanzar tu meta",
+    "timeframeRemaining": "{years} años {months} meses restantes",
+    "interestRate": "tasa de interés",
+    "interestRateHint": "rendimiento anual estimado",
+    "interestRateCryptoHint": "rendimiento anual esperado (los rendimientos cripto son muy variables)",
+    "goalAmount": "meta de ahorro",
+    "goalAmountHint": "monto objetivo que quieres alcanzar",
+    "setGoal": "Establecer meta de ahorro",
+    "totalValue": "Valor Total",
+    "principalPaid": "capital aportado",
+    "interestEarned": "intereses ganados",
+    "hitGoalAt": "Alcanzas tu meta en el Año {year}",
+    "extendForGoal": "Extiende {years} años más para alcanzar tu meta",
+    "switchToDateMode": "Cambiar a fecha objetivo",
+    "switchToYearsMode": "Cambiar a años",
+    "cryptoNotice": "Los montos están en {symbol}. Ingresa tu inversión en unidades de {symbol}."
+  },
+  "results": {
+    "totalValue": "Valor Total",
+    "principalPaid": "capital aportado",
+    "interestEarned": "intereses ganados"
+  },
+  "save": {
+    "save": "Guardar",
+    "saving": "Guardando…",
+    "saved": "¡Guardado!",
+    "savedCount": "¡Guardado! ({count} {count, plural, one {vez} other {veces}})",
+    "saveLocally": "Guardar localmente",
+    "saveToCloud": "Guardar en la nube",
+    "signInToSave": "Inicia sesión para guardar",
+    "failedToSave": "Error al guardar. Verifica la configuración de tu navegador.",
+    "scenarioName": "Nombre del escenario",
+    "scenarioNamePlaceholder": "ej. Fondo de retiro",
+    "description": "Descripción",
+    "descriptionPlaceholder": "¿Para qué es este plan de ahorro?",
+    "goals": "Objetivos",
+    "goalsPlaceholder": "¿Qué quieres lograr?",
+    "cancel": "Cancelar",
+    "confirm": "Guardar escenario"
+  },
+  "share": {
+    "share": "Compartir",
+    "shareCalculation": "Compartir este cálculo",
+    "linkCopied": "¡Enlace copiado al portapapeles!",
+    "copyLink": "Copiar enlace",
+    "shareVia": "Compartir vía",
+    "close": "Cerrar"
+  },
+  "profile": {
+    "title": "Mis Escenarios",
+    "noScenarios": "Sin escenarios guardados",
+    "noScenariosHint": "Guarda un cálculo para verlo aquí",
+    "signInPrompt": "Inicia sesión para ver tus escenarios guardados",
+    "load": "Cargar",
+    "delete": "Eliminar",
+    "deleteConfirm": "¿Eliminar este escenario?",
+    "lastUpdated": "Actualizado {date}",
+    "created": "Creado {date}"
+  },
+  "insights": {
+    "title": "Análisis",
+    "comingSoon": "Análisis próximamente",
+    "comingSoonHint": "El análisis impulsado por IA de tu plan de ahorro estará disponible aquí.",
+    "askPlaceholder": "Pregunta sobre tu plan de ahorro…",
+    "send": "Enviar",
+    "refresh": "Actualizar análisis",
+    "provider": "Proveedor de IA",
+    "model": "Modelo",
+    "cryptoNote": "Los rendimientos de activos cripto son muy volátiles. El análisis considerará este riesgo."
+  },
+  "tiers": {
+    "anonymous": "Gratis",
+    "registered": "Registrado",
+    "pro": "Pro",
+    "upgradeTitle": "Actualiza a Pro",
+    "upgradeDescription": "Desbloquea {feature} con una suscripción Pro.",
+    "upgrade": "Actualizar",
+    "maybeLater": "Quizás después"
+  },
+  "currency": {
+    "label": "Moneda",
+    "fiat": "Moneda fiduciaria",
+    "crypto": "Cripto"
+  },
+  "language": {
+    "label": "Idioma"
+  },
+  "nav": {
+    "calculator": "Calculadora",
+    "insights": "Análisis",
+    "profile": "Perfil"
+  },
+  "errors": {
+    "generic": "Algo salió mal. Por favor intenta de nuevo.",
+    "networkError": "Error de red. Verifica tu conexión.",
+    "authRequired": "Por favor inicia sesión para continuar."
+  },
+  "milestones": {
+    "quarter": "¡Estás al 25% de tu meta! Sigue así.",
+    "half": "¡A la mitad! Tu dinero está trabajando duro.",
+    "threeQuarters": "¡Al 75% del camino! Ya casi llegas a tu meta."
+  },
+  "chart": {
+    "years": "Años",
+    "value": "Valor",
+    "area": "Área",
+    "bar": "Barras",
+    "line": "Línea",
+    "doublingMilestone": "2× en el año {year}",
+    "goalReached": "🎯 Alcanzas tu meta de {amount} en el Año {year}",
+    "goalNotReached": "📈 Amplía tu plazo para alcanzar tu meta de {amount}",
+    "months": "Meses",
+    "goalLabel": "Meta"
+  }
+}

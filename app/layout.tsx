@@ -6,6 +6,8 @@ import Script from "next/script";
 import SvgPalmOverlays from "@/components/SvgPalmOverlays";
 import { Toaster } from "sonner";
 import { Providers } from "@/app/providers";
+import { NextIntlClientProvider } from "next-intl";
+import { getLocale, getMessages } from "next-intl/server";
 
 const inter = Inter({
   subsets: ["latin"],
@@ -30,13 +32,16 @@ export const metadata: Metadata = {
   description: "Calculate your savings growth with compound interest",
 };
 
-export default function RootLayout({
+export default async function RootLayout({
   children,
 }: Readonly<{
   children: React.ReactNode;
 }>) {
+  const locale = await getLocale();
+  const messages = await getMessages();
+
   return (
-    <html lang="en">
+    <html lang={locale}>
       <head>
         <Script
           src="https://www.googletagmanager.com/gtag/js?id=G-7SSJWHL9D0"
@@ -52,12 +57,14 @@ export default function RootLayout({
         </Script>
       </head>
       <body className={`${inter.variable} ${spaceGrotesk.variable} ${robotoMono.variable} font-sans antialiased`}>
-        <Providers>
-          <SvgPalmOverlays />
-          {children}
-          <Toaster richColors position="top-right" />
-          <Analytics />
-        </Providers>
+        <NextIntlClientProvider locale={locale} messages={messages}>
+          <Providers>
+            <SvgPalmOverlays />
+            {children}
+            <Toaster richColors position="top-right" />
+            <Analytics />
+          </Providers>
+        </NextIntlClientProvider>
       </body>
     </html>
   );
