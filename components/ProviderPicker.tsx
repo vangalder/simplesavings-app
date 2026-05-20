@@ -39,9 +39,27 @@ export const PROVIDERS: Provider[] = [
     id: "openrouter",
     label: "OpenRouter",
     models: [
+      // Balanced — primary recommended option
       { id: "meta-llama/llama-3.3-70b-instruct", label: "Llama 3.3 70B" },
-      { id: "deepseek/deepseek-r1", label: "DeepSeek R1" },
-      { id: "mistralai/mistral-large", label: "Mistral Large" },
+      // DeepSeek — max efficiency, near-zero cost
+      { id: "deepseek/deepseek-chat", label: "DeepSeek V3" },
+      { id: "deepseek/deepseek-r1-distill-llama-8b", label: "DeepSeek R1 Distill 8B" },
+      // Google Gemma — creative, punchy, low latency
+      { id: "google/gemma-2-27b-it", label: "Gemma 2 27B" },
+      { id: "google/gemma-3-12b-it", label: "Gemma 3 12B" },
+      // Llama — high-speed fallback
+      { id: "meta-llama/llama-3.1-8b-instruct", label: "Llama 3.1 8B" },
+      { id: "meta-llama/llama-3.1-405b-instruct", label: "Llama 3.1 405B" },
+      { id: "meta-llama/llama-4-maverick", label: "Llama 4 Maverick" },
+      { id: "meta-llama/llama-4-scout", label: "Llama 4 Scout" },
+      // Mistral — fast, compact
+      { id: "mistralai/mistral-small-3.2-24b-instruct", label: "Mistral Small 3.2" },
+      { id: "mistralai/mistral-nemo", label: "Mistral Nemo" },
+      // Qwen
+      { id: "qwen/qwen3-235b-a22b", label: "Qwen3 235B" },
+      { id: "qwen/qwen3-30b-a3b", label: "Qwen3 30B" },
+      // Microsoft
+      { id: "microsoft/phi-4", label: "Phi-4" },
     ],
   },
   {

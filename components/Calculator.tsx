@@ -719,13 +719,24 @@ export default function Calculator() {
               <div className="flex items-center gap-2">
                 <label className="text-xs text-white/70 shrink-0">{tChart("goalLabel")} {getCurrencyMeta(currency).symbol}</label>
                 <input
-                  type="number"
-                  min={0}
-                  step={10000}
-                  value={goalAmount || ""}
-                  onChange={(e) => setGoalAmount(parseFloat(e.target.value) || 0)}
-                  placeholder="e.g. 1000000"
-                  className="flex-1 px-2 py-1 text-xs bg-white/10 border border-white/20 rounded-lg text-white placeholder:text-white/30 focus:outline-none focus:border-white/50"
+                  type="text"
+                  inputMode="numeric"
+                  value={goalAmount ? goalAmount.toLocaleString() : ""}
+                  onChange={(e) => {
+                    const raw = e.target.value.replace(/[^0-9]/g, "");
+                    setGoalAmount(raw ? parseInt(raw, 10) : 0);
+                  }}
+                  onFocus={(e) => {
+                    if (goalAmount) e.target.value = String(goalAmount);
+                  }}
+                  onBlur={(e) => {
+                    const raw = e.target.value.replace(/[^0-9]/g, "");
+                    const parsed = raw ? parseInt(raw, 10) : 0;
+                    setGoalAmount(parsed);
+                    e.target.value = parsed ? parsed.toLocaleString() : "";
+                  }}
+                  placeholder="1,000,000"
+                  className="flex-1 px-3 py-1.5 text-sm font-display font-semibold bg-white text-secondary-dark placeholder:text-secondary-dark/30 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-white/60 transition-all"
                 />
                 <button
                   onClick={() => { setGoalAmount(0); setShowGoalInput(false); }}

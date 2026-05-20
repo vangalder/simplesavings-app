@@ -93,4 +93,19 @@ export default defineSchema({
   })
     .index("by_shared_by", ["sharedBy"])
     .index("by_shared_with", ["sharedWith"]),
+
+  // Performance telemetry for AI blurb calls
+  blurb_logs: defineTable({
+    provider: v.string(),
+    model: v.string(),
+    tokensIn: v.number(),
+    tokensOut: v.number(),
+    latencyMs: v.number(),
+    costUsd: v.number(),
+    isTranslation: v.boolean(),
+    locale: v.optional(v.string()),
+    createdAt: v.number(),
+  })
+    .index("by_provider_model", ["provider", "model"])
+    .index("by_created_at", ["createdAt"]),
 });

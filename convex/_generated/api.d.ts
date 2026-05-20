@@ -9,6 +9,7 @@
  */
 
 import type * as appConfig from "../appConfig.js";
+import type * as blurbLogs from "../blurbLogs.js";
 import type * as http from "../http.js";
 import type * as messages from "../messages.js";
 import type * as providerConfigs from "../providerConfigs.js";
@@ -25,6 +26,7 @@ import type {
 
 declare const fullApi: ApiFromModules<{
   appConfig: typeof appConfig;
+  blurbLogs: typeof blurbLogs;
   http: typeof http;
   messages: typeof messages;
   providerConfigs: typeof providerConfigs;

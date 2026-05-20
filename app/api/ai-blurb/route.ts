@@ -69,9 +69,32 @@ const RATES: Record<string, { in: number; out: number }> = {
   "gemini-1.5-pro":                { in: 1.25,  out: 5.0  },
   "gemini-2.5-flash":              { in: 0.15,  out: 0.6  },
   "gemini-2.5-pro":                { in: 1.25,  out: 10.0 },
-  "meta-llama/llama-3.3-70b-instruct": { in: 0.12, out: 0.3 },
-  "deepseek/deepseek-r1":          { in: 0.55,  out: 2.19 },
-  "mistralai/mistral-large":       { in: 2.0,   out: 6.0  },
+  // OpenRouter — Meta / Llama
+  "meta-llama/llama-3.3-70b-instruct":         { in: 0.12,  out: 0.30 },
+  "meta-llama/llama-3.1-8b-instruct":           { in: 0.02,  out: 0.04 },
+  "meta-llama/llama-3.1-405b-instruct":         { in: 2.70,  out: 2.70 },
+  "meta-llama/llama-4-maverick":                { in: 0.18,  out: 0.60 },
+  "meta-llama/llama-4-scout":                   { in: 0.11,  out: 0.34 },
+  // OpenRouter — DeepSeek
+  "deepseek/deepseek-chat":                     { in: 0.14,  out: 0.28 },
+  "deepseek/deepseek-r1":                       { in: 0.55,  out: 2.19 },
+  "deepseek/deepseek-r1-distill-llama-8b":      { in: 0.025, out: 0.05 },
+  "deepseek/deepseek-r1-distill-llama-70b":     { in: 0.23,  out: 0.69 },
+  "deepseek/deepseek-chat-v3-5":                { in: 0.27,  out: 1.10 },
+  // OpenRouter — Mistral
+  "mistralai/mistral-large":                    { in: 2.00,  out: 6.00 },
+  "mistralai/mistral-small-3.2-24b-instruct":   { in: 0.10,  out: 0.30 },
+  "mistralai/mistral-nemo":                     { in: 0.035, out: 0.08 },
+  // OpenRouter — Google Gemma
+  "google/gemma-2-27b-it":                      { in: 0.10,  out: 0.20 },
+  "google/gemma-3-27b-it":                      { in: 0.10,  out: 0.20 },
+  "google/gemma-3-12b-it":                      { in: 0.04,  out: 0.08 },
+  // OpenRouter — Qwen
+  "qwen/qwen3-235b-a22b":                       { in: 0.13,  out: 0.60 },
+  "qwen/qwen3-30b-a3b":                         { in: 0.10,  out: 0.30 },
+  "qwen/qwq-32b":                               { in: 0.12,  out: 0.18 },
+  // OpenRouter — Microsoft
+  "microsoft/phi-4":                            { in: 0.07,  out: 0.14 },
 };
 
 function calcCost(modelId: string, tokensIn: number, tokensOut: number): number {
@@ -218,10 +241,16 @@ export async function POST(req: NextRequest) {
         150,
       );
       const latencyMs = Date.now() - t0;
+      const costUsd = calcCost(modelId, result.tokensIn, result.tokensOut);
       const { blurb, question, pitch } = parseBlurbParts(result.text || String(body.text));
+      convex.mutation(api.blurbLogs.logBlurbCall, {
+        provider, model: modelId, tokensIn: result.tokensIn, tokensOut: result.tokensOut,
+        latencyMs, costUsd, isTranslation: true,
+        locale: typeof body.targetLocale === "string" ? body.targetLocale : undefined,
+      }).catch(() => {});
       return NextResponse.json({
         blurb, question, pitch,
-        meta: { provider, model: modelId, tokensIn: result.tokensIn, tokensOut: result.tokensOut, latencyMs, costUsd: calcCost(modelId, result.tokensIn, result.tokensOut) },
+        meta: { provider, model: modelId, tokensIn: result.tokensIn, tokensOut: result.tokensOut, latencyMs, costUsd },
       });
     } catch {
       return NextResponse.json({ blurb: String(body.text), question: "", pitch: "" });
@@ -467,11 +496,15 @@ Write THREE sentences: Mirror, Friction, Question.`;
     const t0 = Date.now();
     const result = await callLLM(provider, modelId, SYSTEM_PROMPT, userMessage, 180);
     const latencyMs = Date.now() - t0;
+    const costUsd = calcCost(modelId, result.tokensIn, result.tokensOut);
     const { blurb, question, pitch } = parseBlurbParts(result.text);
-
+    convex.mutation(api.blurbLogs.logBlurbCall, {
+      provider, model: modelId, tokensIn: result.tokensIn, tokensOut: result.tokensOut,
+      latencyMs, costUsd, isTranslation: false,
+    }).catch(() => {});
     return NextResponse.json({
       blurb, question, pitch,
-      meta: { provider, model: modelId, tokensIn: result.tokensIn, tokensOut: result.tokensOut, latencyMs, costUsd: calcCost(modelId, result.tokensIn, result.tokensOut) },
+      meta: { provider, model: modelId, tokensIn: result.tokensIn, tokensOut: result.tokensOut, latencyMs, costUsd },
     });
   } catch (err) {
     console.error("[ai-blurb] LLM error:", err);
