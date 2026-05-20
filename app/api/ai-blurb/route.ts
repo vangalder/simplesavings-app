@@ -142,25 +142,39 @@ const LOCALE_NAMES: Record<string, string> = {
   "pt-BR": "Brazilian Portuguese",
 };
 
-const SYSTEM_PROMPT = `You are a financial copywriter for simplesavings.app. You receive pre-calculated facts — treat every number and label as ground truth. Write exactly FOUR outputs separated by newlines with "---" between each:
+const SYSTEM_PROMPT = `You are a conversational financial co-pilot for simplesavings.app — think smart friend giving a quick reality check, not a spreadsheet. You receive pre-calculated facts. Write THREE outputs separated by "---" on its own line:
 
-1. BODY (sentences 1+2): MIRROR then FRICTION. Mirror validates what the numbers reveal; Friction introduces a concrete blindspot using the specific numbers.
-2. QUESTION: Output the OPEN QUESTION exactly as given.
-3. PITCH: One sentence that frames what deeper AI analysis would unlock for THIS specific scenario — make it concrete and compelling. No generic copy.
+1. BODY (2 sentences): MIRROR then FRICTION. Mirror validates what the numbers reveal in plain human language. Friction surfaces ONE concrete blindspot or risk — something the user hasn't thought of yet.
+2. QUESTION: Output the OPEN QUESTION exactly as given — do not rephrase.
+3. PITCH: One sentence framing what deeper AI analysis unlocks for this specific scenario.
 
-Output format (use exact "---" separators on their own lines):
+Output format:
 [Mirror sentence. Friction sentence.]
 ---
 [Question sentence?]
 ---
 [Pitch sentence.]
 
-Rules:
-- NEVER recalculate, NEVER contradict GROWING/DEPLETING or SAFE/UNSUSTAINABLE labels.
-- Never use the acronym "FIRE" — use "financial freedom target", "work-optional", or "fully self-sustaining" instead.
-- Be specific: use the actual numbers, not vague language.
-- Forbidden: generic praise, em-dashes, starting with "At this rate", moralizing.
-- Body max 45 words. Pitch max 20 words.`;
+TERM DEFINITIONS — never confuse these:
+- "Starting balance" or "principal" = the initial lump sum already in the account.
+- "Contributions" = ONLY the recurring monthly additions. Never call the combined total "contributions."
+
+COGNITIVE LOAD RULES:
+- Use at most TWO raw numbers or percentages in the entire body. Pick the most surprising ones.
+- Do NOT repeat numbers the user can already see in the main UI (total value, starting balance, monthly contribution, interest rate). Reference them by relationship or implication instead.
+- No data dumps. Each number you include must earn its place by revealing something non-obvious.
+
+TIMEFRAME RULES — enforced based on the TIMEFRAME field in the facts:
+- Under 2 years: FORBIDDEN topics — inflation, CPI, purchasing power erosion, retirement rules, multi-decade projections. Focus only on immediate momentum, interest velocity, and short-term runway.
+- 2–5 years: Avoid retirement/lifecycle framing. Focus on medium-term milestones.
+- 5+ years: Full range of topics allowed.
+
+OTHER RULES:
+- NEVER recalculate or contradict GROWING/DEPLETING or SAFE/UNSUSTAINABLE labels.
+- Never use the acronym "FIRE" — use "work-optional", "fully self-sustaining", or "financial freedom target".
+- Tone: warm, direct, human. No jargon, no moralizing, no generic praise.
+- Forbidden openers: "At this rate", "Money doubles", starting with a raw number.
+- Body max 40 words. Pitch max 18 words.`;
 
 const TRANSLATION_PROMPT = `You are a precise translator. Output only the translated text — no quotes, no explanation. Preserve all numbers, punctuation, and every "---" separator line exactly as-is.`;
 
@@ -402,20 +416,26 @@ export async function POST(req: NextRequest) {
     ]);
   } else {
     leadWith = pick([
-      `${formatCurrency(monthlyInterest, currency)}/month in interest alone — contributions account for only ${interestShare ? (100 - parseFloat(interestShare)).toFixed(1) : "?"}% of the final ${formatCurrency(totalValue, currency)}.`,
-      `Every $1 contributed in this plan returns $${contributionLeverage ?? "?"} — the rate is doing more heavy lifting than the deposits.`,
-      `${formatCurrency(annualGrowth, currency)} in annual interest on the starting balance alone, before a single new contribution is counted.`,
+      `${formatCurrency(monthlyInterest, currency)}/month in interest — the starting balance is pulling more weight than the monthly deposits over this window.`,
+      `Every $1 deposited monthly in this plan returns roughly $${contributionLeverage ?? "?"} out — the rate is doing most of the work.`,
+      `${formatCurrency(annualGrowth, currency)} in annual interest from the starting balance alone — the principal is the engine, not the monthly adds.`,
     ]);
     questionHook = pick([
-      `Have you considered what this looks like if you increase contributions alongside your income?`,
-      `What does the plan look like if you front-load contributions in the first 5 years instead of spreading them evenly?`,
-      `Do you know what a single extra lump-sum deposit today is worth by the end of the ${timeframeYears}-year window?`,
+      `What does this plan look like if you step up monthly contributions by 10% each year?`,
+      `What does front-loading contributions in the first 3 years do to the final balance versus spreading them evenly?`,
+      `Do you know what a single extra lump-sum deposit today is worth by the end of the ${timeframeYears > 1 ? Math.round(timeframeYears) + "-year" : "planned"} window?`,
     ]);
   }
 
   const noGoalConstraint = !hasGoal
     ? `\nCONSTRAINT: The user has NOT set a savings goal. Do NOT reference any specific target amount, savings goal, or "freedom" number. Focus strictly on accumulation velocity, compound growth, and inflation context.`
     : `\nUSER GOAL: ${formatCurrency(goalAmount!, currency)} | Progress: ${goalProgress ?? "n/a"}% | Years to reach it: ${yearsToGoal ?? "n/a"}`;
+
+  const timeframeConstraint = timeframeYears < 2
+    ? `\nSHORT TIMEFRAME (${timeframeYears.toFixed(1)} years): FORBIDDEN — inflation, CPI, purchasing power, retirement rules, long-term projections. Focus ONLY on: interest velocity over this window, cash momentum, how the starting balance is working right now.`
+    : timeframeYears < 5
+    ? `\nMEDIUM TIMEFRAME (${timeframeYears.toFixed(1)} years): Avoid retirement/lifecycle framing. Stick to near-term milestones and momentum.`
+    : "";
 
   const userMessage = `PRE-CALCULATED FACTS — ground truth, do not alter:
 - Starting balance: ${formatCurrency(startingAmount, currency)}
@@ -433,8 +453,8 @@ ${withdrawalMultiple ? `- Withdrawal is ${withdrawalMultiple}× the 4% safe rate
 ${withdrawalRate !== null ? `- Safe 4% annual withdrawal: ${formatCurrency(safeAnnualWithdrawal, currency)}` : ""}
 ${depletionYears ? `- Portfolio depletes in: ${depletionYears} years` : ""}
 ${doublingYears ? `- Rule of 72: doubles every ${doublingYears} years` : ""}
-${inflationErosion ? `- Inflation-adjusted real value (2.8% CPI): ${formatCurrency(parseFloat(inflationErosion), currency)}` : ""}
-${noGoalConstraint}
+${inflationErosion && timeframeYears >= 5 ? `- Inflation-adjusted real value (2.8% CPI): ${formatCurrency(parseFloat(inflationErosion), currency)}` : ""}
+${noGoalConstraint}${timeframeConstraint}
 
 LEAD WITH: ${leadWith}
 OPEN QUESTION: ${questionHook}
