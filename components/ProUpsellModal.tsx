@@ -39,10 +39,10 @@ async function handleCheckout(type: "one_time" | "subscription") {
 const FALLBACK_SUBTITLE = "An interactive, intelligent co-pilot for your financial strategy.";
 
 const MARKETING_HOOKS = [
-  "Play out unlimited 'what-if' paths to find your absolute fastest timeline",
-  "Uncover the tiny lifestyle levers that shave years off your target date",
-  "Simulate real-world market corrections to ensure your money lasts forever",
-  "Find hidden optimization shortcuts unique to your portfolio asset mix",
+  "See exactly what changing one number does to your timeline, month by month",
+  "Run a stress test: what does a 2% return drop in year one actually cost you?",
+  "Find out which single variable is doing the most work in your plan",
+  "Model what happens if you increase contributions by just $200 a month",
 ];
 
 function pickRandom<T>(arr: T[]): T {
