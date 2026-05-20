@@ -204,23 +204,30 @@ export default function AdminPanel() {
       <div className="bg-white rounded-2xl border border-neutral-200 p-5">
         <h3 className="text-sm font-semibold text-neutral-700 mb-4">Usage Stats</h3>
         {stats === undefined ? (
-          <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
-            {[...Array(4)].map((_, i) => (
+          <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
+            {[...Array(6)].map((_, i) => (
               <div key={i} className="h-16 bg-neutral-100 rounded-xl animate-pulse" />
             ))}
           </div>
         ) : (
-          <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
-            <Stat label="Total users" value={stats.totalUsers} />
-            <Stat label="Pro subscribers" value={stats.proSubscribers} />
-            <Stat label="One-time purchases" value={stats.oneTimePurchases} />
-            <Stat label="AI responses" value={stats.totalAiMessages} />
-          </div>
-        )}
-        {stats && (
-          <p className="text-xs text-neutral-400 mt-3">
-            Total AI spend: ${(stats.totalAiCostCents / 100).toFixed(2)}
-          </p>
+          <>
+            <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
+              <Stat label="Total users" value={stats.totalUsers} />
+              <Stat label="Pro subscribers" value={stats.proSubscribers} />
+              <Stat label="One-time purchases" value={stats.oneTimePurchases} />
+              <Stat label="AI chat responses" value={stats.totalAiMessages} />
+              <Stat label="Blurbs generated" value={stats.totalBlurbs} />
+            </div>
+            {stats.totalUsers === 0 && (
+              <p className="text-xs text-amber-600 bg-amber-50 rounded-lg px-3 py-2 mt-3">
+                ⚠ 0 users in Convex — the Clerk webhook may not be configured. Set endpoint to{" "}
+                <span className="font-mono">https://simplesavings.app/api/webhooks/clerk</span> in the Clerk dashboard.
+              </p>
+            )}
+            <p className="text-xs text-neutral-400 mt-3">
+              Conversation AI spend: ${(stats.totalAiCostCents / 100).toFixed(2)} · Blurb spend: ${stats.totalBlurbCostUsd.toFixed(4)}
+            </p>
+          </>
         )}
       </div>
 

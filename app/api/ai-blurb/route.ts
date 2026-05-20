@@ -7,7 +7,19 @@ import { api } from "@/convex/_generated/api";
 const anthropic = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
 const openaiClient = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
 const xaiClient = new OpenAI({ apiKey: process.env.XAI_API_KEY, baseURL: "https://api.x.ai/v1" });
-const openrouterClient = new OpenAI({ apiKey: process.env.OPENROUTER_API_KEY, baseURL: "https://openrouter.ai/api/v1" });
+const openrouterClient = new OpenAI({
+  apiKey: process.env.OPENROUTER_API_KEY,
+  baseURL: "https://openrouter.ai/api/v1",
+  defaultHeaders: {
+    "HTTP-Referer": "https://simplesavings.app",
+    "X-Title": "Simple Savings",
+  },
+});
+// Google Gemini via OpenAI-compatible endpoint
+const googleClient = new OpenAI({
+  apiKey: process.env.GOOGLE_API_KEY,
+  baseURL: "https://generativelanguage.googleapis.com/v1beta/openai/",
+});
 const convex = new ConvexHttpClient(process.env.NEXT_PUBLIC_CONVEX_URL!);
 
 // Simple in-memory rate limiter: max 10 requests per minute per IP
@@ -125,9 +137,10 @@ async function callLLM(
     };
   }
 
-  // OpenAI-compatible providers (openai, xai, openrouter)
+  // OpenAI-compatible providers (openai, xai, openrouter, google)
   const client = provider === "xai" ? xaiClient
     : provider === "openrouter" ? openrouterClient
+    : provider === "google" ? googleClient
     : openaiClient;
   const resp = await client.chat.completions.create({
     model: modelId,
@@ -202,7 +215,9 @@ OTHER RULES:
 const TRANSLATION_PROMPT = `You are a precise translator. Output only the translated text — no quotes, no explanation. Preserve all numbers, punctuation, and every "---" separator line exactly as-is.`;
 
 function parseBlurbParts(raw: string): { blurb: string; question: string; pitch: string } {
-  const parts = raw.split(/\n---\n/);
+  // Try newline-wrapped first (preferred), then space-wrapped (some models omit newlines)
+  let parts = raw.split("\n---\n");
+  if (parts.length < 2) parts = raw.split(/\s+---\s+/);
   return {
     blurb:    parts[0]?.trim() ?? raw,
     question: parts[1]?.trim() ?? "",
