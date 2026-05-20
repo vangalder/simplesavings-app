@@ -76,7 +76,7 @@ const RATES: Record<string, { in: number; out: number }> = {
 
 function calcCost(modelId: string, tokensIn: number, tokensOut: number): number {
   const rate = RATES[modelId] ?? { in: 1.0, out: 3.0 };
-  return Math.ceil(((tokensIn * rate.in + tokensOut * rate.out) / 1_000_000) * 100);
+  return (tokensIn * rate.in + tokensOut * rate.out) / 1_000_000;
 }
 
 type LLMResult = { text: string; tokensIn: number; tokensOut: number };
@@ -219,7 +219,7 @@ export async function POST(req: NextRequest) {
       const { blurb, question, pitch } = parseBlurbParts(result.text || String(body.text));
       return NextResponse.json({
         blurb, question, pitch,
-        meta: { provider, model: modelId, tokensIn: result.tokensIn, tokensOut: result.tokensOut, costCents: calcCost(modelId, result.tokensIn, result.tokensOut) },
+        meta: { provider, model: modelId, tokensIn: result.tokensIn, tokensOut: result.tokensOut, costUsd: calcCost(modelId, result.tokensIn, result.tokensOut) },
       });
     } catch {
       return NextResponse.json({ blurb: String(body.text), question: "", pitch: "" });
@@ -467,7 +467,7 @@ Write THREE sentences: Mirror, Friction, Question.`;
 
     return NextResponse.json({
       blurb, question, pitch,
-      meta: { provider, model: modelId, tokensIn: result.tokensIn, tokensOut: result.tokensOut, costCents: calcCost(modelId, result.tokensIn, result.tokensOut) },
+      meta: { provider, model: modelId, tokensIn: result.tokensIn, tokensOut: result.tokensOut, costUsd: calcCost(modelId, result.tokensIn, result.tokensOut) },
     });
   } catch (err) {
     console.error("[ai-blurb] LLM error:", err);

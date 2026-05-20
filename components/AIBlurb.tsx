@@ -7,7 +7,7 @@ export type BlurbMeta = {
   model: string;
   tokensIn: number;
   tokensOut: number;
-  costCents: number;
+  costUsd: number;
 };
 
 export type InsightContext = {
@@ -68,7 +68,7 @@ export default function AIBlurb({ blurb, question, pitch, loading, meta, isAdmin
       )}
       {isAdmin && meta && !loading && (
         <p className="ml-6 text-[10px] text-neutral-300 font-mono tabular-nums">
-          {meta.provider} · {meta.model} · {meta.tokensIn}↑ {meta.tokensOut}↓ · ${(meta.costCents / 100).toFixed(4)}
+          {meta.provider} · {meta.model} · {meta.tokensIn}↑ {meta.tokensOut}↓ · ${meta.costUsd.toFixed(6)}
         </p>
       )}
     </div>
