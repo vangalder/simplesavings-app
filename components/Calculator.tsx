@@ -7,7 +7,7 @@ import Image from "next/image";
 import { toast } from "sonner";
 import { useTranslations } from "next-intl";
 import { useLocaleAndCurrency } from "@/lib/hooks/useLocaleAndCurrency";
-import { isCryptoCurrency } from "@/lib/currency";
+import { isCryptoCurrency, getCurrencyMeta } from "@/lib/currency";
 import { defaultCalculatorValues, type CalculatorState } from "@/lib/defaultValues";
 import AnimatedCurrency from "@/components/AnimatedCurrency";
 import AnimatedNumberInput from "@/components/AnimatedNumberInput";
@@ -22,6 +22,34 @@ const Chart = dynamic(() => import("@/components/Chart"), { ssr: false });
 
 const STORAGE_KEY = "simplesavings-calculator-state";
 
+const MAX_YEARS_AHEAD = 100;
+
+// Clamp day to last valid day of month; reject past or absurdly-far-future years (both snap to today).
+function sanitizeDate(dateStr: string): string {
+  const todayDate = new Date();
+  const todayStr = todayDate.toISOString().slice(0, 10);
+  const todayYear = todayDate.getFullYear();
+
+  if (!dateStr) return todayStr;
+  const parts = dateStr.split("-");
+  if (parts.length !== 3) return todayStr;
+
+  const year = parseInt(parts[0], 10);
+  const month = parseInt(parts[1], 10);
+  const day = parseInt(parts[2], 10);
+  if (isNaN(year) || isNaN(month) || isNaN(day)) return todayStr;
+
+  // Numeric year guard — catches both past years and the browser's wrap-around to year 275757
+  if (year < todayYear || year > todayYear + MAX_YEARS_AHEAD) return todayStr;
+
+  // Clamp day to last valid day of that month (e.g. Jun 31 → Jun 30)
+  const lastDay = new Date(year, month, 0).getDate();
+  const clampedDay = Math.min(Math.max(1, day), lastDay);
+
+  const result = [String(year).padStart(4, "0"), parts[1], String(clampedDay).padStart(2, "0")].join("-");
+  return result < todayStr ? todayStr : result;
+}
+
 export default function Calculator() {
   const searchParams = useSearchParams();
   const router = useRouter();
@@ -33,6 +61,7 @@ export default function Calculator() {
   const [targetDateStr, setTargetDateStr] = useState("");
   const t = useTranslations("calculator");
   const tSave = useTranslations("save");
+  const tChart = useTranslations("chart");
   const { locale, currency } = useLocaleAndCurrency();
   const [chartType, setChartType] = useState<"area" | "bar" | "line">("area");
   const [goalAmount, setGoalAmount] = useState<number>(0);
@@ -164,7 +193,7 @@ export default function Calculator() {
     if (timeframeMode !== "date" || !targetDateStr) return;
     const compute = () => {
       const diff = new Date(targetDateStr).getTime() - Date.now();
-      const years = Math.max(0, diff / (365.25 * 24 * 3600 * 1000));
+      const years = Math.min(200, Math.max(0, diff / (365.25 * 24 * 3600 * 1000)));
       setState((prev) => ({ ...prev, timeframeYears: parseFloat(years.toFixed(2)) }));
     };
     compute();
@@ -396,7 +425,8 @@ export default function Calculator() {
                     type="date"
                     value={targetDateStr}
                     min={new Date().toISOString().slice(0, 10)}
-                    onChange={(e) => setTargetDateStr(e.target.value)}
+                    max={`${new Date().getFullYear() + MAX_YEARS_AHEAD}-12-31`}
+                    onChange={(e) => { if (e.target.value) setTargetDateStr(sanitizeDate(e.target.value)); }}
                     className="w-full px-3 py-3 border-2 border-accent-orange-base rounded-xl text-center text-lg font-display font-semibold text-accent-orange-base focus:outline-none focus:ring-2 focus:ring-accent-orange-base"
                   />
                   <p className="text-xs text-neutral-600 mt-0.5 text-center">
@@ -512,7 +542,7 @@ export default function Calculator() {
               </button>
             ) : (
               <div className="flex items-center gap-2">
-                <label className="text-xs text-white/70 shrink-0">Goal $</label>
+                <label className="text-xs text-white/70 shrink-0">{tChart("goalLabel")} {getCurrencyMeta(currency).symbol}</label>
                 <input
                   type="number"
                   min={0}

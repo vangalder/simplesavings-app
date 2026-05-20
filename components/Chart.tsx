@@ -157,7 +157,7 @@ export default function Chart({ data, chartType = "area", goalAmount = 0, locale
     }
 
     const maxYear = validData[validData.length - 1].year;
-    const maxValue = Math.max(...validData.map((p) => p.total), 0);
+    const maxValue = validData.reduce((m, p) => Math.max(m, p.total), 0);
 
     // Build aligned arrays
     const byYear = new Map(validData.map((p) => [p.year, p]));
@@ -199,6 +199,8 @@ export default function Chart({ data, chartType = "area", goalAmount = 0, locale
     } : undefined;
 
     // Phantom total series (transparent, carries markers)
+    // z: 5 keeps markLine/markPoint above the area fills in the canvas so they
+    // appear correctly in both on-screen rendering and saveAsImage exports.
     const phantomSeries = {
       name: "_total",
       type: "line",
@@ -206,7 +208,7 @@ export default function Chart({ data, chartType = "area", goalAmount = 0, locale
       lineStyle: { width: 0, opacity: 0 },
       itemStyle: { color: "transparent" },
       symbol: "none",
-      z: -1,
+      z: 5,
       ...(doublingMarkPoint ? { markPoint: doublingMarkPoint } : {}),
       ...(goalMarkLine ? { markLine: goalMarkLine } : {}),
     };
