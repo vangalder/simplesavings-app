@@ -7,8 +7,6 @@ import { useState, Component, type ReactNode } from "react";
 import { toast } from "sonner";
 import Header from "@/components/Header";
 import Footer from "@/components/Footer";
-import TabNavigation from "@/components/TabNavigation";
-import TabContentContainer from "@/components/TabContentContainer";
 import ScenarioCard from "@/components/ScenarioCard";
 import SkeletonCard from "@/components/SkeletonCard";
 import AdminPanel from "@/components/AdminPanel";
@@ -220,9 +218,8 @@ export default function ProfilePage() {
   return (
     <div className="min-h-screen flex flex-col relative">
       <Header />
-      <TabNavigation />
-      <main className="flex-1 relative z-10 pt-0 pb-4 md:pb-8">
-        <TabContentContainer>
+      <main className="flex-1 relative z-10 pb-4 md:pb-8">
+        <div className="container mx-auto px-4 md:px-6 py-6 md:py-8">
           <h1 className="text-3xl font-display font-bold text-primary-base mb-6">Profile</h1>
 
           {!isClerkConfigured && (
@@ -249,7 +246,7 @@ export default function ProfilePage() {
               </p>
             </div>
           )}
-        </TabContentContainer>
+        </div>
       </main>
       <Footer />
     </div>

@@ -6,8 +6,6 @@ import { useParams, useRouter } from "next/navigation";
 import { useEffect } from "react";
 import Header from "@/components/Header";
 import Footer from "@/components/Footer";
-import TabNavigation from "@/components/TabNavigation";
-import TabContentContainer from "@/components/TabContentContainer";
 import InsightsPanel from "@/components/InsightsPanel";
 import SkeletonCard from "@/components/SkeletonCard";
 import { api } from "@/convex/_generated/api";
@@ -46,14 +44,13 @@ export default function PlanDetailPage() {
     return (
       <div className="min-h-screen flex flex-col relative">
         <Header />
-        <TabNavigation />
-        <main className="flex-1 relative z-10 pt-0 pb-4 md:pb-8">
-          <TabContentContainer>
+        <main className="flex-1 relative z-10 pb-4 md:pb-8">
+          <div className="container mx-auto px-4 md:px-6 py-6 md:py-8">
             <div className="space-y-3">
               <SkeletonCard />
               <SkeletonCard lines={4} />
             </div>
-          </TabContentContainer>
+          </div>
         </main>
         <Footer />
       </div>
@@ -65,9 +62,8 @@ export default function PlanDetailPage() {
   return (
     <div className="min-h-screen flex flex-col relative">
       <Header />
-      <TabNavigation />
-      <main className="flex-1 relative z-10 pt-0 pb-4 md:pb-8">
-        <TabContentContainer>
+      <main className="flex-1 relative z-10 pb-4 md:pb-8">
+        <div className="container mx-auto px-4 md:px-6 py-6 md:py-8">
           {scenario === undefined && (
             <div className="space-y-3">
               <SkeletonCard />
@@ -160,7 +156,7 @@ export default function PlanDetailPage() {
               </div>
             </div>
           )}
-        </TabContentContainer>
+        </div>
       </main>
       <Footer />
     </div>
