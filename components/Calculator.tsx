@@ -75,8 +75,10 @@ export default function Calculator() {
   const [aiBlurbLoading, setAiBlurbLoading] = useState(false);
   const [aiBlurbMeta, setAiBlurbMeta] = useState<BlurbMeta | undefined>();
   const isAdmin = useIsAdmin();
-  // Store full combined original (blurb ||| question) so locale changes translate both parts
-  const aiBlurbOriginalRef = useRef("");
+  // Store English originals separately so locale changes can translate all parts atomically
+  const aiBlurbOriginalBodyRef = useRef("");
+  const aiBlurbOriginalQuestionRef = useRef("");
+  const aiBlurbOriginalPitchRef = useRef("");
   // Keep locale in a ref so the debounced blurb callback always reads the live value
   const localeRef = useRef(locale);
   localeRef.current = locale;
@@ -231,18 +233,19 @@ export default function Calculator() {
         const englishBlurb = data.blurb ?? "";
         const englishQuestion = data.question ?? "";
         const englishPitch = data.pitch ?? "";
-        // Store combined so locale-change effect can translate all parts together
-        aiBlurbOriginalRef.current = [englishBlurb, englishQuestion, englishPitch]
-          .filter(Boolean).join("\n---\n");
+        aiBlurbOriginalBodyRef.current = englishBlurb;
+        aiBlurbOriginalQuestionRef.current = englishQuestion;
+        aiBlurbOriginalPitchRef.current = englishPitch;
         if (data.meta) setAiBlurbMeta(data.meta);
 
         // Translate immediately if locale is non-English
         const currentLocale = localeRef.current;
         if (currentLocale !== "en" && englishBlurb) {
+          const combined = [englishBlurb, englishQuestion, englishPitch].filter(Boolean).join("\n---\n");
           const tRes = await fetch("/api/ai-blurb", {
             method: "POST",
             headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ text: aiBlurbOriginalRef.current, targetLocale: currentLocale }),
+            body: JSON.stringify({ text: combined, targetLocale: currentLocale }),
           });
           const tData = await tRes.json();
           setAiBlurb(tData.blurb ?? englishBlurb);
@@ -269,31 +272,49 @@ export default function Calculator() {
 
   // Translate existing blurb when locale changes — does not regenerate
   useEffect(() => {
-    const original = aiBlurbOriginalRef.current;
-    if (!original) return;
+    const body = aiBlurbOriginalBodyRef.current;
+    if (!body) return;
+
     if (locale === "en") {
-      setAiBlurb(original);
+      // Restore English originals directly from refs — no API call needed
+      setAiBlurb(body);
+      setAiBlurbQuestion(aiBlurbOriginalQuestionRef.current);
+      setAiBlurbPitch(aiBlurbOriginalPitchRef.current);
       return;
     }
-    let cancelled = false;
+
+    // Clear stale content synchronously so body and question can't show from different locales
+    setAiBlurb("");
+    setAiBlurbQuestion("");
+    setAiBlurbPitch("");
     setAiBlurbLoading(true);
+
+    const combined = [body, aiBlurbOriginalQuestionRef.current, aiBlurbOriginalPitchRef.current]
+      .filter(Boolean).join("\n---\n");
+    let cancelled = false;
     fetch("/api/ai-blurb", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ text: original, targetLocale: locale }),
+      body: JSON.stringify({ text: combined, targetLocale: locale }),
     })
       .then((r) => r.json())
       .then((data) => {
         if (cancelled) return;
-        setAiBlurb(data.blurb ?? original);
-        setAiBlurbQuestion(data.question ?? "");
-        setAiBlurbPitch(data.pitch ?? "");
+        setAiBlurb(data.blurb ?? body);
+        setAiBlurbQuestion(data.question ?? aiBlurbOriginalQuestionRef.current);
+        setAiBlurbPitch(data.pitch ?? aiBlurbOriginalPitchRef.current);
         if (data.meta) setAiBlurbMeta(data.meta);
       })
-      .catch(() => { if (!cancelled) { setAiBlurb(original); setAiBlurbQuestion(""); setAiBlurbPitch(""); } })
+      .catch(() => {
+        if (!cancelled) {
+          setAiBlurb(body);
+          setAiBlurbQuestion(aiBlurbOriginalQuestionRef.current);
+          setAiBlurbPitch(aiBlurbOriginalPitchRef.current);
+        }
+      })
       .finally(() => { if (!cancelled) setAiBlurbLoading(false); });
     return () => { cancelled = true; setAiBlurbLoading(false); };
-  }, [locale]); // intentionally omits aiBlurbOriginalRef — ref reads are stable
+  }, [locale]); // intentionally omits refs — ref reads are stable
 
   // Recompute timeframeYears from target date (also runs every 24h via interval)
   useEffect(() => {
