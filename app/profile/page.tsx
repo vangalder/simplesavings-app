@@ -3,7 +3,7 @@
 import { useUser, SignInButton, SignOutButton, UserProfile } from "@clerk/nextjs";
 import { useQuery, useMutation } from "convex/react";
 import { useRouter } from "next/navigation";
-import { useState } from "react";
+import { useState, Component, type ReactNode } from "react";
 import { toast } from "sonner";
 import Header from "@/components/Header";
 import Footer from "@/components/Footer";
@@ -21,6 +21,21 @@ const isConvexConfigured = !!process.env.NEXT_PUBLIC_CONVEX_URL;
 import type { ScenarioCardData } from "@/components/ScenarioCard";
 
 const ADMIN_EMAIL = "trevor@vangalder.com";
+
+class AdminErrorBoundary extends Component<{ children: ReactNode }, { error: boolean }> {
+  state = { error: false };
+  static getDerivedStateFromError() { return { error: true }; }
+  render() {
+    if (this.state.error) {
+      return (
+        <div className="bg-red-50 border border-red-200 rounded-2xl p-4 text-sm text-red-600">
+          Admin panel failed to load — Convex functions may need to be deployed (<code>npx convex deploy</code>).
+        </div>
+      );
+    }
+    return this.props.children;
+  }
+}
 
 function SignedInProfile({ clerkId }: { clerkId: string }) {
   const { user } = useUser();
@@ -166,7 +181,7 @@ function SignedInProfile({ clerkId }: { clerkId: string }) {
         )}
       </div>
 
-      {isAdmin && <AdminPanel />}
+      {isAdmin && <AdminErrorBoundary><AdminPanel /></AdminErrorBoundary>}
     </div>
   );
 }
