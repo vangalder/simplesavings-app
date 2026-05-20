@@ -48,15 +48,16 @@ const LOCALE_NAMES: Record<string, string> = {
   "pt-BR": "Brazilian Portuguese",
 };
 
-const SYSTEM_PROMPT = `You are a concise financial insight engine. Given savings calculator inputs, produce exactly ONE sentence of genuine financial insight.
+const SYSTEM_PROMPT = `You are a concise financial insight engine. You will be given pre-calculated financial facts — treat them as ground truth. Your only job is to write ONE punchy sentence that communicates the most important insight.
 
 Rules:
-- Never generic ("great job saving!" is forbidden)
-- Surface something non-obvious: rule of 72, FIRE threshold, inflation context, a milestone year, tax-advantaged opportunity, or compound growth milestone
-- Reference the specific numbers given
-- Use plain language — no jargon unless universally understood (like "4% rule")
-- No em-dashes. Max 25 words.
-- Do NOT start with "At this rate" — vary the opening`;
+- NEVER recalculate or second-guess the provided facts. They are correct.
+- NEVER contradict the DIRECTION labels (GROWING / DEPLETING, SAFE / UNSUSTAINABLE).
+- Surface what's surprising or non-obvious — rule of 72, FIRE threshold breach, depletion timeline, inflation context, a milestone year.
+- Reference specific numbers from the facts.
+- No generic encouragement ("great job saving!" is forbidden).
+- No em-dashes. Max 30 words.
+- Do NOT start with "At this rate" — vary the opening.`;
 
 const MODEL = "claude-haiku-4-5";
 const INPUT_RATE = 0.25;  // $0.25/1M input tokens
@@ -127,20 +128,46 @@ export async function POST(req: NextRequest) {
   };
 
   const isWithdrawal = monthlyContribution < 0;
-  const action = isWithdrawal ? "withdrawing" : "contributing";
   const contributionAbs = Math.abs(monthlyContribution);
-  const totalPrincipal = startingAmount + contributionAbs * 12 * timeframeYears;
+  const annualFlow = contributionAbs * 12;
+  const annualGrowth = startingAmount * (interestRate / 100);
+  const netAnnualChange = isWithdrawal ? annualGrowth - annualFlow : annualGrowth + annualFlow;
+  const portfolioDirection = netAnnualChange >= 0 ? "GROWING" : "DEPLETING";
 
-  const userMessage = `Calculator inputs:
-- Starting amount: ${formatCurrency(startingAmount, currency)}
-- Monthly ${action}: ${formatCurrency(contributionAbs, currency)}
-- Timeframe: ${timeframeYears} years
-- Annual interest rate: ${interestRate}%
-- Projected total value: ${formatCurrency(totalValue, currency)}
-- Interest earned: ${formatCurrency(interestEarned, currency)}
-- Total ${isWithdrawal ? "withdrawn" : "principal contributed"}: ${formatCurrency(totalPrincipal, currency)}
+  // Withdrawal-mode FIRE facts
+  const withdrawalRate = isWithdrawal && startingAmount > 0
+    ? (annualFlow / startingAmount) * 100
+    : null;
+  const fireStatus = withdrawalRate !== null
+    ? (withdrawalRate <= 4 ? "SAFE (below 4% rule)" : "UNSUSTAINABLE (above 4% rule)")
+    : null;
+  const safeAnnualWithdrawal = startingAmount * 0.04;
 
-Give one insight sentence about these specific numbers.`;
+  // Accumulation facts
+  const doublingYears = interestRate > 0 ? 72 / interestRate : null;
+  const yearsToFireTarget = !isWithdrawal && netAnnualChange > 0
+    ? Math.log(25 * annualFlow / Math.max(startingAmount, 1)) / Math.log(1 + interestRate / 100)
+    : null;
+
+  // Depletion timeline (independent of timeframeYears input)
+  const depletionYears = isWithdrawal && netAnnualChange < 0
+    ? (startingAmount / Math.abs(netAnnualChange)).toFixed(1)
+    : null;
+
+  const userMessage = `PRE-CALCULATED FACTS — do not recalculate, do not contradict:
+- Starting balance: ${formatCurrency(startingAmount, currency)}
+- Monthly ${isWithdrawal ? "withdrawal" : "contribution"}: ${formatCurrency(contributionAbs, currency)}
+- Annual ${isWithdrawal ? "withdrawal" : "contribution"}: ${formatCurrency(annualFlow, currency)}
+- Annual portfolio growth at ${interestRate}%: ${formatCurrency(annualGrowth, currency)}
+- Net annual change: ${netAnnualChange >= 0 ? "+" : ""}${formatCurrency(netAnnualChange, currency)} — portfolio is ${portfolioDirection}
+- Timeframe: ${timeframeYears} years | Projected total: ${formatCurrency(totalValue, currency)} | Interest earned: ${formatCurrency(interestEarned, currency)}
+${withdrawalRate !== null ? `- Annual withdrawal rate: ${withdrawalRate.toFixed(1)}% — ${fireStatus}` : ""}
+${withdrawalRate !== null ? `- Safe 4% withdrawal would be: ${formatCurrency(safeAnnualWithdrawal, currency)}/year` : ""}
+${depletionYears ? `- At this rate, portfolio depletes in: ${depletionYears} years` : ""}
+${doublingYears ? `- Rule of 72: balance doubles every ${doublingYears.toFixed(1)} years` : ""}
+${yearsToFireTarget && yearsToFireTarget > 0 ? `- Estimated years to 25× annual contribution (FIRE): ${yearsToFireTarget.toFixed(1)}` : ""}
+
+Write one insight sentence using these facts.`;
 
   try {
     const message = await anthropic.messages.create({
