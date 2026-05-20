@@ -48,7 +48,7 @@ setInterval(() => {
 
 // Config cache — refresh every 30s so admin changes take effect quickly
 let configCache: { provider: string; modelId: string; fetchedAt: number } | null = null;
-const CONFIG_TTL_MS = 30_000;
+const CONFIG_TTL_MS = 5_000;
 const DEFAULT_PROVIDER = "anthropic";
 const DEFAULT_MODEL = "claude-haiku-4-5";
 
@@ -90,8 +90,10 @@ const RATES: Record<string, { in: number; out: number }> = {
   // OpenRouter — DeepSeek
   "deepseek/deepseek-chat":                     { in: 0.14,  out: 0.28 },
   "deepseek/deepseek-r1":                       { in: 0.55,  out: 2.19 },
-  "deepseek/deepseek-r1-distill-llama-8b":      { in: 0.025, out: 0.05 },
+  "deepseek/deepseek-r1-0528":                  { in: 0.55,  out: 2.19 },
+  "deepseek/deepseek-v4-flash":                 { in: 0.10,  out: 0.40 },
   "deepseek/deepseek-r1-distill-llama-70b":     { in: 0.23,  out: 0.69 },
+  "deepseek/deepseek-r1-distill-qwen-32b":      { in: 0.12,  out: 0.18 },
   "deepseek/deepseek-chat-v3-5":                { in: 0.27,  out: 1.10 },
   // OpenRouter — Mistral
   "mistralai/mistral-large":                    { in: 2.00,  out: 6.00 },
@@ -188,11 +190,11 @@ const SYSTEM_PROMPT = `You are a conversational financial co-pilot for simplesav
 3. PITCH: One sentence that directly addresses or begins to answer the OPEN QUESTION for this specific scenario. Reference their actual numbers or situation. This becomes the modal subtitle the user reads the moment they click — it should feel like the answer is one conversation away. No generic copy, no vague promises.
 
 Output format — write exactly three blocks separated by a line containing only "---". No brackets, no labels, no extra lines:
-Mirror sentence. Friction sentence.
+Your interest is outpacing deposits by month 14.
 ---
-Question sentence?
+Have you stress-tested this against a 2% return drop in year one?
 ---
-Pitch sentence.
+I can show you exactly how a single correction year reshapes the entire curve.
 
 TERM DEFINITIONS — never confuse these:
 - "Starting balance" or "principal" = the initial lump sum already in the account.
@@ -207,6 +209,10 @@ TIMEFRAME RULES — enforced based on the TIMEFRAME field in the facts:
 - Under 2 years: FORBIDDEN topics — inflation, CPI, purchasing power erosion, retirement rules, multi-decade projections. Focus only on immediate momentum, interest velocity, and short-term runway.
 - 2–5 years: Avoid retirement/lifecycle framing. Focus on medium-term milestones.
 - 5+ years: Full range of topics allowed.
+
+WITHDRAWAL OVERRIDE — HIGHEST PRIORITY:
+- If the facts say "is_net_growth_positive: TRUE", you are STRICTLY FORBIDDEN from calling the strategy "unsustainable", declaring a "deficit", or claiming the portfolio will run out of money. The interest fully covers the drawdown — the portfolio is growing. Acknowledge this.
+- If the projected final value exceeds the starting balance, the body MUST reflect net growth. Do not introduce depletion warnings, panic language, or sustainability concerns that contradict this arithmetic fact.
 
 OTHER RULES:
 - NEVER recalculate or contradict GROWING/DEPLETING or SAFE/UNSUSTAINABLE labels.
@@ -316,8 +322,13 @@ export async function POST(req: NextRequest) {
     ? (annualFlow / startingAmount) * 100 : null;
   const withdrawalMultiple = withdrawalRate !== null
     ? (withdrawalRate / 4).toFixed(2) : null;
+  const isNetGrowthPositive = netAnnualChange >= 0;
   const sustainabilityStatus = withdrawalRate !== null
-    ? (withdrawalRate <= 4 ? "SAFE — below 4% rule" : "UNSUSTAINABLE — above 4% rule") : null;
+    ? (isNetGrowthPositive
+        ? "SELF-SUSTAINING — interest covers the withdrawal; portfolio is growing"
+        : withdrawalRate <= 4 ? "SAFE — below 4% rule"
+        : "UNSUSTAINABLE — above 4% rule")
+    : null;
   const safeAnnualWithdrawal = startingAmount * 0.04;
   const depletionYears = isWithdrawal && netAnnualChange < 0
     ? (startingAmount / Math.abs(netAnnualChange)).toFixed(1) : null;
@@ -362,7 +373,20 @@ export async function POST(req: NextRequest) {
   let questionHook: string;
 
   if (isWithdrawal) {
-    if (withdrawalRate && withdrawalRate > 4) {
+    if (isNetGrowthPositive) {
+      // Interest covers the withdrawal — portfolio is actually growing
+      const monthlySurplus = monthlyInterest - contributionAbs;
+      leadWith = pick([
+        `The ${formatCurrency(monthlyInterest, currency)}/month in interest outpaces the ${formatCurrency(contributionAbs, currency)}/month withdrawal — the portfolio is growing, not shrinking.`,
+        `Interest covers the full withdrawal and then some: ${formatCurrency(monthlySurplus, currency)}/month surplus is quietly compounding on top.`,
+        `Despite taking ${formatCurrency(contributionAbs, currency)}/month out, the portfolio ends higher than it started — interest is doing the heavy lifting.`,
+      ]);
+      questionHook = pick([
+        `Have you stress-tested what happens to this surplus if returns drop 2% for a sustained period?`,
+        `Do you know the minimum return rate that keeps this drawdown self-sustaining indefinitely?`,
+        `What does this plan look like if inflation erodes your real purchasing power over this timeframe?`,
+      ]);
+    } else if (withdrawalRate && withdrawalRate > 4) {
       leadWith = pick([
         `Withdrawal rate is ${withdrawalRate.toFixed(1)}% — ${withdrawalMultiple}× the sustainable 4% threshold. Portfolio depletes in ${depletionYears ?? "?"} years at this pace.`,
         `At ${withdrawalRate.toFixed(1)}% annual withdrawals, the portfolio runs out in ${depletionYears ?? "?"} years — the 4% rule exists precisely because of scenarios like this one.`,
@@ -497,6 +521,8 @@ export async function POST(req: NextRequest) {
 - Annual growth at ${interestRate}% (vs S&P nominal ${spNominal}%, real ${spReal}%): ${formatCurrency(annualGrowth, currency)}
 - Monthly interest generated: ${formatCurrency(monthlyInterest, currency)}
 - Net annual change: ${netAnnualChange >= 0 ? "+" : ""}${formatCurrency(netAnnualChange, currency)} — portfolio is ${portfolioDirection}
+- is_net_growth_positive: ${isNetGrowthPositive ? "TRUE" : "FALSE"}
+- Final value vs starting balance: ${totalValue >= startingAmount ? `GROWING — ${formatCurrency(totalValue, currency)} > ${formatCurrency(startingAmount, currency)}` : `DECLINING — ${formatCurrency(totalValue, currency)} < ${formatCurrency(startingAmount, currency)}`}
 - Timeframe: ${timeframeYears} years
 - Projected total: ${formatCurrency(totalValue, currency)} | Interest earned: ${formatCurrency(interestEarned, currency)}
 ${interestShare ? `- Interest as share of total: ${interestShare}%` : ""}
@@ -512,7 +538,7 @@ ${noGoalConstraint}${timeframeConstraint}
 LEAD WITH: ${leadWith}
 OPEN QUESTION: ${questionHook}
 
-Write THREE sentences: Mirror, Friction, Question.`;
+Write the three blocks separated by --- as described above. Output the OPEN QUESTION exactly as written — do not rephrase it.`;
 
   try {
     const t0 = Date.now();

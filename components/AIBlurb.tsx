@@ -14,6 +14,7 @@ export type BlurbMeta = {
 export type InsightContext = {
   question: string;
   pitch: string;
+  marketingHook?: string;
 };
 
 interface AIBlurbProps {

@@ -66,26 +66,27 @@ export default function AdminPanel() {
     if (!chartData) return null;
     return {
       tooltip: { trigger: "axis", axisPointer: { type: "shadow" } },
-      legend: { data: ["Avg latency (ms)", "P95 latency (ms)"], textStyle: { fontSize: 11 } },
-      grid: { left: 16, right: 16, bottom: 60, top: 40, containLabel: true },
-      xAxis: {
+      legend: { data: ["Avg (ms)", "P95 (ms)"], textStyle: { fontSize: 10 }, top: 4 },
+      grid: { left: 8, right: 16, bottom: 8, top: 32, containLabel: true },
+      xAxis: { type: "value", name: "ms", nameTextStyle: { fontSize: 9 }, axisLabel: { fontSize: 9 } },
+      yAxis: {
         type: "category",
         data: chartData.labels,
-        axisLabel: { rotate: 30, fontSize: 10, interval: 0 },
+        axisLabel: { fontSize: 9, width: 120, overflow: "truncate" },
+        inverse: true,
       },
-      yAxis: { type: "value", name: "ms", nameTextStyle: { fontSize: 10 } },
       series: [
         {
-          name: "Avg latency (ms)",
+          name: "Avg (ms)",
           type: "bar",
           data: chartData.stats.map((s, i) => ({ value: s.avgLatencyMs, itemStyle: { color: CHART_COLORS[i % CHART_COLORS.length] } })),
-          barMaxWidth: 40,
+          barMaxWidth: 14,
         },
         {
-          name: "P95 latency (ms)",
+          name: "P95 (ms)",
           type: "bar",
-          data: chartData.stats.map((s, i) => ({ value: s.p95LatencyMs, itemStyle: { color: CHART_COLORS[i % CHART_COLORS.length], opacity: 0.45 } })),
-          barMaxWidth: 40,
+          data: chartData.stats.map((s, i) => ({ value: s.p95LatencyMs, itemStyle: { color: CHART_COLORS[i % CHART_COLORS.length], opacity: 0.4 } })),
+          barMaxWidth: 14,
         },
       ],
     };
@@ -99,22 +100,22 @@ export default function AdminPanel() {
         formatter: (params: { name: string; value: number }[]) =>
           params.map((p) => `${p.name}: $${p.value.toFixed(6)}`).join("<br/>"),
       },
-      grid: { left: 16, right: 16, bottom: 60, top: 24, containLabel: true },
-      xAxis: {
+      grid: { left: 8, right: 64, bottom: 8, top: 8, containLabel: true },
+      yAxis: {
         type: "category",
         data: chartData.labels,
-        axisLabel: { rotate: 30, fontSize: 10, interval: 0 },
+        axisLabel: { fontSize: 9, width: 120, overflow: "truncate" },
+        inverse: true,
       },
-      yAxis: { type: "value", name: "$/call", nameTextStyle: { fontSize: 10 },
-        axisLabel: { formatter: (v: number) => `$${v.toFixed(5)}` } },
+      xAxis: { type: "value", axisLabel: { formatter: (v: number) => `$${v.toFixed(5)}`, fontSize: 8 } },
       series: [{
         type: "bar",
         data: chartData.stats.map((s, i) => ({
           value: s.avgCostUsd,
           itemStyle: { color: CHART_COLORS[i % CHART_COLORS.length] },
         })),
-        barMaxWidth: 40,
-        label: { show: true, position: "top", formatter: (p: { value: number }) => `$${p.value.toFixed(5)}`, fontSize: 9 },
+        barMaxWidth: 14,
+        label: { show: true, position: "right", formatter: (p: { value: number }) => `$${p.value.toFixed(5)}`, fontSize: 8 },
       }],
     };
   }, [chartData]);
@@ -150,28 +151,29 @@ export default function AdminPanel() {
     if (!chartData) return null;
     return {
       tooltip: { trigger: "axis", axisPointer: { type: "shadow" } },
-      legend: { data: ["Avg tokens in", "Avg tokens out"], textStyle: { fontSize: 11 } },
-      grid: { left: 16, right: 16, bottom: 60, top: 40, containLabel: true },
-      xAxis: {
+      legend: { data: ["Tokens in", "Tokens out"], textStyle: { fontSize: 10 }, top: 4 },
+      grid: { left: 8, right: 16, bottom: 8, top: 32, containLabel: true },
+      xAxis: { type: "value", name: "tokens", nameTextStyle: { fontSize: 9 }, axisLabel: { fontSize: 9 } },
+      yAxis: {
         type: "category",
         data: chartData.labels,
-        axisLabel: { rotate: 30, fontSize: 10, interval: 0 },
+        axisLabel: { fontSize: 9, width: 120, overflow: "truncate" },
+        inverse: true,
       },
-      yAxis: { type: "value", name: "tokens", nameTextStyle: { fontSize: 10 } },
       series: [
         {
-          name: "Avg tokens in",
+          name: "Tokens in",
           type: "bar",
           stack: "tokens",
           data: chartData.stats.map((s, i) => ({ value: s.avgTokensIn, itemStyle: { color: CHART_COLORS[i % CHART_COLORS.length], opacity: 0.5 } })),
-          barMaxWidth: 40,
+          barMaxWidth: 14,
         },
         {
-          name: "Avg tokens out",
+          name: "Tokens out",
           type: "bar",
           stack: "tokens",
           data: chartData.stats.map((s, i) => ({ value: s.avgTokensOut, itemStyle: { color: CHART_COLORS[i % CHART_COLORS.length] } })),
-          barMaxWidth: 40,
+          barMaxWidth: 14,
         },
       ],
     };

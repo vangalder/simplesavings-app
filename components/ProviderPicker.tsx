@@ -43,7 +43,8 @@ export const PROVIDERS: Provider[] = [
       { id: "meta-llama/llama-3.3-70b-instruct", label: "Llama 3.3 70B" },
       // DeepSeek — max efficiency, near-zero cost
       { id: "deepseek/deepseek-chat", label: "DeepSeek V3" },
-      { id: "deepseek/deepseek-r1-distill-llama-8b", label: "DeepSeek R1 Distill 8B" },
+      { id: "deepseek/deepseek-v4-flash", label: "DeepSeek V4 Flash" },
+      { id: "deepseek/deepseek-r1-0528", label: "DeepSeek R1 (May)" },
       // Google Gemma — creative, punchy, low latency
       { id: "google/gemma-2-27b-it", label: "Gemma 2 27B" },
       { id: "google/gemma-3-12b-it", label: "Gemma 3 12B" },

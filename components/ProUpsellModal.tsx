@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useUser, SignInButton } from "@clerk/nextjs";
 import { useQuery } from "convex/react";
 import { api } from "@/convex/_generated/api";
@@ -8,6 +8,7 @@ import { api } from "@/convex/_generated/api";
 type InsightContext = {
   question: string;
   pitch: string;
+  marketingHook?: string;
 };
 
 type Props = {
@@ -28,6 +29,17 @@ async function handleCheckout(type: "one_time" | "subscription") {
 
 const FALLBACK_SUBTITLE = "An interactive, intelligent co-pilot for your financial strategy.";
 
+const MARKETING_HOOKS = [
+  "Play out unlimited 'what-if' paths to find your absolute fastest timeline",
+  "Uncover the tiny lifestyle levers that shave years off your target date",
+  "Simulate real-world market corrections to ensure your money lasts forever",
+  "Find hidden optimization shortcuts unique to your portfolio asset mix",
+];
+
+function pickRandom<T>(arr: T[]): T {
+  return arr[Math.floor(Math.random() * arr.length)];
+}
+
 export default function ProUpsellModal({ open, onClose, insightContext }: Props) {
   const pitch = insightContext?.pitch || FALLBACK_SUBTITLE;
   const { isSignedIn, user } = useUser();
@@ -37,6 +49,14 @@ export default function ProUpsellModal({ open, onClose, insightContext }: Props)
     isSignedIn && clerkId ? { clerkId } : "skip"
   );
   const overlayRef = useRef<HTMLDivElement>(null);
+
+  // Pick a new hook each time the modal opens. Stored in state so React
+  // re-renders with the new value, but only updated when `open` flips to true —
+  // no dependency on `hook` itself, so no infinite loop.
+  const [hook, setHook] = useState(() => pickRandom(MARKETING_HOOKS));
+  useEffect(() => {
+    if (open) setHook(insightContext?.marketingHook ?? pickRandom(MARKETING_HOOKS));
+  }, [open]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // Close on Escape
   useEffect(() => {
@@ -66,7 +86,7 @@ export default function ProUpsellModal({ open, onClose, insightContext }: Props)
               <h2 className="text-lg font-display font-bold text-neutral-900">
                 AI Insights ✦
               </h2>
-              <p className="text-sm text-neutral-500 mt-0.5">
+              <p className="text-sm text-neutral-500 mt-0.5 leading-snug">
                 {pitch}
               </p>
             </div>
@@ -86,11 +106,11 @@ export default function ProUpsellModal({ open, onClose, insightContext }: Props)
             {[
               "Ask anything — your numbers, your goals, your timeline",
               "Financial freedom targets, safe withdrawal limits, compounding milestones",
-              "Powered by your choice of AI model",
+              hook,
             ].map((item) => (
               <li key={item} className="flex items-start gap-2 text-sm text-neutral-600">
                 <span className="text-primary-base mt-0.5 shrink-0">✦</span>
-                {item}
+                <span className="leading-snug">{item}</span>
               </li>
             ))}
           </ul>
