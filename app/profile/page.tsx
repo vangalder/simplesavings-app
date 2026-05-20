@@ -11,6 +11,7 @@ import TabNavigation from "@/components/TabNavigation";
 import TabContentContainer from "@/components/TabContentContainer";
 import ScenarioCard from "@/components/ScenarioCard";
 import SkeletonCard from "@/components/SkeletonCard";
+import AdminPanel from "@/components/AdminPanel";
 import { api } from "@/convex/_generated/api";
 import type { Id } from "@/convex/_generated/dataModel";
 
@@ -19,8 +20,11 @@ const isConvexConfigured = !!process.env.NEXT_PUBLIC_CONVEX_URL;
 
 import type { ScenarioCardData } from "@/components/ScenarioCard";
 
+const ADMIN_EMAIL = "trevor@vangalder.com";
+
 function SignedInProfile({ clerkId }: { clerkId: string }) {
   const { user } = useUser();
+  const isAdmin = user?.primaryEmailAddress?.emailAddress === ADMIN_EMAIL;
   const router = useRouter();
   const scenarios = useQuery(api.scenarios.getScenariosByUser, { clerkId }) as ScenarioCardData[] | undefined;
   const deleteScenario = useMutation(api.scenarios.deleteScenario);
@@ -161,6 +165,8 @@ function SignedInProfile({ clerkId }: { clerkId: string }) {
           </div>
         )}
       </div>
+
+      {isAdmin && <AdminPanel />}
     </div>
   );
 }

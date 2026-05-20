@@ -140,6 +140,28 @@ export const getClerkIdByStripeCustomer = query({
   },
 });
 
+export const getAdminStats = query({
+  args: {},
+  handler: async (ctx) => {
+    const allUsers = await ctx.db.query("users").collect();
+    const allMessages = await ctx.db.query("messages").collect();
+    const allPurchases = await ctx.db.query("purchases").collect();
+
+    const proCount = allUsers.filter((u) => u.isPro).length;
+    const totalAiCostCents = allUsers.reduce((sum, u) => sum + (u.aiCreditsUsed ?? 0), 0);
+    const completedPurchases = allPurchases.filter((p) => p.status === "complete").length;
+    const assistantMessages = allMessages.filter((m) => m.role === "assistant").length;
+
+    return {
+      totalUsers: allUsers.length,
+      proSubscribers: proCount,
+      oneTimePurchases: completedPurchases,
+      totalAiMessages: assistantMessages,
+      totalAiCostCents,
+    };
+  },
+});
+
 export const updateUserPreferences = mutation({
   args: {
     clerkId: v.string(),
