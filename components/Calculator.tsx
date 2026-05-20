@@ -1,7 +1,7 @@
 "use client";
 
-import { useState, useMemo, useEffect, useCallback } from "react";
-import { useSearchParams, useRouter } from "next/navigation";
+import { useState, useMemo, useEffect, useCallback, useRef } from "react";
+import { useSearchParams } from "next/navigation";
 import dynamic from "next/dynamic";
 import Image from "next/image";
 import { toast } from "sonner";
@@ -52,7 +52,6 @@ function sanitizeDate(dateStr: string): string {
 
 export default function Calculator() {
   const searchParams = useSearchParams();
-  const router = useRouter();
   const [state, setState] = useState<CalculatorState>(defaultCalculatorValues);
   const [isInitialized, setIsInitialized] = useState(false);
   const [shouldAnimateInputs, setShouldAnimateInputs] = useState(false);
@@ -66,12 +65,14 @@ export default function Calculator() {
   const [chartType, setChartType] = useState<"area" | "bar" | "line">("area");
   const [goalAmount, setGoalAmount] = useState<number>(0);
   const [showGoalInput, setShowGoalInput] = useState(false);
+  const dateInputRef = useRef<HTMLInputElement>(null);
 
   // Load values from URL params, localStorage, or defaults
   useEffect(() => {
     if (isInitialized) return;
 
     // Priority 1: URL Parameters
+    const tdParam = searchParams.get("td"); // target date (date mode)
     const urlParams = {
       sa: searchParams.get("sa"),
       mc: searchParams.get("mc"),
@@ -79,27 +80,25 @@ export default function Calculator() {
       ir: searchParams.get("ir"),
     };
 
-    if (urlParams.sa || urlParams.mc || urlParams.ty || urlParams.ir) {
+    if (urlParams.sa || urlParams.mc || urlParams.ty || urlParams.ir || tdParam) {
+      let timeframeYears = urlParams.ty ? parseFloat(urlParams.ty) || 0 : defaultCalculatorValues.timeframeYears;
+      if (tdParam) {
+        const diff = new Date(tdParam).getTime() - Date.now();
+        timeframeYears = parseFloat(Math.min(200, Math.max(0, diff / (365.25 * 24 * 3600 * 1000))).toFixed(2));
+        setTargetDateStr(tdParam);
+        setTimeframeMode("date");
+      }
       const newState: CalculatorState = {
         startingAmount: urlParams.sa ? parseFloat(urlParams.sa) || 0 : defaultCalculatorValues.startingAmount,
         monthlyContribution: urlParams.mc ? parseFloat(urlParams.mc) || 0 : defaultCalculatorValues.monthlyContribution,
-        timeframeYears: urlParams.ty ? parseFloat(urlParams.ty) || 0 : defaultCalculatorValues.timeframeYears,
+        timeframeYears,
         interestRate: urlParams.ir ? parseFloat(urlParams.ir) || 0 : defaultCalculatorValues.interestRate,
       };
-      // Set to 0 first for animation
-      setState({
-        startingAmount: 0,
-        monthlyContribution: 0,
-        timeframeYears: 0,
-        interestRate: 0,
-      });
+      setState({ startingAmount: 0, monthlyContribution: 0, timeframeYears: 0, interestRate: 0 });
       setIsInitialized(true);
-      // Enable animation and set target values after a brief delay
       setTimeout(() => {
         setShouldAnimateInputs(true);
-        setTimeout(() => {
-          setState(newState);
-        }, 50);
+        setTimeout(() => { setState(newState); }, 50);
       }, 100);
       return;
     }
@@ -115,20 +114,15 @@ export default function Calculator() {
           timeframeYears: parsed.timeframeYears ?? defaultCalculatorValues.timeframeYears,
           interestRate: parsed.interestRate ?? defaultCalculatorValues.interestRate,
         };
-        // Set to 0 first for animation
-        setState({
-          startingAmount: 0,
-          monthlyContribution: 0,
-          timeframeYears: 0,
-          interestRate: 0,
-        });
+        if (parsed.timeframeMode === "date" && parsed.targetDateStr) {
+          setTimeframeMode("date");
+          setTargetDateStr(parsed.targetDateStr);
+        }
+        setState({ startingAmount: 0, monthlyContribution: 0, timeframeYears: 0, interestRate: 0 });
         setIsInitialized(true);
-        // Enable animation and set target values after a brief delay
         setTimeout(() => {
           setShouldAnimateInputs(true);
-          setTimeout(() => {
-            setState(loadedState);
-          }, 50);
+          setTimeout(() => { setState(loadedState); }, 50);
         }, 100);
         return;
       }
@@ -141,9 +135,11 @@ export default function Calculator() {
     setIsInitialized(true);
   }, [searchParams, isInitialized]);
 
-  // Update URL when state changes (debounced)
+  // Update URL when state changes (debounced).
+  // Uses window.history.replaceState instead of router.replace to avoid triggering
+  // Next.js Suspense re-renders which would unmount Calculator and reset local state.
   const updateURL = useCallback(
-    (newState: CalculatorState) => {
+    (newState: CalculatorState, mode: "years" | "date", dateStr: string) => {
       const params = new URLSearchParams();
       if (newState.startingAmount !== defaultCalculatorValues.startingAmount) {
         params.set("sa", newState.startingAmount.toString());
@@ -151,17 +147,21 @@ export default function Calculator() {
       if (newState.monthlyContribution !== defaultCalculatorValues.monthlyContribution) {
         params.set("mc", newState.monthlyContribution.toString());
       }
-      if (newState.timeframeYears !== defaultCalculatorValues.timeframeYears) {
-        params.set("ty", newState.timeframeYears.toString());
+      if (mode === "date") {
+        if (dateStr) params.set("td", dateStr);
+      } else {
+        if (newState.timeframeYears !== defaultCalculatorValues.timeframeYears) {
+          params.set("ty", newState.timeframeYears.toString());
+        }
       }
       if (newState.interestRate !== defaultCalculatorValues.interestRate) {
         params.set("ir", newState.interestRate.toString());
       }
 
       const newURL = params.toString() ? `?${params.toString()}` : window.location.pathname;
-      router.replace(newURL, { scroll: false });
+      window.history.replaceState(null, "", newURL);
     },
-    [router]
+    []
   );
 
   // Debounce URL updates
@@ -169,24 +169,24 @@ export default function Calculator() {
     if (!isInitialized) return;
 
     const timeoutId = setTimeout(() => {
-      updateURL(state);
+      updateURL(state, timeframeMode, targetDateStr);
     }, 500);
 
     return () => clearTimeout(timeoutId);
-  }, [state, isInitialized, updateURL]);
+  }, [state, timeframeMode, targetDateStr, isInitialized, updateURL]);
 
   // Debounced auto-save to localStorage on every state change
   useEffect(() => {
     if (!isInitialized) return;
     const id = setTimeout(() => {
       try {
-        localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+        localStorage.setItem(STORAGE_KEY, JSON.stringify({ ...state, timeframeMode, targetDateStr }));
       } catch {
         // ignore quota errors silently
       }
     }, 1000);
     return () => clearTimeout(id);
-  }, [state, isInitialized]);
+  }, [state, timeframeMode, targetDateStr, isInitialized]);
 
   // Recompute timeframeYears from target date (also runs every 24h via interval)
   useEffect(() => {
@@ -456,12 +456,19 @@ export default function Calculator() {
                 ) : (
                   <>
                     <input
+                      ref={dateInputRef}
                       type="date"
-                      value={targetDateStr}
+                      defaultValue={targetDateStr}
                       min={new Date().toISOString().slice(0, 10)}
                       max={`${new Date().getFullYear() + MAX_YEARS_AHEAD}-12-31`}
                       onChange={(e) => { if (e.target.value) setTargetDateStr(e.target.value); }}
-                      onBlur={(e) => { if (e.target.value) setTargetDateStr(sanitizeDate(e.target.value)); }}
+                      onBlur={(e) => {
+                        if (e.target.value) {
+                          const sanitized = sanitizeDate(e.target.value);
+                          setTargetDateStr(sanitized);
+                          if (dateInputRef.current) dateInputRef.current.value = sanitized;
+                        }
+                      }}
                       className="w-full px-3 py-3 border-2 border-accent-orange-base rounded-xl text-center text-lg font-display font-semibold text-accent-orange-base focus:outline-none focus:ring-2 focus:ring-accent-orange-base"
                     />
                     <p className="text-xs text-neutral-600 mt-0.5 text-center">
