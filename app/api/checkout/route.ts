@@ -25,11 +25,6 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
-  const stripeKey = process.env.STRIPE_SECRET_KEY;
-  if (!stripeKey) {
-    return NextResponse.json({ error: "Stripe not yet configured" }, { status: 503 });
-  }
-
   let body: { type: "subscription" | "one_time"; scenarioId?: string };
   try {
     body = await req.json();
@@ -40,6 +35,25 @@ export async function POST(req: NextRequest) {
   const { type, scenarioId } = body;
   if (type !== "subscription" && type !== "one_time") {
     return NextResponse.json({ error: "Invalid checkout type" }, { status: 400 });
+  }
+
+  const convex = getConvex();
+  const origin = req.headers.get("origin") ?? "https://simplesavings.app";
+
+  // Check payment test mode — admin bypass, skips Stripe entirely
+  const testMode = await convex.query(api.appConfig.getConfig, { key: "paymentTestMode" });
+  if (testMode === "true") {
+    if (type === "subscription") {
+      await convex.mutation(api.users.setUserPro, { clerkId: userId });
+    } else {
+      await convex.mutation(api.users.grantAiCredits, { clerkId: userId, creditsInCents: 199 });
+    }
+    return NextResponse.json({ url: `${origin}/?testPaid=1` });
+  }
+
+  const stripeKey = process.env.STRIPE_SECRET_KEY;
+  if (!stripeKey) {
+    return NextResponse.json({ error: "Stripe not yet configured" }, { status: 503 });
   }
 
   const priceId =
@@ -56,7 +70,6 @@ export async function POST(req: NextRequest) {
 
   try {
     const stripe = getStripe();
-    const convex = getConvex();
     const clerkUser = await currentUser();
     const email = clerkUser?.primaryEmailAddress?.emailAddress;
 
@@ -76,8 +89,6 @@ export async function POST(req: NextRequest) {
         stripeCustomerId,
       });
     }
-
-    const origin = req.headers.get("origin") ?? "https://simplesavings.app";
 
     const session = await stripe.checkout.sessions.create({
       customer: stripeCustomerId,

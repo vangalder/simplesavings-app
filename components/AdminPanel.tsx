@@ -15,8 +15,14 @@ export default function AdminPanel() {
   const shareAnalytics = useQuery(api.shares.getShareAnalytics, {});
   const blurbModel = useQuery(api.appConfig.getConfig, { key: "defaultBlurbModel" });
   const convoModel = useQuery(api.appConfig.getConfig, { key: "defaultConversationModel" });
+  const paymentTestMode = useQuery(api.appConfig.getConfig, { key: "paymentTestMode" });
   const setConfig = useMutation(api.appConfig.setConfig);
   const modelStats = useQuery(api.blurbLogs.getModelStats, {});
+
+  const isTestModeOn = paymentTestMode === "true";
+  const handleToggleTestMode = async () => {
+    await setConfig({ key: "paymentTestMode", value: isTestModeOn ? "false" : "true" });
+  };
 
   // Model config state
   const [blurbProvider, setBlurbProvider] = useState("anthropic");
@@ -246,6 +252,43 @@ export default function AdminPanel() {
             className="px-4 py-2 bg-primary-base text-white text-sm font-medium rounded-xl hover:opacity-90 transition-opacity"
           >
             {configSaved ? "Saved ✓" : "Save defaults"}
+          </button>
+        </div>
+      </div>
+
+      {/* Developer Tools */}
+      <div className={`rounded-2xl border p-5 ${isTestModeOn ? "bg-amber-50 border-amber-300" : "bg-white border-neutral-200"}`}>
+        <div className="flex items-start justify-between gap-4">
+          <div>
+            <h3 className="text-sm font-semibold text-neutral-700">Developer Tools</h3>
+            <p className="text-xs text-neutral-400 mt-0.5">Test the paid UX without touching Stripe.</p>
+          </div>
+          {isTestModeOn && (
+            <span className="shrink-0 px-2 py-0.5 rounded-full bg-amber-200 text-amber-800 text-xs font-semibold">TEST MODE ON</span>
+          )}
+        </div>
+        <div className="mt-4 flex items-center justify-between">
+          <div>
+            <p className="text-sm font-medium text-neutral-700">Payment test mode</p>
+            <p className="text-xs text-neutral-400 mt-0.5">
+              {isTestModeOn
+                ? "Clicking a payment button will instantly grant access — no Stripe, no charge."
+                : "When enabled, the checkout flow grants credits/Pro immediately without Stripe."}
+            </p>
+          </div>
+          <button
+            onClick={handleToggleTestMode}
+            className={`relative inline-flex h-6 w-11 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors focus:outline-none ${
+              isTestModeOn ? "bg-amber-400" : "bg-neutral-200"
+            }`}
+            role="switch"
+            aria-checked={isTestModeOn}
+          >
+            <span
+              className={`inline-block h-5 w-5 rounded-full bg-white shadow-sm ring-0 transition-transform ${
+                isTestModeOn ? "translate-x-5" : "translate-x-0"
+              }`}
+            />
           </button>
         </div>
       </div>
