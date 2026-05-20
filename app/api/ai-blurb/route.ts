@@ -1,7 +1,13 @@
 import { NextRequest, NextResponse } from "next/server";
 import Anthropic from "@anthropic-ai/sdk";
+import OpenAI from "openai";
+import { ConvexHttpClient } from "convex/browser";
+import { api } from "@/convex/_generated/api";
 
 const anthropic = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
+const openaiClient = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
+const xaiClient = new OpenAI({ apiKey: process.env.XAI_API_KEY, baseURL: "https://api.x.ai/v1" });
+const convex = new ConvexHttpClient(process.env.NEXT_PUBLIC_CONVEX_URL!);
 
 // Simple in-memory rate limiter: max 10 requests per minute per IP
 const rateLimitMap = new Map<string, { count: number; resetAt: number }>();
@@ -27,6 +33,86 @@ setInterval(() => {
   }
 }, RATE_WINDOW_MS * 2);
 
+// Config cache — refresh every 30s so admin changes take effect quickly
+let configCache: { provider: string; modelId: string; fetchedAt: number } | null = null;
+const CONFIG_TTL_MS = 30_000;
+const DEFAULT_PROVIDER = "anthropic";
+const DEFAULT_MODEL = "claude-haiku-4-5";
+
+async function resolveModel(): Promise<{ provider: string; modelId: string }> {
+  const now = Date.now();
+  if (configCache && now - configCache.fetchedAt < CONFIG_TTL_MS) return configCache;
+  try {
+    const raw = await convex.query(api.appConfig.getConfig, { key: "defaultBlurbModel" });
+    if (raw && typeof raw === "string" && raw.includes(":")) {
+      const [provider, modelId] = raw.split(":", 2);
+      configCache = { provider, modelId, fetchedAt: now };
+      return configCache;
+    }
+  } catch {
+    // fall through to default
+  }
+  return { provider: DEFAULT_PROVIDER, modelId: DEFAULT_MODEL };
+}
+
+// Per-model pricing in $/1M tokens (approximate)
+const RATES: Record<string, { in: number; out: number }> = {
+  "claude-haiku-4-5":     { in: 0.25,  out: 1.25 },
+  "claude-sonnet-4-6":    { in: 3.0,   out: 15.0 },
+  "claude-opus-4-7":      { in: 15.0,  out: 75.0 },
+  "gpt-4o-mini":          { in: 0.15,  out: 0.6  },
+  "gpt-4o":               { in: 2.5,   out: 10.0 },
+  "grok-3-mini":          { in: 0.3,   out: 0.5  },
+  "grok-3":               { in: 3.0,   out: 15.0 },
+  "gemini-1.5-flash":     { in: 0.075, out: 0.3  },
+  "gemini-1.5-pro":       { in: 1.25,  out: 5.0  },
+};
+
+function calcCost(modelId: string, tokensIn: number, tokensOut: number): number {
+  const rate = RATES[modelId] ?? { in: 1.0, out: 3.0 };
+  return Math.ceil(((tokensIn * rate.in + tokensOut * rate.out) / 1_000_000) * 100);
+}
+
+type LLMResult = { text: string; tokensIn: number; tokensOut: number };
+
+async function callLLM(
+  provider: string,
+  modelId: string,
+  systemPrompt: string,
+  userContent: string,
+  maxTokens: number,
+): Promise<LLMResult> {
+  if (provider === "anthropic") {
+    const msg = await anthropic.messages.create({
+      model: modelId,
+      max_tokens: maxTokens,
+      system: systemPrompt,
+      messages: [{ role: "user", content: userContent }],
+    });
+    return {
+      text: msg.content[0]?.type === "text" ? msg.content[0].text.trim() : "",
+      tokensIn: msg.usage.input_tokens,
+      tokensOut: msg.usage.output_tokens,
+    };
+  }
+
+  // OpenAI-compatible providers (openai, xai)
+  const client = provider === "xai" ? xaiClient : openaiClient;
+  const resp = await client.chat.completions.create({
+    model: modelId,
+    max_tokens: maxTokens,
+    messages: [
+      { role: "system", content: systemPrompt },
+      { role: "user", content: userContent },
+    ],
+  });
+  return {
+    text: resp.choices[0]?.message?.content?.trim() ?? "",
+    tokensIn: resp.usage?.prompt_tokens ?? 0,
+    tokensOut: resp.usage?.completion_tokens ?? 0,
+  };
+}
+
 function formatCurrency(value: number, currency = "USD"): string {
   try {
     return new Intl.NumberFormat("en-US", {
@@ -48,34 +134,35 @@ const LOCALE_NAMES: Record<string, string> = {
   "pt-BR": "Brazilian Portuguese",
 };
 
-const SYSTEM_PROMPT = `You are a financial copywriter for simplesavings.app. You receive pre-calculated facts — treat every number and label as ground truth. Write exactly THREE sentences:
+const SYSTEM_PROMPT = `You are a financial copywriter for simplesavings.app. You receive pre-calculated facts — treat every number and label as ground truth. Write exactly FOUR outputs separated by newlines with "---" between each:
 
-1. MIRROR: Use the LEAD WITH fact as your angle. Make the user feel seen — validate what their numbers reveal.
-2. FRICTION: Introduce one concrete financial blindspot or risk this scenario creates. Use the specific numbers provided.
-3. QUESTION: Output the OPEN QUESTION exactly as given — do not rephrase it, do not add punctuation changes.
+1. BODY (sentences 1+2): MIRROR then FRICTION. Mirror validates what the numbers reveal; Friction introduces a concrete blindspot using the specific numbers.
+2. QUESTION: Output the OPEN QUESTION exactly as given.
+3. PITCH: One sentence that frames what deeper AI analysis would unlock for THIS specific scenario — make it concrete and compelling. No generic copy.
 
-Output format: sentences 1 and 2 joined normally, then the literal string " ||| ", then sentence 3. Example: "Mirror sentence. Friction sentence. ||| Question sentence?"
+Output format (use exact "---" separators on their own lines):
+[Mirror sentence. Friction sentence.]
+---
+[Question sentence?]
+---
+[Pitch sentence.]
 
 Rules:
 - NEVER recalculate, NEVER contradict GROWING/DEPLETING or SAFE/UNSUSTAINABLE labels.
 - Never use the acronym "FIRE" — use "financial freedom target", "work-optional", or "fully self-sustaining" instead.
 - Be specific: use the actual numbers, not vague language.
 - Forbidden: generic praise, em-dashes, starting with "At this rate", moralizing.
-- Max 65 words total across all three sentences.`;
+- Body max 45 words. Pitch max 20 words.`;
 
-const MODEL = "claude-haiku-4-5";
-const INPUT_RATE = 0.25;  // $0.25/1M input tokens
-const OUTPUT_RATE = 1.25; // $1.25/1M output tokens
+const TRANSLATION_PROMPT = `You are a precise translator. Output only the translated text — no quotes, no explanation. Preserve all numbers, punctuation, and every "---" separator line exactly as-is.`;
 
-function calcCost(tokensIn: number, tokensOut: number) {
-  return Math.ceil(((tokensIn * INPUT_RATE + tokensOut * OUTPUT_RATE) / 1_000_000) * 100);
-}
-
-function splitBlurb(raw: string): [string, string] {
-  const sep = " ||| ";
-  const idx = raw.indexOf(sep);
-  if (idx !== -1) return [raw.slice(0, idx).trim(), raw.slice(idx + sep.length).trim()];
-  return [raw, ""];
+function parseBlurbParts(raw: string): { blurb: string; question: string; pitch: string } {
+  const parts = raw.split(/\n---\n/);
+  return {
+    blurb:    parts[0]?.trim() ?? raw,
+    question: parts[1]?.trim() ?? "",
+    pitch:    parts[2]?.trim() ?? "",
+  };
 }
 
 export async function POST(req: NextRequest) {
@@ -95,28 +182,25 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: "Invalid JSON" }, { status: 400 });
   }
 
+  const { provider, modelId } = await resolveModel();
+
   // Translation mode: { text: string, targetLocale: string }
   if (typeof body.text === "string" && typeof body.targetLocale === "string") {
     const langName = LOCALE_NAMES[body.targetLocale] ?? body.targetLocale;
     try {
-      const message = await anthropic.messages.create({
-        model: MODEL,
-        max_tokens: 120,
-        messages: [{
-          role: "user",
-          content: `Translate the following text to ${langName}. Output only the translated text — no quotes, no explanation, preserve all numbers and punctuation exactly.\n\n${body.text}`,
-        }],
-      });
-      const raw = message.content[0]?.type === "text" ? message.content[0].text.trim() : String(body.text);
-      const [blurb, question] = splitBlurb(raw);
-      const tokensIn = message.usage.input_tokens;
-      const tokensOut = message.usage.output_tokens;
+      const result = await callLLM(
+        provider, modelId,
+        TRANSLATION_PROMPT,
+        `Translate the following text to ${langName}:\n\n${body.text}`,
+        150,
+      );
+      const { blurb, question, pitch } = parseBlurbParts(result.text || String(body.text));
       return NextResponse.json({
-        blurb, question,
-        meta: { provider: "anthropic", model: MODEL, tokensIn, tokensOut, costCents: calcCost(tokensIn, tokensOut) },
+        blurb, question, pitch,
+        meta: { provider, model: modelId, tokensIn: result.tokensIn, tokensOut: result.tokensOut, costCents: calcCost(modelId, result.tokensIn, result.tokensOut) },
       });
     } catch {
-      return NextResponse.json({ blurb: String(body.text), question: "" }); // fallback: show English
+      return NextResponse.json({ blurb: String(body.text), question: "", pitch: "" });
     }
   }
 
@@ -155,7 +239,7 @@ export async function POST(req: NextRequest) {
     ? (withdrawalRate / 4).toFixed(2) : null;
   const breakEvenRate = isWithdrawal && startingAmount > 0
     ? (annualFlow / startingAmount * 100).toFixed(2) : null;
-  const fireStatus = withdrawalRate !== null
+  const sustainabilityStatus = withdrawalRate !== null
     ? (withdrawalRate <= 4 ? "SAFE — below 4% rule" : "UNSUSTAINABLE — above 4% rule") : null;
   const safeAnnualWithdrawal = startingAmount * 0.04;
   const depletionYears = isWithdrawal && netAnnualChange < 0
@@ -167,10 +251,10 @@ export async function POST(req: NextRequest) {
   const contributionLeverage = totalContributions > 0
     ? (totalValue / totalContributions).toFixed(2) : null;
   const doublingYears = interestRate > 0 ? (72 / interestRate).toFixed(1) : null;
-  const fireNumber = isWithdrawal ? null : annualFlow * 25;
-  const fireProgress = fireNumber && fireNumber > 0
-    ? ((startingAmount / fireNumber) * 100).toFixed(1) : null;
-  const yearsToFire = !isWithdrawal && annualFlow > 0 && interestRate > 0
+  const freedomNumber = isWithdrawal ? null : annualFlow * 25;
+  const freedomProgress = freedomNumber && freedomNumber > 0
+    ? ((startingAmount / freedomNumber) * 100).toFixed(1) : null;
+  const yearsToFreedom = !isWithdrawal && annualFlow > 0 && interestRate > 0
     ? (() => {
         const target = annualFlow * 25;
         if (startingAmount >= target) return "already reached";
@@ -184,7 +268,7 @@ export async function POST(req: NextRequest) {
   const spReal = 7.0;
   const vsSpNominal = (interestRate - spNominal).toFixed(1);
   const inflationErosion = timeframeYears > 0
-    ? (totalValue / Math.pow(1.028, timeframeYears)).toFixed(0) : null; // real value at 2.8% CPI
+    ? (totalValue / Math.pow(1.028, timeframeYears)).toFixed(0) : null;
 
   // ── Select the single most interesting insight hook ─────────────────────
   let leadWith: string;
@@ -207,11 +291,11 @@ export async function POST(req: NextRequest) {
   } else if (doublingYears && parseFloat(doublingYears) < 8) {
     leadWith = `Money doubles every ${doublingYears} years at ${interestRate}%, compounding to ${formatCurrency(totalValue, currency)} over ${timeframeYears} years.`;
     questionHook = `Have you modeled what sequence-of-returns risk looks like once you start withdrawing?`;
-  } else if (fireProgress && parseFloat(fireProgress) >= 80) {
-    leadWith = `Already ${fireProgress}% of the way to a ${formatCurrency(fireNumber!, currency)} fully self-sustaining portfolio — roughly ${yearsToFire} years out at this pace.`;
+  } else if (freedomProgress && parseFloat(freedomProgress) >= 80) {
+    leadWith = `Already ${freedomProgress}% of the way to a ${formatCurrency(freedomNumber!, currency)} fully self-sustaining portfolio — roughly ${yearsToFreedom} years out at this pace.`;
     questionHook = `Do you know the exact year your portfolio crosses into work-optional territory?`;
-  } else if (fireProgress && parseFloat(fireProgress) < 20 && timeframeYears >= 10) {
-    leadWith = `Financial freedom target is ${formatCurrency(fireNumber!, currency)} (25× annual contribution) — currently at ${fireProgress}% with ${yearsToFire} years to go.`;
+  } else if (freedomProgress && parseFloat(freedomProgress) < 20 && timeframeYears >= 10) {
+    leadWith = `Financial freedom target is ${formatCurrency(freedomNumber!, currency)} (25× annual contribution) — currently at ${freedomProgress}% with ${yearsToFreedom} years to go.`;
     questionHook = `What does a modest increase in monthly contributions do to the year you become work-optional?`;
   } else if (interestRate > 12) {
     leadWith = `${interestRate}% return is ${vsSpNominal}% above the S&P 500 average — if that assumption holds, the result is extraordinary.`;
@@ -235,13 +319,13 @@ export async function POST(req: NextRequest) {
 - Projected total: ${formatCurrency(totalValue, currency)} | Interest earned: ${formatCurrency(interestEarned, currency)}
 ${interestShare ? `- Interest as share of total: ${interestShare}%` : ""}
 ${contributionLeverage ? `- Contribution leverage: every $1 in becomes $${contributionLeverage} out` : ""}
-${withdrawalRate !== null ? `- Annual withdrawal rate: ${withdrawalRate.toFixed(1)}% — ${fireStatus}` : ""}
+${withdrawalRate !== null ? `- Annual withdrawal rate: ${withdrawalRate.toFixed(1)}% — ${sustainabilityStatus}` : ""}
 ${withdrawalMultiple ? `- Withdrawal is ${withdrawalMultiple}× the 4% safe rate` : ""}
 ${withdrawalRate !== null ? `- Safe 4% annual withdrawal: ${formatCurrency(safeAnnualWithdrawal, currency)}` : ""}
 ${depletionYears ? `- Portfolio depletes in: ${depletionYears} years` : ""}
 ${doublingYears ? `- Rule of 72: doubles every ${doublingYears} years` : ""}
-${fireNumber ? `- FIRE number (25× annual contribution): ${formatCurrency(fireNumber, currency)}` : ""}
-${fireProgress ? `- FIRE progress: ${fireProgress}% — ${yearsToFire} years to target` : ""}
+${freedomNumber ? `- Financial freedom number (25× annual contribution): ${formatCurrency(freedomNumber, currency)}` : ""}
+${freedomProgress ? `- Progress toward financial freedom: ${freedomProgress}% — ${yearsToFreedom} years to target` : ""}
 ${inflationErosion ? `- Inflation-adjusted real value (2.8% CPI): ${formatCurrency(parseFloat(inflationErosion), currency)}` : ""}
 
 LEAD WITH: ${leadWith}
@@ -250,24 +334,15 @@ OPEN QUESTION: ${questionHook}
 Write THREE sentences: Mirror, Friction, Question.`;
 
   try {
-    const message = await anthropic.messages.create({
-      model: MODEL,
-      max_tokens: 150,
-      system: SYSTEM_PROMPT,
-      messages: [{ role: "user", content: userMessage }],
-    });
-
-    const raw = message.content[0]?.type === "text" ? message.content[0].text.trim() : "";
-    const [blurb, question] = splitBlurb(raw);
-    const tokensIn = message.usage.input_tokens;
-    const tokensOut = message.usage.output_tokens;
+    const result = await callLLM(provider, modelId, SYSTEM_PROMPT, userMessage, 180);
+    const { blurb, question, pitch } = parseBlurbParts(result.text);
 
     return NextResponse.json({
-      blurb, question,
-      meta: { provider: "anthropic", model: MODEL, tokensIn, tokensOut, costCents: calcCost(tokensIn, tokensOut) },
+      blurb, question, pitch,
+      meta: { provider, model: modelId, tokensIn: result.tokensIn, tokensOut: result.tokensOut, costCents: calcCost(modelId, result.tokensIn, result.tokensOut) },
     });
   } catch (err) {
     console.error("[ai-blurb] LLM error:", err);
-    return NextResponse.json({ blurb: "" });
+    return NextResponse.json({ blurb: "", question: "", pitch: "" });
   }
 }

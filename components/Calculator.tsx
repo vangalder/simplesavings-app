@@ -71,6 +71,7 @@ export default function Calculator() {
   const dateInputRef = useRef<HTMLInputElement>(null);
   const [aiBlurb, setAiBlurb] = useState("");
   const [aiBlurbQuestion, setAiBlurbQuestion] = useState("");
+  const [aiBlurbPitch, setAiBlurbPitch] = useState("");
   const [aiBlurbLoading, setAiBlurbLoading] = useState(false);
   const [aiBlurbMeta, setAiBlurbMeta] = useState<BlurbMeta | undefined>();
   const isAdmin = useIsAdmin();
@@ -224,10 +225,10 @@ export default function Calculator() {
         const data = await res.json();
         const englishBlurb = data.blurb ?? "";
         const englishQuestion = data.question ?? "";
-        // Store combined so locale-change effect can translate both parts together
-        aiBlurbOriginalRef.current = englishQuestion
-          ? `${englishBlurb} ||| ${englishQuestion}`
-          : englishBlurb;
+        const englishPitch = data.pitch ?? "";
+        // Store combined so locale-change effect can translate all parts together
+        aiBlurbOriginalRef.current = [englishBlurb, englishQuestion, englishPitch]
+          .filter(Boolean).join("\n---\n");
         if (data.meta) setAiBlurbMeta(data.meta);
 
         // Translate immediately if locale is non-English
@@ -241,10 +242,12 @@ export default function Calculator() {
           const tData = await tRes.json();
           setAiBlurb(tData.blurb ?? englishBlurb);
           setAiBlurbQuestion(tData.question ?? englishQuestion);
+          setAiBlurbPitch(tData.pitch ?? englishPitch);
           if (tData.meta) setAiBlurbMeta(tData.meta);
         } else {
           setAiBlurb(englishBlurb);
           setAiBlurbQuestion(englishQuestion);
+          setAiBlurbPitch(englishPitch);
         }
       } catch {
         // fail silently
@@ -279,9 +282,10 @@ export default function Calculator() {
         if (cancelled) return;
         setAiBlurb(data.blurb ?? original);
         setAiBlurbQuestion(data.question ?? "");
+        setAiBlurbPitch(data.pitch ?? "");
         if (data.meta) setAiBlurbMeta(data.meta);
       })
-      .catch(() => { if (!cancelled) { setAiBlurb(original); setAiBlurbQuestion(""); } })
+      .catch(() => { if (!cancelled) { setAiBlurb(original); setAiBlurbQuestion(""); setAiBlurbPitch(""); } })
       .finally(() => { if (!cancelled) setAiBlurbLoading(false); });
     return () => { cancelled = true; setAiBlurbLoading(false); };
   }, [locale]); // intentionally omits aiBlurbOriginalRef — ref reads are stable
@@ -712,7 +716,7 @@ export default function Calculator() {
       {showShareModal && isClerkConfigured && (
         <ShareModal url={shareUrl} onClose={() => setShowShareModal(false)} />
       )}
-      <ProUpsellModal open={showUpsell} onClose={() => setShowUpsell(false)} />
+      <ProUpsellModal open={showUpsell} onClose={() => setShowUpsell(false)} pitch={aiBlurbPitch} />
     </div>
   );
 }

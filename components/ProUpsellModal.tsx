@@ -8,6 +8,7 @@ import { api } from "@/convex/_generated/api";
 type Props = {
   open: boolean;
   onClose: () => void;
+  pitch?: string;
 };
 
 async function handleCheckout(type: "one_time" | "subscription") {
@@ -20,7 +21,7 @@ async function handleCheckout(type: "one_time" | "subscription") {
   if (data.url) window.location.href = data.url;
 }
 
-export default function ProUpsellModal({ open, onClose }: Props) {
+export default function ProUpsellModal({ open, onClose, pitch }: Props) {
   const { isSignedIn, user } = useUser();
   const clerkId = user?.id ?? "";
   const creditBalance = useQuery(
@@ -58,7 +59,7 @@ export default function ProUpsellModal({ open, onClose }: Props) {
                 AI Insights ✦
               </h2>
               <p className="text-sm text-neutral-500 mt-0.5">
-                An interactive, intelligent co-pilot for your financial strategy.
+                {pitch || "An interactive, intelligent co-pilot for your financial strategy."}
               </p>
             </div>
             <button
