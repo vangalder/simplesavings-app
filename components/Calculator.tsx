@@ -262,7 +262,8 @@ export default function Calculator() {
     const safeInterestRate = isNaN(state.interestRate) || !isFinite(state.interestRate) ? 0 : state.interestRate;
     const safeTimeframeYears = isNaN(state.timeframeYears) || !isFinite(state.timeframeYears) ? 0 : Math.max(0, state.timeframeYears);
     const safeStartingAmount = isNaN(state.startingAmount) || !isFinite(state.startingAmount) ? 0 : Math.max(0, state.startingAmount);
-    const safeMonthlyContribution = isNaN(state.monthlyContribution) || !isFinite(state.monthlyContribution) ? 0 : Math.max(0, state.monthlyContribution);
+    // Negative values are valid (monthly withdrawals)
+    const safeMonthlyContribution = isNaN(state.monthlyContribution) || !isFinite(state.monthlyContribution) ? 0 : state.monthlyContribution;
 
     const monthlyRate = safeInterestRate / 100 / 12;
     const totalMonths = Math.floor(safeTimeframeYears * 12);
@@ -284,9 +285,19 @@ export default function Calculator() {
     const futureValueAnnuity = calculateFutureValueAnnuity(totalMonths);
     const safeFvAnnuity = isNaN(futureValueAnnuity) || !isFinite(futureValueAnnuity) ? 0 : futureValueAnnuity;
 
-    const totalValue = safeFvInitial + safeFvAnnuity;
-    const principalPaid = safeStartingAmount + (safeMonthlyContribution * totalMonths);
-    const interestEarned = totalValue - principalPaid;
+    const totalValue = Math.max(0, safeFvInitial + safeFvAnnuity);
+
+    // For savings: principalPaid = starting amount + all contributions added
+    // For withdrawals: principalPaid = starting balance only (nothing extra was deposited)
+    const isWithdrawalMode = safeMonthlyContribution < 0;
+    const principalPaid = isWithdrawalMode
+      ? safeStartingAmount
+      : safeStartingAmount + safeMonthlyContribution * totalMonths;
+
+    // Universal formula: Interest = Ending Balance + Total Withdrawals − Starting Balance − Total Contributions
+    // Equivalent to: totalValue − startingAmount − (monthlyContribution × months)
+    // Works correctly for both savings (+monthly) and withdrawal (−monthly) scenarios.
+    const interestEarned = Math.max(0, totalValue - safeStartingAmount - safeMonthlyContribution * totalMonths);
 
     // Generate data points for chart
     // Use monthly granularity when timeframe < 2 years so the chart is meaningful
@@ -304,12 +315,28 @@ export default function Calculator() {
       const safeFvA = isNaN(fvAnnuity) || !isFinite(fvAnnuity) ? 0 : fvAnnuity;
 
       const totalValue = safeFvI + safeFvA;
-      const principal = safeStartingAmount + (safeMonthlyContribution * months);
-      const interest = totalValue - principal;
+      const finalTotal = isNaN(totalValue) || !isFinite(totalValue) ? 0 : Math.max(0, totalValue);
 
-      const finalPrincipal = isNaN(principal) || !isFinite(principal) ? 0 : Math.max(0, principal);
-      const finalTotal = isNaN(totalValue) || !isFinite(totalValue) ? finalPrincipal : Math.max(finalPrincipal, totalValue);
-      const finalInterest = isNaN(interest) || !isFinite(interest) ? 0 : Math.max(0, finalTotal - finalPrincipal);
+      let finalPrincipal: number;
+      let finalInterest: number;
+      if (isWithdrawalMode) {
+        // Principal = original deposit, intact until balance actually drops below it.
+        // Orange = retained interest (only when withdrawing less than interest earned).
+        finalPrincipal = Math.min(finalTotal, safeStartingAmount);
+        finalInterest = Math.max(0, finalTotal - safeStartingAmount);
+      } else {
+        // Principal = starting amount + cumulative contributions deposited so far.
+        // Orange = compounded growth above that invested capital.
+        const cumulativePrincipal = Math.max(0, safeStartingAmount + safeMonthlyContribution * months);
+        finalPrincipal = Math.min(finalTotal, cumulativePrincipal);
+        finalInterest = Math.max(0, finalTotal - finalPrincipal);
+      }
+
+      // Account depleted — record the zero point and stop generating data
+      if (finalTotal <= 0 && i > 0) {
+        chartData.push({ year: i, value: 0, principal: 0, interest: 0 });
+        break;
+      }
 
       chartData.push({ year: i, value: finalTotal, principal: finalPrincipal, interest: finalInterest });
     }
@@ -318,6 +345,7 @@ export default function Calculator() {
       totalValue,
       principalPaid,
       interestEarned,
+      isWithdrawalMode,
       chartData,
       chartXUnit: chartMonthly ? "months" as const : "years" as const,
     };
@@ -367,7 +395,7 @@ export default function Calculator() {
           {/* Monthly Contribution */}
           <div>
             <label className="block text-sm font-medium text-neutral-700 mb-1.5">
-              {t("monthlyContribution")}
+              {state.monthlyContribution < 0 ? t("monthlyWithdrawal") : t("monthlyContribution")}
             </label>
             <AnimatedNumberInput
               value={state.monthlyContribution}
@@ -377,13 +405,15 @@ export default function Calculator() {
               className="w-full px-4 py-3 border-2 border-accent-orange-base rounded-xl text-center text-4xl font-display font-semibold text-accent-orange-base focus:outline-none focus:ring-2 focus:ring-accent-orange-base focus:border-accent-orange-base"
               shouldAnimate={shouldAnimateInputs}
             />
-            <p className="text-xs text-neutral-600 mt-0.5 text-center">{t("monthlyContributionHint")}</p>
+            <p className="text-xs text-neutral-600 mt-0.5 text-center">
+              {state.monthlyContribution < 0 ? t("monthlyWithdrawalHint") : t("monthlyContributionHint")}
+            </p>
           </div>
 
           {/* Timeframe and Interest Rate - Side by side */}
           <div className="grid grid-cols-2 gap-3">
-            <div>
-              <div className="flex items-center justify-between mb-1.5">
+            <div className="flex flex-col">
+              <div className="flex flex-wrap items-center gap-x-1.5 gap-y-0.5 mb-1.5">
                 <label className="text-sm font-medium text-neutral-700">
                   {timeframeMode === "years" ? t("timeframeYears") : t("timeframeDate")}
                 </label>
@@ -400,65 +430,73 @@ export default function Calculator() {
                       setTimeframeMode("years");
                     }
                   }}
-                  className="text-xs text-primary-base hover:underline"
+                  className="text-xs text-primary-base hover:underline whitespace-nowrap"
                 >
                   {timeframeMode === "years" ? t("switchToDateMode") : t("switchToYearsMode")}
                 </button>
               </div>
 
-              {timeframeMode === "years" ? (
-                <>
-                  <AnimatedNumberInput
-                    value={state.timeframeYears}
-                    onChange={(val) => setState({ ...state, timeframeYears: val })}
-                    step="0.1"
-                    min={0}
-                    placeholder="0"
-                    className="w-full px-4 py-3 border-2 border-accent-orange-base rounded-xl text-center text-4xl font-display font-semibold text-accent-orange-base focus:outline-none focus:ring-2 focus:ring-accent-orange-base focus:border-accent-orange-base"
-                    shouldAnimate={shouldAnimateInputs}
-                  />
-                  <p className="text-xs text-neutral-600 mt-0.5 text-center">{t("timeframeYearsHint")}</p>
-                </>
-              ) : (
-                <>
-                  <input
-                    type="date"
-                    value={targetDateStr}
-                    min={new Date().toISOString().slice(0, 10)}
-                    max={`${new Date().getFullYear() + MAX_YEARS_AHEAD}-12-31`}
-                    onChange={(e) => { if (e.target.value) setTargetDateStr(sanitizeDate(e.target.value)); }}
-                    className="w-full px-3 py-3 border-2 border-accent-orange-base rounded-xl text-center text-lg font-display font-semibold text-accent-orange-base focus:outline-none focus:ring-2 focus:ring-accent-orange-base"
-                  />
-                  <p className="text-xs text-neutral-600 mt-0.5 text-center">
-                    {state.timeframeYears > 0
-                      ? (() => {
-                          const totalMonths = Math.round(state.timeframeYears * 12);
-                          const y = Math.floor(totalMonths / 12);
-                          const m = totalMonths % 12;
-                          return t("timeframeRemaining", { years: y, months: m });
-                        })()
-                      : t("timeframeDateHint")}
-                  </p>
-                </>
-              )}
+              {/* mt-auto pushes the input to the bottom of the grid row so it aligns with the interest rate input */}
+              <div className="mt-auto">
+                {timeframeMode === "years" ? (
+                  <>
+                    <AnimatedNumberInput
+                      value={state.timeframeYears}
+                      onChange={(val) => setState({ ...state, timeframeYears: val })}
+                      step="0.1"
+                      min={0}
+                      placeholder="0"
+                      className="w-full px-4 py-3 border-2 border-accent-orange-base rounded-xl text-center text-4xl font-display font-semibold text-accent-orange-base focus:outline-none focus:ring-2 focus:ring-accent-orange-base focus:border-accent-orange-base"
+                      shouldAnimate={shouldAnimateInputs}
+                    />
+                    <p className="text-xs text-neutral-600 mt-0.5 text-center">
+                      {state.monthlyContribution < 0 ? t("timeframeYearsWithdrawalHint") : t("timeframeYearsHint")}
+                    </p>
+                  </>
+                ) : (
+                  <>
+                    <input
+                      type="date"
+                      value={targetDateStr}
+                      min={new Date().toISOString().slice(0, 10)}
+                      max={`${new Date().getFullYear() + MAX_YEARS_AHEAD}-12-31`}
+                      onChange={(e) => { if (e.target.value) setTargetDateStr(e.target.value); }}
+                      onBlur={(e) => { if (e.target.value) setTargetDateStr(sanitizeDate(e.target.value)); }}
+                      className="w-full px-3 py-3 border-2 border-accent-orange-base rounded-xl text-center text-lg font-display font-semibold text-accent-orange-base focus:outline-none focus:ring-2 focus:ring-accent-orange-base"
+                    />
+                    <p className="text-xs text-neutral-600 mt-0.5 text-center">
+                      {state.timeframeYears > 0
+                        ? (() => {
+                            const totalMonths = Math.round(state.timeframeYears * 12);
+                            const y = Math.floor(totalMonths / 12);
+                            const m = totalMonths % 12;
+                            return t("timeframeRemaining", { years: y, months: m });
+                          })()
+                        : t("timeframeDateHint")}
+                    </p>
+                  </>
+                )}
+              </div>
             </div>
 
-            <div>
+            <div className="flex flex-col">
+              <div className="mt-auto">
               <label className="block text-sm font-medium text-neutral-700 mb-1.5">
                 {t("interestRate")}
               </label>
-              <AnimatedNumberInput
-                value={state.interestRate}
-                onChange={(val) => setState({ ...state, interestRate: val })}
-                step="0.1"
-                max={100}
-                placeholder="0"
-                className="w-full px-4 py-3 border-2 border-accent-orange-base rounded-xl text-center text-4xl font-display font-semibold text-accent-orange-base focus:outline-none focus:ring-2 focus:ring-accent-orange-base focus:border-accent-orange-base"
-                shouldAnimate={shouldAnimateInputs}
-              />
-              <p className="text-xs text-neutral-600 mt-0.5 text-center">
-                {isCryptoCurrency(currency) ? t("interestRateCryptoHint") : t("interestRateHint")}
-              </p>
+                <AnimatedNumberInput
+                  value={state.interestRate}
+                  onChange={(val) => setState({ ...state, interestRate: val })}
+                  step="0.1"
+                  max={100}
+                  placeholder="0"
+                  className="w-full px-4 py-3 border-2 border-accent-orange-base rounded-xl text-center text-4xl font-display font-semibold text-accent-orange-base focus:outline-none focus:ring-2 focus:ring-accent-orange-base focus:border-accent-orange-base"
+                  shouldAnimate={shouldAnimateInputs}
+                />
+                <p className="text-xs text-neutral-600 mt-0.5 text-center">
+                  {isCryptoCurrency(currency) ? t("interestRateCryptoHint") : t("interestRateHint")}
+                </p>
+              </div>
             </div>
           </div>
 
@@ -484,17 +522,17 @@ export default function Calculator() {
                 />
               </button>
             </div>
-            <div className="flex justify-center gap-4 text-sm mb-3">
-              <div className="text-center">
-                <p className="text-neutral-600">{t("principalPaid")}</p>
-                <div className="text-secondary-base font-display font-semibold mt-0.5">
-                  <AnimatedCurrency value={results.principalPaid} size="lg" locale={locale} currency={currency} />
+            <div className="grid grid-cols-2 gap-x-3 text-sm mb-3">
+              <div className="text-center min-w-0">
+                <p className="text-neutral-600 truncate">{results.isWithdrawalMode ? t("startingBalance") : t("principalPaid")}</p>
+                <div className="text-secondary-base font-display font-semibold mt-0.5 flex justify-center overflow-hidden">
+                  <AnimatedCurrency value={results.principalPaid} size="md" locale={locale} currency={currency} />
                 </div>
               </div>
-              <div className="text-center">
-                <p className="text-neutral-600">{t("interestEarned")}</p>
-                <div className="text-secondary-base font-display font-semibold mt-0.5">
-                  <AnimatedCurrency value={results.interestEarned} size="lg" locale={locale} currency={currency} />
+              <div className="text-center min-w-0">
+                <p className="text-neutral-600 truncate">{t("interestEarned")}</p>
+                <div className="text-secondary-base font-display font-semibold mt-0.5 flex justify-center overflow-hidden">
+                  <AnimatedCurrency value={results.interestEarned} size="md" locale={locale} currency={currency} />
                 </div>
               </div>
             </div>
