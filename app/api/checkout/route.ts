@@ -43,6 +43,13 @@ export async function POST(req: NextRequest) {
   // Check payment test mode — admin bypass, skips Stripe entirely
   const testMode = await convex.query(api.appConfig.getConfig, { key: "paymentTestMode" });
   if (testMode === "true") {
+    // Ensure user exists in Convex (handles case where Clerk webhook isn't configured yet)
+    const clerkUser = await currentUser();
+    await convex.mutation(api.users.upsertUser, {
+      clerkId: userId,
+      email: clerkUser?.primaryEmailAddress?.emailAddress ?? undefined,
+      name: clerkUser?.fullName ?? clerkUser?.firstName ?? undefined,
+    });
     if (type === "subscription") {
       await convex.mutation(api.users.setUserPro, { clerkId: userId });
     } else {

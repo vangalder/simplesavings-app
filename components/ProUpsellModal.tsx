@@ -4,6 +4,7 @@ import { useEffect, useRef, useState } from "react";
 import { useUser, SignInButton } from "@clerk/nextjs";
 import { useQuery } from "convex/react";
 import { api } from "@/convex/_generated/api";
+import { toast } from "sonner";
 
 type InsightContext = {
   question: string;
@@ -18,13 +19,21 @@ type Props = {
 };
 
 async function handleCheckout(type: "one_time" | "subscription") {
-  const res = await fetch("/api/checkout", {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ type }),
-  });
-  const data = await res.json();
-  if (data.url) window.location.href = data.url;
+  try {
+    const res = await fetch("/api/checkout", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ type }),
+    });
+    const data = await res.json();
+    if (data.url) {
+      window.location.href = data.url;
+    } else {
+      toast.error(data.error ?? "Checkout failed — please try again.");
+    }
+  } catch {
+    toast.error("Network error — please try again.");
+  }
 }
 
 const FALLBACK_SUBTITLE = "An interactive, intelligent co-pilot for your financial strategy.";
