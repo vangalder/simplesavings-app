@@ -160,6 +160,23 @@ export const getClerkIdByStripeCustomer = query({
   },
 });
 
+export const getTokenStats = query({
+  args: { clerkId: v.string() },
+  handler: async (ctx, args) => {
+    const user = await ctx.db
+      .query("users")
+      .withIndex("by_clerk_id", (q) => q.eq("clerkId", args.clerkId))
+      .first();
+    if (!user) return null;
+    const msgs = await ctx.db
+      .query("messages")
+      .withIndex("by_user", (q) => q.eq("userId", user._id))
+      .take(100_000);
+    const tokensUsed = msgs.reduce((sum, m) => sum + (m.inputTokens ?? 0) + (m.outputTokens ?? 0), 0);
+    return { tokensUsed };
+  },
+});
+
 export const getAdminStats = query({
   args: {},
   handler: async (ctx) => {

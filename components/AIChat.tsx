@@ -306,14 +306,16 @@ export default function AIChat({
     ]
   );
 
-  // Generate opener if no history
+  // Generate opener if no history — wait for both queries to resolve so the
+  // opener uses the admin-configured model, not the fallback default.
   useEffect(() => {
     if (savedMessages === undefined) return;
+    if (defaultConvoModel === undefined) return;
     if (openerStarted) return;
     if (savedMessages.length > 0) return;
     setOpenerStarted(true);
     sendMessage("__OPENER__", true);
-  }, [savedMessages]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [savedMessages, defaultConvoModel]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();

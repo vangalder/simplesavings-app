@@ -1026,7 +1026,20 @@ export default function Calculator() {
 
       {/* Modals */}
       {showShareModal && isClerkConfigured && (
-        <ShareModal url={shareUrl} onClose={() => setShowShareModal(false)} />
+        <ShareModal
+          url={shareUrl}
+          snapshot={{
+            startingAmount: state.startingAmount,
+            monthlyContribution: state.monthlyContribution,
+            timeframeYears: state.timeframeYears,
+            interestRate: state.interestRate,
+            totalValue: results.totalValue,
+            interestEarned: results.interestEarned,
+            goalAmount: goalAmount > 0 ? goalAmount : undefined,
+            currency,
+          }}
+          onClose={() => setShowShareModal(false)}
+        />
       )}
       <ProUpsellModal open={upsellContext !== null} onClose={() => setUpsellContext(null)} insightContext={upsellContext} monthlyContribution={state.monthlyContribution} />
     </>

@@ -1,15 +1,28 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { useUser, SignInButton } from "@clerk/nextjs";
 import Modal from "@/components/Modal";
+import { useIsAdmin } from "@/hooks/useIsAdmin";
+
+interface CalculatorSnapshot {
+  startingAmount: number;
+  monthlyContribution: number;
+  timeframeYears: number;
+  interestRate: number;
+  totalValue: number;
+  interestEarned: number;
+  goalAmount?: number;
+  currency?: string;
+}
 
 interface ShareModalProps {
   url: string;
+  snapshot: CalculatorSnapshot;
   onClose: () => void;
 }
 
-type View = "auth" | "form" | "success";
+type View = "auth" | "form" | "narrative" | "success";
 
 function ModalHeader({ title, onClose }: { title: string; onClose: () => void }) {
   return (
@@ -26,27 +39,70 @@ function ModalHeader({ title, onClose }: { title: string; onClose: () => void })
   );
 }
 
-export default function ShareModal({ url, onClose }: ShareModalProps) {
+export default function ShareModal({ url, snapshot, onClose }: ShareModalProps) {
   const { isSignedIn, isLoaded, user } = useUser();
+  const isAdmin = useIsAdmin();
   const [recipientEmail, setRecipientEmail] = useState("");
   const [emailError, setEmailError] = useState("");
-  const [copied, setCopied] = useState(false);
+  const [linkCopied, setLinkCopied] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [view, setView] = useState<View>("auth");
 
-  // Advance from auth to form once signed in
+  // narrative state
+  const [narrative, setNarrative] = useState("");
+  const [narrativeLoading, setNarrativeLoading] = useState(false);
+  const [narrativeError, setNarrativeError] = useState("");
+  const [narrativeCopied, setNarrativeCopied] = useState(false);
+  const [narrativeUsage, setNarrativeUsage] = useState<{ inputTokens: number; outputTokens: number; model: string; provider: string } | null>(null);
+
   const currentView: View = (() => {
+    if (view === "narrative") return "narrative";
     if (view === "success") return "success";
     if (!isLoaded) return "auth";
     if (isSignedIn) return "form";
     return "auth";
   })();
 
-  const handleCopy = async () => {
+  const generateNarrative = useCallback(async () => {
+    setNarrativeLoading(true);
+    setNarrativeError("");
+    setNarrativeCopied(false);
+    try {
+      const res = await fetch("/api/narrative", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(snapshot),
+      });
+      const data = await res.json();
+      if (data.error || !data.narrative) throw new Error(data.error ?? "Empty response");
+      setNarrative(data.narrative);
+      if (data.usage) setNarrativeUsage(data.usage);
+    } catch {
+      setNarrativeError("Something went wrong. Try again.");
+    } finally {
+      setNarrativeLoading(false);
+    }
+  }, [snapshot]);
+
+  useEffect(() => {
+    if (view === "narrative" && !narrative && !narrativeLoading) {
+      generateNarrative();
+    }
+  }, [view]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  const handleCopyLink = async () => {
     try {
       await navigator.clipboard.writeText(url);
-      setCopied(true);
-      setTimeout(() => setCopied(false), 2000);
+      setLinkCopied(true);
+      setTimeout(() => setLinkCopied(false), 2000);
+    } catch {}
+  };
+
+  const handleCopyNarrative = async () => {
+    try {
+      await navigator.clipboard.writeText(narrative);
+      setNarrativeCopied(true);
+      setTimeout(() => setNarrativeCopied(false), 2000);
     } catch {}
   };
 
@@ -60,8 +116,6 @@ export default function ShareModal({ url, onClose }: ShareModalProps) {
     setIsSubmitting(true);
 
     const sharedBy = user?.primaryEmailAddress?.emailAddress ?? "";
-
-    // Record the share — non-blocking; Sprint 2 will persist this to Convex
     fetch("/api/shares/record", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
@@ -69,11 +123,67 @@ export default function ShareModal({ url, onClose }: ShareModalProps) {
     }).catch(console.warn);
 
     await navigator.clipboard.writeText(url).catch(() => {});
-
     setIsSubmitting(false);
     setView("success");
   };
 
+  // ── Narrative view ─────────────────────────────────────────────────────────
+  if (currentView === "narrative") {
+    return (
+      <Modal onClose={onClose}>
+        <ModalHeader title="Share Your Calculation" onClose={onClose} />
+        <div className="px-6 py-5 space-y-3">
+          <div className="min-h-[88px] rounded-xl border-2 border-neutral-200 bg-neutral-50 px-4 py-3 text-sm text-neutral-700 leading-relaxed">
+            {narrativeLoading && (
+              <span className="inline-flex gap-1 items-center h-5 text-neutral-400">
+                <span className="w-1.5 h-1.5 rounded-full bg-neutral-400 animate-bounce" style={{ animationDelay: "0ms" }} />
+                <span className="w-1.5 h-1.5 rounded-full bg-neutral-400 animate-bounce" style={{ animationDelay: "150ms" }} />
+                <span className="w-1.5 h-1.5 rounded-full bg-neutral-400 animate-bounce" style={{ animationDelay: "300ms" }} />
+              </span>
+            )}
+            {!narrativeLoading && narrativeError && <span className="text-error-base">{narrativeError}</span>}
+            {!narrativeLoading && !narrativeError && narrative}
+          </div>
+          {!narrativeLoading && narrativeError && (
+            <button onClick={generateNarrative} className="text-xs text-neutral-400 hover:text-neutral-600 transition-colors">
+              Try again
+            </button>
+          )}
+          {isAdmin && narrativeUsage && !narrativeLoading && (
+            <p className="text-[10px] text-neutral-400 font-mono tabular-nums">
+              {narrativeUsage.provider} · {narrativeUsage.model} · {narrativeUsage.inputTokens}↑ {narrativeUsage.outputTokens}↓ · ${(((narrativeUsage.inputTokens * 0.25 + narrativeUsage.outputTokens * 1.25) / 1_000_000)).toFixed(6)}
+            </p>
+          )}
+        </div>
+
+        <div className="px-6 pb-4 flex justify-end gap-3">
+          <button onClick={onClose} className="px-5 py-2.5 text-neutral-600 font-medium rounded-xl hover:bg-neutral-100 transition-colors">
+            Cancel
+          </button>
+          <button
+            onClick={handleCopyNarrative}
+            disabled={narrativeLoading || !narrative}
+            className={`px-6 py-2.5 font-semibold rounded-xl shadow transition-all disabled:opacity-40 ${
+              narrativeCopied ? "bg-secondary-base text-white" : "bg-gradient-orange-yellow text-white hover:shadow-md"
+            }`}
+          >
+            {narrativeCopied ? "Copied!" : "Copy"}
+          </button>
+        </div>
+
+        <div className="px-6 pb-5 text-center">
+          <button
+            onClick={() => setView(isSignedIn ? "form" : "auth")}
+            className="text-xs text-neutral-400 hover:text-neutral-600 transition-colors underline underline-offset-2"
+          >
+            Share Link
+          </button>
+        </div>
+      </Modal>
+    );
+  }
+
+  // ── Auth view ──────────────────────────────────────────────────────────────
   if (currentView === "auth") {
     return (
       <Modal onClose={onClose}>
@@ -91,30 +201,31 @@ export default function ShareModal({ url, onClose }: ShareModalProps) {
               </p>
               <SignInButton mode="modal">
                 <button className="w-full py-3 px-4 border-2 border-neutral-300 rounded-xl flex items-center justify-center gap-3 hover:bg-neutral-50 transition-colors font-medium text-neutral-800">
-                  <span
-                    className="text-lg font-bold w-5 text-center"
-                    style={{ color: "#4285F4" }}
-                  >
-                    G
-                  </span>
+                  <span className="text-lg font-bold w-5 text-center" style={{ color: "#4285F4" }}>G</span>
                   Sign in with Google
                 </button>
               </SignInButton>
             </>
           )}
         </div>
-        <div className="px-6 pb-6 flex justify-end">
-          <button
-            onClick={onClose}
-            className="px-5 py-2.5 text-neutral-600 font-medium rounded-xl hover:bg-neutral-100 transition-colors"
-          >
+        <div className="px-6 pb-4 flex justify-end">
+          <button onClick={onClose} className="px-5 py-2.5 text-neutral-600 font-medium rounded-xl hover:bg-neutral-100 transition-colors">
             Cancel
+          </button>
+        </div>
+        <div className="px-6 pb-5 text-center">
+          <button
+            onClick={() => setView("narrative")}
+            className="text-xs text-neutral-400 hover:text-neutral-600 transition-colors underline underline-offset-2"
+          >
+            Share Narrative Only
           </button>
         </div>
       </Modal>
     );
   }
 
+  // ── Success view ───────────────────────────────────────────────────────────
   if (currentView === "success") {
     return (
       <Modal onClose={onClose}>
@@ -143,12 +254,11 @@ export default function ShareModal({ url, onClose }: ShareModalProps) {
     );
   }
 
-  // form view
+  // ── Form view (signed in) ──────────────────────────────────────────────────
   return (
     <Modal onClose={onClose}>
       <ModalHeader title="Share Your Calculation" onClose={onClose} />
       <div className="px-6 py-5 space-y-4">
-        {/* URL row */}
         <div>
           <label className="block text-sm font-medium text-neutral-700 mb-1.5">
             Your shareable link
@@ -158,19 +268,16 @@ export default function ShareModal({ url, onClose }: ShareModalProps) {
               {url}
             </div>
             <button
-              onClick={handleCopy}
+              onClick={handleCopyLink}
               className={`shrink-0 px-4 py-2.5 rounded-xl font-medium text-sm transition-colors ${
-                copied
-                  ? "bg-secondary-base text-white"
-                  : "bg-neutral-100 text-neutral-700 hover:bg-neutral-200"
+                linkCopied ? "bg-secondary-base text-white" : "bg-neutral-100 text-neutral-700 hover:bg-neutral-200"
               }`}
             >
-              {copied ? "Copied!" : "Copy"}
+              {linkCopied ? "Copied!" : "Copy"}
             </button>
           </div>
         </div>
 
-        {/* Recipient email */}
         <div>
           <label className="block text-sm font-medium text-neutral-700 mb-1.5">
             Share with (email address)
@@ -178,13 +285,8 @@ export default function ShareModal({ url, onClose }: ShareModalProps) {
           <input
             type="email"
             value={recipientEmail}
-            onChange={(e) => {
-              setRecipientEmail(e.target.value);
-              if (emailError) setEmailError("");
-            }}
-            onKeyDown={(e) => {
-              if (e.key === "Enter") handleShare();
-            }}
+            onChange={(e) => { setRecipientEmail(e.target.value); if (emailError) setEmailError(""); }}
+            onKeyDown={(e) => { if (e.key === "Enter") handleShare(); }}
             placeholder="friend@example.com"
             autoFocus
             className={`w-full px-4 py-3 border-2 rounded-xl text-base focus:outline-none focus:ring-2 transition-colors ${
@@ -193,17 +295,12 @@ export default function ShareModal({ url, onClose }: ShareModalProps) {
                 : "border-accent-orange-base focus:ring-accent-orange-base focus:ring-opacity-40"
             }`}
           />
-          {emailError && (
-            <p className="text-sm text-error-base mt-1">{emailError}</p>
-          )}
+          {emailError && <p className="text-sm text-error-base mt-1">{emailError}</p>}
         </div>
       </div>
 
-      <div className="px-6 pb-6 flex justify-end gap-3">
-        <button
-          onClick={onClose}
-          className="px-5 py-2.5 text-neutral-600 font-medium rounded-xl hover:bg-neutral-100 transition-colors"
-        >
+      <div className="px-6 pb-4 flex justify-end gap-3">
+        <button onClick={onClose} className="px-5 py-2.5 text-neutral-600 font-medium rounded-xl hover:bg-neutral-100 transition-colors">
           Cancel
         </button>
         <button
@@ -212,6 +309,15 @@ export default function ShareModal({ url, onClose }: ShareModalProps) {
           className="px-6 py-2.5 bg-gradient-orange-yellow text-white font-semibold rounded-xl shadow hover:shadow-md transition-shadow disabled:opacity-60"
         >
           {isSubmitting ? "Sharing…" : "Share Link"}
+        </button>
+      </div>
+
+      <div className="px-6 pb-5 text-center">
+        <button
+          onClick={() => setView("narrative")}
+          className="text-xs text-neutral-400 hover:text-neutral-600 transition-colors underline underline-offset-2"
+        >
+          Share Narrative Only
         </button>
       </div>
     </Modal>

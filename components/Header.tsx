@@ -51,6 +51,10 @@ function UserDropdown() {
     api.appConfig.getConfig,
     isAdmin ? { key: "paymentTestMode" } : "skip"
   );
+  const tokenStats = useQuery(
+    api.users.getTokenStats,
+    isAdmin && isSignedIn && clerkId ? { clerkId } : "skip"
+  );
 
   // Close on outside click
   useEffect(() => {
@@ -138,7 +142,7 @@ function UserDropdown() {
               <p className="text-[10px] font-semibold text-neutral-500 uppercase tracking-widest mb-1.5">Usage</p>
               {isAdmin && (
                 <p className="text-[10px] text-neutral-500 font-mono tabular-nums mb-1.5">
-                  Tokens Used: ${(used / 100).toFixed(4)} / ${(granted / 100).toFixed(2)} ({pct}%)
+                  {(tokenStats?.tokensUsed ?? 0).toLocaleString()} tokens · ${(used / 100).toFixed(4)} / ${(granted / 100).toFixed(2)} ({pct}%)
                 </p>
               )}
               <div className="h-2 bg-neutral-200 rounded-full overflow-hidden">
