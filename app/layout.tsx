@@ -30,6 +30,7 @@ const robotoMono = Roboto_Mono({
 export const metadata: Metadata = {
   title: "Simple Savings Calculator",
   description: "Calculate your savings growth with compound interest",
+  other: { google: "notranslate" },
 };
 
 export default async function RootLayout({
@@ -41,7 +42,7 @@ export default async function RootLayout({
   const messages = await getMessages();
 
   return (
-    <html lang={locale}>
+    <html lang={locale} translate="no" className="notranslate">
       <head>
         <Script
           src="https://www.googletagmanager.com/gtag/js?id=G-7SSJWHL9D0"
