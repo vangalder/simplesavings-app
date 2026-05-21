@@ -350,6 +350,7 @@ export default function Calculator() {
       setAiBlurb(defaultScenario.blurbEn);
       setAiBlurbQuestion(defaultScenario.blurbQuestionEn ?? "");
       setAiBlurbPitch(defaultScenario.blurbPitchEn ?? "");
+      setAiBlurbMeta({ provider: "cache", model: "cached", tokensIn: 0, tokensOut: 0, latencyMs: 0, costUsd: 0 });
       return;
     }
 

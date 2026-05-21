@@ -147,7 +147,7 @@ export async function GET() {
       headers["Authorization"] = `Bearer ${process.env.OPENROUTER_API_KEY}`;
     }
 
-    const res = await fetch("https://openrouter.ai/api/v1/models", {
+    const res = await fetch("https://openrouter.ai/api/v1/models?output_modalities=text", {
       cache: "no-store",
       headers,
       signal: AbortSignal.timeout(8_000),

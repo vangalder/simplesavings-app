@@ -22,7 +22,10 @@ const PROVIDER_LABELS: Record<ProviderPrefix, string> = {
 
 const HIGH_COST_THRESHOLD = 15.0;
 
-type Profile = { label: string; strengths: string; caveats: string };
+type SortCol = "name" | "cost";
+type SortDir = "asc" | "desc";
+
+type Profile = { label: string; pros: string; cons: string };
 
 function getProfile(id: string): Profile {
   const lc = id.toLowerCase();
@@ -32,21 +35,21 @@ function getProfile(id: string): Profile {
   ) {
     return {
       label: "High-Reasoning",
-      strengths: "✓ Elite Math & Chronological Consistency",
-      caveats: "⚠️ Latency / Processing Delay",
+      pros:  "Flawless chronological tracking and age milestones, immune to basic math and compounding hallucinations.",
+      cons:  "Severe 5–15s latency, hidden thinking chains burn token counts, prone to dense walls of text.",
     };
   }
   if (["flash", "mini", "lite", "nano", "haiku", "scout", "small", "fast", "turbo"].some((k) => lc.includes(k))) {
     return {
       label: "Fast Efficiency",
-      strengths: "✓ Sub-second Latency / Low-cost Copy",
-      caveats: "⚠️ Timeline Hallucination Risk",
+      pros:  "Sub-second rendering, near-zero cost, strictly respects micro-copy token and brevity constraints.",
+      cons:  "Vulnerable to number hallucinations on multi-step horizons (> 10 years), superficial strategy logic.",
     };
   }
   return {
     label: "General Flagship",
-    strengths: "✓ High Context / Balanced Strategy Copilot",
-    caveats: "",
+    pros:  "Excellent strategic nuance for wealth advising, parses complex compound math, rock-solid output structure.",
+    cons:  "Moderate 2–3s latency, expensive token cost, overkill for high-frequency 2-sentence blurb updates.",
   };
 }
 
@@ -90,6 +93,8 @@ export default function AdminModelMatrix({
   const [activeTab,    setActiveTab]    = useState<ProviderPrefix>(() =>
     getDefaultTab(parseActiveId(activeConvo ?? ""))
   );
+  const [sortCol,  setSortCol]  = useState<SortCol>("cost");
+  const [sortDir,  setSortDir]  = useState<SortDir>("desc");
 
   const activeConvoId = parseActiveId(activeConvo);
   const activeBlurbId = parseActiveId(activeBlurb);
@@ -108,12 +113,24 @@ export default function AdminModelMatrix({
     return () => { cancelled = true; };
   }, []);
 
-  const tabModels = useMemo(() =>
-    models
-      .filter((m) => m.id.startsWith(activeTab))
-      .sort((a, b) => b.pricePerMTok - a.pricePerMTok),
-    [models, activeTab]
-  );
+  function handleSort(col: SortCol) {
+    if (sortCol === col) {
+      setSortDir((d) => (d === "asc" ? "desc" : "asc"));
+    } else {
+      setSortCol(col);
+      setSortDir(col === "cost" ? "desc" : "asc");
+    }
+  }
+
+  const tabModels = useMemo(() => {
+    const filtered = models.filter((m) => m.id.startsWith(activeTab));
+    return [...filtered].sort((a, b) => {
+      const cmp = sortCol === "name"
+        ? a.name.localeCompare(b.name)
+        : a.pricePerMTok - b.pricePerMTok;
+      return sortDir === "asc" ? cmp : -cmp;
+    });
+  }, [models, activeTab, sortCol, sortDir]);
 
   const providerCounts = useMemo(() => {
     const counts: Partial<Record<ProviderPrefix, number>> = {};
@@ -148,6 +165,9 @@ export default function AdminModelMatrix({
       </div>
     );
   }
+
+  const sortArrow = (col: SortCol) =>
+    sortCol === col ? (sortDir === "asc" ? " ↑" : " ↓") : "";
 
   return (
     <div className="space-y-3">
@@ -188,13 +208,27 @@ export default function AdminModelMatrix({
       ) : (
         <div className="rounded-xl border border-neutral-200 overflow-hidden">
           <div className="overflow-x-auto">
-            <table className="w-full text-xs min-w-[620px]">
+            <table className="w-full text-xs min-w-[640px]">
               <thead>
                 <tr className="border-b border-neutral-100 bg-neutral-50">
-                  <th className="text-left px-4 py-2 font-medium text-neutral-400 w-[26%]">Model / Identifier</th>
-                  <th className="text-left px-3 py-2 font-medium text-neutral-400 w-[40%]">Operational Profile &amp; Known Caveats</th>
-                  <th className="text-right px-3 py-2 font-medium text-neutral-400 w-[12%]">Cost / 1M</th>
-                  <th className="text-right px-4 py-2 font-medium text-neutral-400 w-[22%]">Allocation</th>
+                  <th
+                    className="text-left px-4 py-2 font-medium text-neutral-400 w-[24%] cursor-pointer select-none hover:text-neutral-600 transition-colors"
+                    onClick={() => handleSort("name")}
+                  >
+                    Model / Identifier{sortArrow("name")}
+                  </th>
+                  <th className="text-left px-3 py-2 font-medium text-neutral-400 w-[42%]">
+                    Operational Profile &amp; Known Caveats
+                  </th>
+                  <th
+                    className="text-right px-3 py-2 font-medium text-neutral-400 w-[12%] cursor-pointer select-none hover:text-neutral-600 transition-colors"
+                    onClick={() => handleSort("cost")}
+                  >
+                    Cost / 1M{sortArrow("cost")}
+                  </th>
+                  <th className="text-right px-4 py-2 font-medium text-neutral-400 w-[22%]">
+                    Allocation
+                  </th>
                 </tr>
               </thead>
               <tbody>
@@ -224,14 +258,14 @@ export default function AdminModelMatrix({
 
                       {/* Operational profile */}
                       <td className="px-3 py-2.5">
-                        <p className="font-medium text-neutral-700 leading-tight" style={{ fontSize: "11px" }}>
+                        <p className="font-medium text-neutral-700 leading-tight mb-0.5" style={{ fontSize: "11px" }}>
                           {profile.label}
                         </p>
-                        <p className="text-neutral-500 leading-tight mt-0.5" style={{ fontSize: "10px" }}>
-                          {profile.strengths}
-                          {profile.caveats && (
-                            <span className="text-neutral-400">{"  |  "}{profile.caveats}</span>
-                          )}
+                        <p className="text-neutral-600 leading-snug" style={{ fontSize: "10px" }}>
+                          🟢 {profile.pros}
+                        </p>
+                        <p className="text-neutral-400 leading-snug mt-0.5" style={{ fontSize: "10px" }}>
+                          ⚠️ {profile.cons}
                         </p>
                       </td>
 

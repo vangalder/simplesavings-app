@@ -76,7 +76,9 @@ export default function AIBlurb({ blurb, question, pitch, loading, meta, error, 
       )}
       {isAdmin && meta && !loading && (
         <p className="ml-6 text-[10px] text-neutral-500 font-mono tabular-nums">
-          {meta.provider} · {meta.model} · {meta.tokensIn}↑ {meta.tokensOut}↓ · {(meta.latencyMs / 1000).toFixed(2)}s · ${meta.costUsd.toFixed(6)}
+          {meta.provider === "cache"
+            ? "served from cache · $0.000000"
+            : `${meta.provider} · ${meta.model} · ${meta.tokensIn}↑ ${meta.tokensOut}↓ · ${(meta.latencyMs / 1000).toFixed(2)}s · $${meta.costUsd.toFixed(6)}`}
         </p>
       )}
     </div>
