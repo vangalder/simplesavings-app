@@ -3,7 +3,7 @@
 import { useState, useEffect, useMemo } from "react";
 import { useQuery, useMutation } from "convex/react";
 import { api } from "@/convex/_generated/api";
-import ProviderPicker, { PROVIDERS } from "@/components/ProviderPicker";
+import AdminModelPicker from "@/components/AdminModelPicker";
 import dynamic from "next/dynamic";
 
 const ReactECharts = dynamic(() => import("echarts-for-react"), { ssr: false });
@@ -25,33 +25,28 @@ export default function AdminPanel() {
     await setConfig({ key: "paymentTestMode", value });
   };
 
-  // Model config state
-  const [blurbProvider, setBlurbProvider] = useState("anthropic");
-  const [blurbModelId, setBlurbModelId] = useState("claude-haiku-4-5-20251001");
-  const [convoProvider, setConvoProvider] = useState("anthropic");
-  const [convoModelId, setConvoModelId] = useState("claude-sonnet-4-6");
+  // Model config state — model IDs are OpenRouter-style (e.g. "anthropic/claude-3-5-haiku-20241022")
+  const [blurbModelId, setBlurbModelId] = useState("anthropic/claude-3-5-haiku-20241022");
+  const [convoModelId, setConvoModelId] = useState("openai/gpt-4o");
   const [configSaved, setConfigSaved] = useState(false);
 
-  // Sync dropdowns from Convex when config loads
+  // Sync dropdowns from Convex when config loads (strip the "provider:" prefix)
   useEffect(() => {
     if (blurbModel && typeof blurbModel === "string" && blurbModel.includes(":")) {
-      const [p, m] = blurbModel.split(":", 2);
-      setBlurbProvider(p);
-      setBlurbModelId(m);
+      setBlurbModelId(blurbModel.slice(blurbModel.indexOf(":") + 1));
     }
   }, [blurbModel]);
 
   useEffect(() => {
     if (convoModel && typeof convoModel === "string" && convoModel.includes(":")) {
-      const [p, m] = convoModel.split(":", 2);
-      setConvoProvider(p);
-      setConvoModelId(m);
+      setConvoModelId(convoModel.slice(convoModel.indexOf(":") + 1));
     }
   }, [convoModel]);
 
   const handleSaveConfig = async () => {
-    await setConfig({ key: "defaultBlurbModel", value: `${blurbProvider}:${blurbModelId}` });
-    await setConfig({ key: "defaultConversationModel", value: `${convoProvider}:${convoModelId}` });
+    // All dynamic models are routed through OpenRouter
+    await setConfig({ key: "defaultBlurbModel", value: `openrouter:${blurbModelId}` });
+    await setConfig({ key: "defaultConversationModel", value: `openrouter:${convoModelId}` });
     setConfigSaved(true);
     setTimeout(() => setConfigSaved(false), 2000);
   };
@@ -244,18 +239,16 @@ export default function AdminPanel() {
         <div className="space-y-4">
           <div>
             <label className="block text-xs font-medium text-neutral-600 mb-1">Default blurb model (free, high-volume)</label>
-            <ProviderPicker
-              provider={blurbProvider}
-              model={blurbModelId}
-              onChange={(p, m) => { setBlurbProvider(p); setBlurbModelId(m); }}
+            <AdminModelPicker
+              value={blurbModelId}
+              onChange={(m) => setBlurbModelId(m)}
             />
           </div>
           <div>
             <label className="block text-xs font-medium text-neutral-600 mb-1">Default conversation model (paid)</label>
-            <ProviderPicker
-              provider={convoProvider}
-              model={convoModelId}
-              onChange={(p, m) => { setConvoProvider(p); setConvoModelId(m); }}
+            <AdminModelPicker
+              value={convoModelId}
+              onChange={(m) => setConvoModelId(m)}
             />
           </div>
           <button
