@@ -187,7 +187,16 @@ const SYSTEM_PROMPT = `You are a conversational financial co-pilot for simplesav
 
 1. BODY (2 sentences): MIRROR then FRICTION. Mirror validates what the numbers reveal in plain human language. Friction surfaces ONE concrete blindspot or risk — something the user hasn't thought of yet.
 2. QUESTION: Output the OPEN QUESTION exactly as given — do not rephrase.
-3. PITCH: One sentence that directly addresses or begins to answer the OPEN QUESTION for this specific scenario. Reference their actual numbers or situation. This becomes the modal subtitle the user reads the moment they click — it should feel like the answer is one conversation away. No generic copy, no vague promises.
+3. PITCH (MAX 25 words — this is the teaser subtitle shown in the upgrade modal the instant the user clicks): Write one punchy, conversion-focused sentence using EXACT numbers from the FACT MATRIX or simulation data.
+
+FORBIDDEN PHRASES: "I can show you how", "Explore your", "Let me help", "We can look at", "changing numbers", "your financial freedom targets", any phrase that could apply to ANY user.
+REQUIRED: Cite specific dollar amounts, percentages, dates, or gaps. Make the user feel this was written for their exact scenario.
+
+Pitch examples by scenario type (match the closest one):
+• Goal missed over short horizon: "You're $93k shy of $1.5M — let's find the exact monthly increase to close that gap by January without banking on a 25% return."
+• High return rate + large principal: "A 25% return is carrying your $1.18M — let's stress-test what a single correction year does to your January runway."
+• No goal, strong accumulation: "Your balance is generating serious monthly interest — let's map your exact safe withdrawal limit and tax minimization paths from here."
+• Withdrawal / depletion mode: "Interest is covering the drawdown — but let's model the exact rate drop that flips this from self-sustaining to depleting."
 
 Output format — write exactly three blocks separated by a line containing only "---". No brackets, no labels, no extra lines:
 Your interest is outpacing deposits by month 14.
@@ -224,7 +233,7 @@ OTHER RULES:
 - Never use the acronym "FIRE" — use "work-optional", "fully self-sustaining", or "financial freedom target".
 - Tone: warm, direct, human. No jargon, no moralizing, no generic praise.
 - Forbidden openers: "At this rate", "Money doubles", starting with a raw number.
-- Body max 40 words. Pitch max 18 words.`;
+- Body max 40 words. Pitch max 25 words.`;
 
 const TRANSLATION_PROMPT = `You are a precise translator. Output only the translated text — no quotes, no explanation. Preserve all numbers, punctuation, and every "---" separator line exactly as-is.`;
 
@@ -300,6 +309,7 @@ export async function POST(req: NextRequest) {
     interestEarned,
     currency = "USD",
     goalAmount = null,
+    targetDateStr = null,
   } = body as {
     startingAmount: number;
     monthlyContribution: number;
@@ -309,7 +319,17 @@ export async function POST(req: NextRequest) {
     interestEarned: number;
     currency?: string;
     goalAmount?: number | null;
+    targetDateStr?: string | null;
   };
+
+  // Human-readable target date for pitch copy ("January 2027")
+  const targetDateFormatted = targetDateStr
+    ? (() => {
+        try {
+          return new Date(targetDateStr + "T12:00:00").toLocaleDateString("en-US", { month: "long", year: "numeric" });
+        } catch { return null; }
+      })()
+    : null;
 
   const hasGoal = typeof goalAmount === "number" && goalAmount > 0;
 
@@ -573,6 +593,16 @@ ${hasGoal && goalAmount !== null ? `
 
 LEAD WITH: ${leadWith}
 OPEN QUESTION: ${questionHook}
+
+PITCH CONTEXT — use this to write a scenario-specific pitch (not generic copy):
+${isWithdrawal
+  ? `Scenario type: WITHDRAWAL / DRAWDOWN — ${isNetGrowthPositive ? "self-sustaining (interest covers withdrawal)" : "depleting portfolio"}`
+  : hasGoal && goalAmount !== null
+    ? goalMetWithinTimeframe
+      ? `Scenario type: GOAL ACHIEVABLE within the ${Math.round(timeframeYears * 12)}-month plan`
+      : `Scenario type: GOAL MISSED — short by ${formatCurrency(goalAmount! - totalValue, currency)} over the ${Math.round(timeframeYears * 12)}-month window${targetDateFormatted ? ` (deadline: ${targetDateFormatted})` : ""}; takes ${monthsToReachGoal ?? "?"} months at current pace`
+    : `Scenario type: NO GOAL SET — starting balance ${formatCurrency(startingAmount, currency)} at ${interestRate}% generating ${formatCurrency(monthlyInterest, currency)}/month`}
+${targetDateFormatted ? `Target deadline: ${targetDateFormatted}` : ""}
 
 Write the three blocks separated by --- as described above. Output the OPEN QUESTION exactly as written — do not rephrase it.`;
 

@@ -375,6 +375,7 @@ export default function Calculator() {
             interestEarned: results.interestEarned,
             currency,
             goalAmount: goalAmount > 0 ? goalAmount : null,
+            targetDateStr: timeframeMode === "date" && targetDateStr ? targetDateStr : null,
           }),
         });
         const data = await res.json();
