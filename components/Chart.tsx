@@ -159,6 +159,13 @@ export default function Chart({ data, chartType = "area", goalAmount = 0, locale
     const maxYear = validData[validData.length - 1].year;
     const maxValue = validData.reduce((m, p) => Math.max(m, p.total), 0);
 
+    // For monthly charts (short timeframe), zoom y-axis so growth is visible rather than swamped by the base
+    const startTotal = validData[0]?.total ?? 0;
+    const growth = maxValue - startTotal;
+    const yMin = xAxisUnit === "months" && growth > 0
+      ? Math.max(0, Math.floor((startTotal - growth * 1.5) / 10000) * 10000)
+      : 0;
+
     // Build aligned arrays
     const byYear = new Map(validData.map((p) => [p.year, p]));
     const aligned: { principal: number; interest: number; total: number }[] = [];
@@ -339,7 +346,7 @@ export default function Chart({ data, chartType = "area", goalAmount = 0, locale
         nameLocation: "middle",
         nameGap: 60,
         nameTextStyle: { fontSize: 12, color: "#64748B", fontWeight: "bold" },
-        min: 0,
+        min: yMin,
         max: Math.ceil(Math.max(maxValue, goalAmount) / 100000) * 100000 || 1200000,
         axisLabel: {
           formatter: (v: number) => fmtCompact(v),

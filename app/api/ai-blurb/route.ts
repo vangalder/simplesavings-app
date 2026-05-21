@@ -433,9 +433,11 @@ export async function POST(req: NextRequest) {
       `What's the gap in dollars between today's balance and the goal, and what's the fastest way to close it?`,
     ]);
   } else if (hasGoal && yearsToGoal) {
-    const overUnder = parseFloat(yearsToGoal) > timeframeYears
-      ? `${(parseFloat(yearsToGoal) - timeframeYears).toFixed(1)} years past the current timeframe`
-      : `within the current timeframe`;
+    const yearsToGoalNum = parseFloat(yearsToGoal);
+    const goalBeyondTimeframe = yearsToGoalNum > timeframeYears;
+    const overUnder = goalBeyondTimeframe
+      ? `${(yearsToGoalNum - timeframeYears).toFixed(1)} years beyond the current ${timeframeYears.toFixed(1)}-year plan`
+      : `on track — arrives within the ${timeframeYears.toFixed(1)}-year window`;
     leadWith = pick([
       `At this pace, the ${formatCurrency(goalAmount!, currency)} goal arrives in ${yearsToGoal} years — ${overUnder}.`,
       `${formatCurrency(goalAmount!, currency)} goal: ${yearsToGoal} years away at current pace, ${overUnder}.`,
@@ -506,7 +508,17 @@ export async function POST(req: NextRequest) {
 
   const noGoalConstraint = !hasGoal
     ? `\nCONSTRAINT: The user has NOT set a savings goal. Do NOT reference any specific target amount, savings goal, or "freedom" number. Focus strictly on accumulation velocity, compound growth, and inflation context.`
-    : `\nUSER GOAL: ${formatCurrency(goalAmount!, currency)} | Progress: ${goalProgress ?? "n/a"}% | Years to reach it: ${yearsToGoal ?? "n/a"}`;
+    : (() => {
+        const base = `\nUSER GOAL: ${formatCurrency(goalAmount!, currency)} | Progress: ${goalProgress ?? "n/a"}% | Years to reach it: ${yearsToGoal ?? "n/a"}`;
+        if (yearsToGoal && yearsToGoal !== "already reached") {
+          const ytgNum = parseFloat(yearsToGoal);
+          const direction = ytgNum > timeframeYears
+            ? `OUTSIDE — goal needs ${yearsToGoal} yrs but plan is only ${timeframeYears.toFixed(2)} yrs`
+            : `INSIDE — goal reaches in ${yearsToGoal} yrs within the ${timeframeYears.toFixed(2)}-yr plan`;
+          return `${base} | Goal vs plan: ${direction}`;
+        }
+        return base;
+      })();
 
   const timeframeConstraint = timeframeYears < 2
     ? `\nSHORT TIMEFRAME (${timeframeYears.toFixed(1)} years): FORBIDDEN — inflation, CPI, purchasing power, retirement rules, long-term projections. Focus ONLY on: interest velocity over this window, cash momentum, how the starting balance is working right now.`
