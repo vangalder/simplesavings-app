@@ -14,7 +14,20 @@ interface CalculatorSnapshot {
   interestEarned: number;
   goalAmount?: number;
   currency?: string;
+  locale?: string;
 }
+
+const LOCALE_STRINGS: Record<string, {
+  years: string; year: string; at: string; startingWith: string;
+  noContributions: string; moContrib: string; moWithdrawal: string; goal: string;
+}> = {
+  "en":    { years: "years",  year: "year",  at: "at",  startingWith: "starting with", noContributions: "no contributions", moContrib: "/mo",      moWithdrawal: "/mo withdrawal",       goal: "goal"      },
+  "es-ES": { years: "años",   year: "año",   at: "al",  startingWith: "empezando con", noContributions: "sin aportaciones", moContrib: "/mes",     moWithdrawal: "/mes de retiro",        goal: "objetivo"  },
+  "es-MX": { years: "años",   year: "año",   at: "al",  startingWith: "empezando con", noContributions: "sin aportaciones", moContrib: "/mes",     moWithdrawal: "/mes de retiro",        goal: "objetivo"  },
+  "it":    { years: "anni",   year: "anno",  at: "al",  startingWith: "a partire da",  noContributions: "senza contributi", moContrib: "/mese",    moWithdrawal: "/mese di prelievo",     goal: "obiettivo" },
+  "pt-BR": { years: "anos",   year: "ano",   at: "a",   startingWith: "começando com", noContributions: "sem contribuições",moContrib: "/mês",     moWithdrawal: "/mês de retirada",      goal: "objetivo"  },
+  "pt-PT": { years: "anos",   year: "ano",   at: "a",   startingWith: "começando com", noContributions: "sem contribuições",moContrib: "/mês",     moWithdrawal: "/mês de levantamento",  goal: "objetivo"  },
+};
 
 interface ShareModalProps {
   url: string;
@@ -67,17 +80,20 @@ export default function ShareModal({ url, snapshot, onClose }: ShareModalProps) 
   })();
 
   const buildBareBonesNarrative = useCallback((): string => {
-    const { startingAmount, monthlyContribution, timeframeYears, interestRate, totalValue, currency = "USD", goalAmount } = snapshot;
-    const c = currency;
-    const exact = (n: number) => new Intl.NumberFormat("en-US", { style: "currency", currency: c, minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(n);
-    const years = timeframeYears % 1 === 0 ? `${timeframeYears} year${timeframeYears !== 1 ? "s" : ""}` : `${timeframeYears.toFixed(1)} years`;
+    const { startingAmount, monthlyContribution, timeframeYears, interestRate, totalValue, currency = "USD", goalAmount, locale = "en" } = snapshot;
+    const intlLocale = locale === "en" ? "en-US" : locale;
+    const s = LOCALE_STRINGS[locale] ?? LOCALE_STRINGS["en"];
+    const exact = (n: number) => new Intl.NumberFormat(intlLocale, { style: "currency", currency, minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(n);
+    const timeStr = timeframeYears % 1 === 0
+      ? `${timeframeYears} ${timeframeYears === 1 ? s.year : s.years}`
+      : `${timeframeYears.toFixed(1)} ${s.years}`;
     const contrib = monthlyContribution === 0
-      ? "no contributions"
+      ? s.noContributions
       : monthlyContribution > 0
-      ? `+ ${exact(monthlyContribution)}/mo`
-      : `- ${exact(Math.abs(monthlyContribution))}/mo withdrawal`;
-    const goalPart = goalAmount ? `, goal ${exact(goalAmount)}` : "";
-    return `${years} at ${interestRate}%, starting with ${exact(startingAmount)}${goalPart} ${contrib}: ${exact(totalValue)} (https://simplesavings.app)`;
+      ? `+ ${exact(monthlyContribution)}${s.moContrib}`
+      : `- ${exact(Math.abs(monthlyContribution))}${s.moWithdrawal}`;
+    const goalPart = goalAmount ? `, ${s.goal} ${exact(goalAmount)}` : "";
+    return `${timeStr} ${s.at} ${interestRate}%, ${s.startingWith} ${exact(startingAmount)}${goalPart} ${contrib}: ${exact(totalValue)} (https://simplesavings.app)`;
   }, [snapshot]);
 
   const generateNarrative = useCallback(async (style: "simple" | "expanded" | "bare bones", isRefresh = false) => {
@@ -96,7 +112,7 @@ export default function ShareModal({ url, snapshot, onClose }: ShareModalProps) 
       const res = await fetch("/api/narrative", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ ...snapshot, style }),
+        body: JSON.stringify({ ...snapshot, style, locale: snapshot.locale ?? "en" }),
       });
       const data = await res.json();
       if (data.error || !data.narrative) throw new Error(data.error ?? "Empty response");

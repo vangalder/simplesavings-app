@@ -1037,6 +1037,7 @@ export default function Calculator() {
             interestEarned: results.interestEarned,
             goalAmount: goalAmount > 0 ? goalAmount : undefined,
             currency,
+            locale,
           }}
           onClose={() => setShowShareModal(false)}
         />

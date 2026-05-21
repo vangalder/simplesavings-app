@@ -5,6 +5,15 @@ export const dynamic = "force-dynamic";
 
 const client = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
 
+const LOCALE_LANGUAGE: Record<string, string> = {
+  "en":    "English",
+  "es-ES": "Spanish (Spain)",
+  "es-MX": "Spanish (Mexico)",
+  "it":    "Italian",
+  "pt-BR": "Portuguese (Brazil)",
+  "pt-PT": "Portuguese (Portugal)",
+};
+
 function fmtExact(n: number, currency = "USD"): string {
   return new Intl.NumberFormat("en-US", {
     style: "currency",
@@ -33,9 +42,11 @@ function buildPrompt(
     interestEarned: number;
     goalAmount?: number;
     currency: string;
+    locale: string;
   }
 ): string {
-  const { startingAmount, monthlyContribution, timeframeYears, interestRate, totalValue, interestEarned, goalAmount, currency } = params;
+  const { startingAmount, monthlyContribution, timeframeYears, interestRate, totalValue, interestEarned, goalAmount, currency, locale } = params;
+  const language = LOCALE_LANGUAGE[locale] ?? "English";
   const isWithdrawal = monthlyContribution < 0;
   const hasContribution = monthlyContribution !== 0;
 
@@ -52,7 +63,9 @@ function buildPrompt(
   ].join("\n");
 
   if (style === "simple") {
-    return `Write exactly 1 sentence someone could text to a family member. Follow this pattern closely but adapt it naturally to the numbers:
+    return `You MUST write entirely in ${language}. Every word must be in ${language}.
+
+Write exactly 1 sentence someone could text to a family member. Follow this pattern closely but adapt it naturally to the numbers:
 
 "If you put away $1,000 for 1 year at a 9% interest rate without adding another dime, it'll grow to $1,093.81—which means you make an extra $93.81 just from your money sitting there!"
 
@@ -67,7 +80,9 @@ Plan:
 ${lines}`;
   }
 
-  return `Write 2–3 casual, first-person sentences someone could text to explain their savings plan. Be specific with the exact numbers. Include: starting amount, monthly contributions if any, timeframe, return rate, final total, growth earned, and goal progress if there's a goal. Follow this style:
+  return `You MUST write entirely in ${language}. Every word must be in ${language}.
+
+Write 2–3 casual, first-person sentences someone could text to explain their savings plan. Be specific with the exact numbers. Include: starting amount, monthly contributions if any, timeframe, return rate, final total, growth earned, and goal progress if there's a goal. Follow this style:
 
 "I'm starting with $1,193,857.83 and putting in $2,000 every month for about 8.4 months at a 25% annual return, and it's gonna grow to $1,425,179.93—that's an extra $215,322.10 just from the returns! I'm getting closer to my $1,500,000 goal, though I'm still about $74,820 short of the full target."
 
@@ -92,6 +107,7 @@ export async function POST(req: NextRequest) {
     interestEarned: number;
     goalAmount?: number;
     currency?: string;
+    locale?: string;
     style?: "simple" | "expanded";
   };
 
@@ -101,8 +117,8 @@ export async function POST(req: NextRequest) {
     return Response.json({ error: "Invalid JSON" }, { status: 400 });
   }
 
-  const { currency = "USD", style = "simple", ...nums } = body;
-  const prompt = buildPrompt(style, { ...nums, currency });
+  const { currency = "USD", locale = "en", style = "simple", ...nums } = body;
+  const prompt = buildPrompt(style, { ...nums, currency, locale });
 
   try {
     const msg = await client.messages.create({
