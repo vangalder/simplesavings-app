@@ -75,6 +75,7 @@ export default function AIChat({
   const bottomRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLTextAreaElement>(null);
   const abortRef = useRef<AbortController | null>(null);
+  const prevStreamingRef = useRef(false);
   // Frozen at mount — the blurb that seeded this conversation never changes even if inputs update
   const frozenBlurbRef = useRef(blurbContext);
 
@@ -132,6 +133,14 @@ export default function AIChat({
       scrollToBottom();
     }
   }, [messages, isStreaming, scrollToBottom]);
+
+  // Focus input when AI finishes responding (streaming true → false only, not on mount)
+  useEffect(() => {
+    if (prevStreamingRef.current && !isStreaming) {
+      inputRef.current?.focus();
+    }
+    prevStreamingRef.current = isStreaming;
+  }, [isStreaming]);
 
   const sendMessage = useCallback(
     async (messageText: string, isOpener = false) => {
