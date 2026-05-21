@@ -72,6 +72,9 @@ function getProfile(id: string): Profile {
   };
 }
 
+const PROS_ICON = "✅";
+const CONS_ICON = "⚠️";
+
 function parseActiveId(stored: string | null): string {
   if (!stored) return "";
   const idx = stored.indexOf(":");
@@ -237,7 +240,7 @@ export default function AdminModelMatrix({
                     Model / Identifier{sortArrow("name")}
                   </th>
                   <th className="text-left px-3 py-2 font-medium text-neutral-400 w-[42%]">
-                    Operational Profile &amp; Known Caveats
+                    Pros and Cons
                   </th>
                   <th
                     className="text-right px-3 py-2 font-medium text-neutral-400 w-[12%] cursor-pointer select-none hover:text-neutral-600 transition-colors"
@@ -275,24 +278,16 @@ export default function AdminModelMatrix({
                         </p>
                       </td>
 
-                      {/* Operational profile */}
+                      {/* Pros and Cons */}
                       <td className="px-3 py-2.5">
-                        {profile.pros.length > 0 && (
-                          <div>
-                            <p className="font-semibold text-neutral-600 leading-tight" style={{ fontSize: "10px" }}>🟢 PROS</p>
-                            {profile.pros.map((p) => (
-                              <p key={p} className="text-neutral-600 leading-snug" style={{ fontSize: "10px" }}>• {p}</p>
-                            ))}
-                          </div>
-                        )}
-                        {profile.cons.length > 0 && (
-                          <div className={profile.pros.length > 0 ? "mt-1" : ""}>
-                            <p className="font-semibold text-neutral-600 leading-tight" style={{ fontSize: "10px" }}>⚠️ CONS</p>
-                            {profile.cons.map((c) => (
-                              <p key={c} className="text-neutral-600 leading-snug" style={{ fontSize: "10px" }}>• {c}</p>
-                            ))}
-                          </div>
-                        )}
+                        <div className="space-y-0.5">
+                          {profile.pros.map((p) => (
+                            <p key={p} className="text-neutral-600 leading-snug whitespace-nowrap" style={{ fontSize: "10px" }}>{PROS_ICON} {p}</p>
+                          ))}
+                          {profile.cons.map((c) => (
+                            <p key={c} className="text-neutral-600 leading-snug whitespace-nowrap" style={{ fontSize: "10px" }}>{CONS_ICON} {c}</p>
+                          ))}
+                        </div>
                       </td>
 
                       {/* Cost */}

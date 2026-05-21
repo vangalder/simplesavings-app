@@ -380,7 +380,7 @@ export default function InsightsPanel({ scenarioId, clerkId, scenarioData }: Pro
       {/* Credit indicator */}
       {creditBalance && !creditBalance.isPro && (
         <div className="px-4 py-1.5 border-t border-neutral-100 bg-neutral-50">
-          <CreditBar granted={creditBalance.granted} used={creditBalance.used} />
+          <CreditBar granted={creditBalance.granted} used={creditBalance.used} isAdmin={isAdmin} />
         </div>
       )}
 
@@ -410,20 +410,22 @@ export default function InsightsPanel({ scenarioId, clerkId, scenarioData }: Pro
   );
 }
 
-function CreditBar({ granted, used }: { granted: number; used: number }) {
+function CreditBar({ granted, used, isAdmin }: { granted: number; used: number; isAdmin?: boolean }) {
   const pct = granted > 0 ? Math.min(100, Math.round((used / granted) * 100)) : 0;
-  const remaining = Math.max(0, granted - used);
-  const remainingDollars = (remaining / 100).toFixed(2);
 
   return (
-    <div className="flex items-center gap-2">
-      <div className="flex-1 h-1.5 bg-neutral-200 rounded-full overflow-hidden">
+    <div className="space-y-0.5">
+      {isAdmin && (
+        <p className="text-[10px] text-neutral-500 font-mono tabular-nums">
+          Tokens Used: ${(used / 100).toFixed(4)} / ${(granted / 100).toFixed(2)} ({pct}%)
+        </p>
+      )}
+      <div className="h-1.5 bg-neutral-200 rounded-full overflow-hidden">
         <div
           className={`h-full rounded-full transition-all ${pct > 80 ? "bg-red-400" : "bg-primary-base"}`}
           style={{ width: `${pct}%` }}
         />
       </div>
-      <span className="text-[10px] text-neutral-400 shrink-0">${remainingDollars} remaining</span>
     </div>
   );
 }
