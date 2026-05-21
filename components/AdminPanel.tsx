@@ -1,9 +1,10 @@
 "use client";
 
-import { useState, useEffect, useMemo } from "react";
+import { useMemo } from "react";
 import { useQuery, useMutation } from "convex/react";
+import { useUser } from "@clerk/nextjs";
 import { api } from "@/convex/_generated/api";
-import AdminModelPicker from "@/components/AdminModelPicker";
+import AdminModelMatrix from "@/components/AdminModelMatrix";
 import dynamic from "next/dynamic";
 
 const ReactECharts = dynamic(() => import("echarts-for-react"), { ssr: false });
@@ -19,36 +20,16 @@ export default function AdminPanel() {
   const setConfig = useMutation(api.appConfig.setConfig);
   const modelStats = useQuery(api.blurbLogs.getModelStats, {});
 
+  const { user } = useUser();
+  const creditBalance = useQuery(
+    api.users.getAiCreditBalance,
+    user?.id ? { clerkId: user.id } : "skip"
+  );
+
   const testModeValue = (paymentTestMode === "true" ? "sample" : paymentTestMode) ?? "off";
   const isTestModeOn = testModeValue !== "off";
   const handleTestModeChange = async (value: string) => {
     await setConfig({ key: "paymentTestMode", value });
-  };
-
-  // Model config state — model IDs are OpenRouter-style (e.g. "anthropic/claude-3-5-haiku-20241022")
-  const [blurbModelId, setBlurbModelId] = useState("anthropic/claude-3-5-haiku-20241022");
-  const [convoModelId, setConvoModelId] = useState("openai/gpt-4o");
-  const [configSaved, setConfigSaved] = useState(false);
-
-  // Sync dropdowns from Convex when config loads (strip the "provider:" prefix)
-  useEffect(() => {
-    if (blurbModel && typeof blurbModel === "string" && blurbModel.includes(":")) {
-      setBlurbModelId(blurbModel.slice(blurbModel.indexOf(":") + 1));
-    }
-  }, [blurbModel]);
-
-  useEffect(() => {
-    if (convoModel && typeof convoModel === "string" && convoModel.includes(":")) {
-      setConvoModelId(convoModel.slice(convoModel.indexOf(":") + 1));
-    }
-  }, [convoModel]);
-
-  const handleSaveConfig = async () => {
-    // All dynamic models are routed through OpenRouter
-    await setConfig({ key: "defaultBlurbModel", value: `openrouter:${blurbModelId}` });
-    await setConfig({ key: "defaultConversationModel", value: `openrouter:${convoModelId}` });
-    setConfigSaved(true);
-    setTimeout(() => setConfigSaved(false), 2000);
   };
 
   // Build chart data from model stats
@@ -234,30 +215,18 @@ export default function AdminPanel() {
       <div className="bg-white rounded-2xl border border-neutral-200 p-5">
         <h3 className="text-sm font-semibold text-neutral-700 mb-1">Model Configuration</h3>
         <p className="text-xs text-neutral-400 mb-4">
-          Current saved — Blurb: <span className="font-mono">{blurbModel ?? "not set"}</span> · Conversation: <span className="font-mono">{convoModel ?? "not set"}</span>
+          Blurb: <span className="font-mono">{blurbModel ?? "not set"}</span> · Conversation: <span className="font-mono">{convoModel ?? "not set"}</span>
         </p>
-        <div className="space-y-4">
-          <div>
-            <label className="block text-xs font-medium text-neutral-600 mb-1">Default blurb model (free, high-volume)</label>
-            <AdminModelPicker
-              value={blurbModelId}
-              onChange={(m) => setBlurbModelId(m)}
-            />
-          </div>
-          <div>
-            <label className="block text-xs font-medium text-neutral-600 mb-1">Default conversation model (paid)</label>
-            <AdminModelPicker
-              value={convoModelId}
-              onChange={(m) => setConvoModelId(m)}
-            />
-          </div>
-          <button
-            onClick={handleSaveConfig}
-            className="px-4 py-2 bg-primary-base text-white text-sm font-medium rounded-xl hover:opacity-90 transition-opacity"
-          >
-            {configSaved ? "Saved ✓" : "Save defaults"}
-          </button>
-        </div>
+        <AdminModelMatrix
+          activeBlurb={typeof blurbModel === "string" ? blurbModel : null}
+          activeConvo={typeof convoModel === "string" ? convoModel : null}
+          onSetBlurb={async (modelId) => {
+            await setConfig({ key: "defaultBlurbModel", value: `openrouter:${modelId}` });
+          }}
+          onSetConvo={async (modelId) => {
+            await setConfig({ key: "defaultConversationModel", value: `openrouter:${modelId}` });
+          }}
+        />
       </div>
 
       {/* Developer Tools */}
@@ -292,6 +261,37 @@ export default function AdminPanel() {
             <option value="pro">Pro</option>
           </select>
         </div>
+
+        {/* Credit balance — visible whenever the account has credits or is in sample test mode */}
+        {creditBalance !== undefined && (creditBalance === null ? testModeValue === "sample" : creditBalance.granted > 0) && (
+          <div className={`mt-3 pt-3 border-t ${isTestModeOn ? "border-amber-200" : "border-neutral-200"}`}>
+            <div className="flex items-start justify-between gap-4">
+              <div>
+                <p className="text-sm font-medium text-neutral-700">Test account credit balance</p>
+                <p className="text-xs text-neutral-400 mt-0.5">
+                  {creditBalance === null
+                    ? "No credits yet — trigger checkout once to seed sample funds."
+                    : `${creditBalance.isPro ? "Pro plan · " : ""}credit pool for this account`}
+                </p>
+              </div>
+              {creditBalance !== null && (
+                <div className="text-right shrink-0">
+                  <p className="text-sm font-semibold text-neutral-900 tabular-nums">
+                    ${(Math.max(0, creditBalance.granted - creditBalance.used) / 100).toFixed(4)} remaining
+                  </p>
+                  <p className="text-xs text-neutral-500 mt-0.5 tabular-nums">
+                    ${(creditBalance.granted / 100).toFixed(2)} granted · ${(creditBalance.used / 100).toFixed(4)} used
+                    {creditBalance.granted > 0 && (
+                      <span className="ml-1 text-neutral-400">
+                        ({Math.min(100, Math.round((creditBalance.used / creditBalance.granted) * 100))}% consumed)
+                      </span>
+                    )}
+                  </p>
+                </div>
+              )}
+            </div>
+          </div>
+        )}
       </div>
 
       {/* Performance Analytics */}

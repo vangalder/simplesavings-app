@@ -233,6 +233,7 @@ OTHER RULES:
 - Never use the acronym "FIRE" — use "work-optional", "fully self-sustaining", or "financial freedom target".
 - Tone: warm, direct, human. No jargon, no moralizing, no generic praise.
 - Forbidden openers: "At this rate", "Money doubles", starting with a raw number.
+- No emojis. Typography drives clarity — do not use any emoji characters in any of the three output blocks.
 - Body max 40 words. Pitch max 25 words.`;
 
 const TRANSLATION_PROMPT = `You are a precise translator. Output only the translated text — no quotes, no explanation. Preserve all numbers, punctuation, and every "---" separator line exactly as-is.`;
