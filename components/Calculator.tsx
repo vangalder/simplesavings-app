@@ -660,7 +660,7 @@ export default function Calculator() {
       {/* pb accounts for the fixed bottom nav + iOS safe-area on mobile */}
       <div
         className="flex flex-col lg:flex-row gap-4 lg:gap-6"
-        style={{ paddingBottom: "calc(5rem + env(safe-area-inset-bottom, 0px))" }}
+        style={{ paddingBottom: "calc(5.5rem + env(safe-area-inset-bottom, 0px))" }}
       >
         {/* ══ LEFT COLUMN ══ */}
         <div className="w-full lg:w-1/2">
@@ -805,6 +805,38 @@ export default function Calculator() {
                   </div>
                 </div>
               </div>
+
+              {/* Goal Amount — optional, always visible, maps to the chart target line */}
+              <div>
+                <label className="block text-sm font-medium text-neutral-700 mb-1.5">
+                  Goal amount{" "}
+                  <span className="text-neutral-400 font-normal text-xs">(optional)</span>
+                </label>
+                <input
+                  type="text"
+                  inputMode="numeric"
+                  value={goalAmount ? goalAmount.toLocaleString() : ""}
+                  onChange={(e) => {
+                    const raw = e.target.value.replace(/[^0-9]/g, "");
+                    const parsed = raw ? parseInt(raw, 10) : 0;
+                    setGoalAmount(parsed);
+                    if (parsed > 0) setShowGoalInput(true);
+                  }}
+                  onFocus={(e) => {
+                    if (goalAmount) e.target.value = String(goalAmount);
+                  }}
+                  onBlur={(e) => {
+                    const raw = e.target.value.replace(/[^0-9]/g, "");
+                    const parsed = raw ? parseInt(raw, 10) : 0;
+                    setGoalAmount(parsed);
+                    setShowGoalInput(parsed > 0);
+                    e.target.value = parsed ? parsed.toLocaleString() : "";
+                  }}
+                  placeholder="e.g. 1,000,000"
+                  className="w-full px-4 py-3 border-2 border-accent-orange-base rounded-xl text-center text-4xl font-display font-semibold text-accent-orange-base focus:outline-none focus:ring-2 focus:ring-accent-orange-base focus:border-accent-orange-base placeholder:text-accent-orange-base/30 placeholder:text-xl"
+                />
+                <p className="text-xs text-neutral-600 mt-0.5 text-center">Sets a target line on the chart</p>
+              </div>
             </div>
             {/* END INPUTS GROUP */}
 
@@ -920,7 +952,7 @@ export default function Calculator() {
         {/* Mobile: visible only on chart tab, uses order-first so it renders above the metrics card */}
         {/* Desktop: always visible as the right column */}
         <div className={`w-full lg:w-1/2 order-first lg:order-none ${mobileTab("chart")}`}>
-          <div className="bg-secondary-base rounded-2xl p-4 min-h-[280px] lg:min-h-[500px] h-full shadow-lg overflow-hidden flex flex-col gap-2">
+          <div className="bg-secondary-base rounded-2xl p-4 min-h-[280px] lg:min-h-[500px] h-full shadow-lg overflow-hidden">
             <Chart
               data={results.chartData}
               chartType={chartType}
@@ -930,48 +962,6 @@ export default function Calculator() {
               xAxisUnit={results.chartXUnit}
               onChartTypeChange={setChartType}
             />
-
-            {/* Goal amount toggle + input */}
-            <div className="mt-auto pt-2">
-              {!showGoalInput ? (
-                <button
-                  onClick={() => setShowGoalInput(true)}
-                  className="text-xs text-white/60 hover:text-white/90 transition-colors"
-                >
-                  + {t("setGoal")}
-                </button>
-              ) : (
-                <div className="flex items-center gap-2">
-                  <label className="text-xs text-white/70 shrink-0">{tChart("goalLabel")} {getCurrencyMeta(currency).symbol}</label>
-                  <input
-                    type="text"
-                    inputMode="numeric"
-                    value={goalAmount ? goalAmount.toLocaleString() : ""}
-                    onChange={(e) => {
-                      const raw = e.target.value.replace(/[^0-9]/g, "");
-                      setGoalAmount(raw ? parseInt(raw, 10) : 0);
-                    }}
-                    onFocus={(e) => {
-                      if (goalAmount) e.target.value = String(goalAmount);
-                    }}
-                    onBlur={(e) => {
-                      const raw = e.target.value.replace(/[^0-9]/g, "");
-                      const parsed = raw ? parseInt(raw, 10) : 0;
-                      setGoalAmount(parsed);
-                      e.target.value = parsed ? parsed.toLocaleString() : "";
-                    }}
-                    placeholder="1,000,000"
-                    className="flex-1 px-3 py-1.5 text-sm font-display font-semibold bg-white text-secondary-dark placeholder:text-secondary-dark/30 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-white/60 transition-all"
-                  />
-                  <button
-                    onClick={() => { setGoalAmount(0); setShowGoalInput(false); }}
-                    className="text-xs text-white/50 hover:text-white/80"
-                  >
-                    ✕
-                  </button>
-                </div>
-              )}
-            </div>
           </div>
         </div>
         {/* END RIGHT COLUMN */}
@@ -981,9 +971,9 @@ export default function Calculator() {
 
       {/* ─── Sticky bottom navigation — mobile only ─── */}
       <nav
-        className="fixed bottom-0 left-0 right-0 z-50 bg-white border-t border-neutral-200 flex lg:hidden justify-around"
+        className="fixed bottom-0 left-0 right-0 z-50 bg-white border-t-2 border-neutral-200 flex lg:hidden justify-around shadow-[0_-4px_16px_rgba(0,0,0,0.08)]"
         style={{
-          height: `calc(3.75rem + env(safe-area-inset-bottom, 0px))`,
+          height: `calc(4rem + env(safe-area-inset-bottom, 0px))`,
           paddingBottom: `env(safe-area-inset-bottom, 0px)`,
           alignItems: "center",
         }}
@@ -992,41 +982,44 @@ export default function Calculator() {
         <button
           onClick={() => switchTab("calculator")}
           className={`flex flex-col items-center justify-center gap-0.5 flex-1 py-2 transition-colors ${
-            activeTab === "calculator" ? "text-primary-base" : "text-neutral-400"
+            activeTab === "calculator" ? "text-primary-base" : "text-slate-600"
           }`}
         >
-          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
             <line x1="4" y1="6" x2="20" y2="6"/><line x1="4" y1="12" x2="20" y2="12"/><line x1="4" y1="18" x2="20" y2="18"/>
             <circle cx="10" cy="6" r="2" fill="currentColor" stroke="none"/><circle cx="16" cy="12" r="2" fill="currentColor" stroke="none"/><circle cx="8" cy="18" r="2" fill="currentColor" stroke="none"/>
           </svg>
-          <span className="text-[11px] font-medium leading-none">Inputs</span>
+          <span className="text-[11px] font-bold tracking-wide leading-none">Inputs</span>
+          {activeTab === "calculator" && <span className="w-1.5 h-1.5 rounded-full bg-primary-base mt-0.5" />}
         </button>
 
         {/* Chart */}
         <button
           onClick={() => switchTab("chart")}
           className={`flex flex-col items-center justify-center gap-0.5 flex-1 py-2 transition-colors ${
-            activeTab === "chart" ? "text-secondary-base" : "text-neutral-400"
+            activeTab === "chart" ? "text-secondary-base" : "text-slate-600"
           }`}
         >
-          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
             <line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/>
             <line x1="2" y1="20" x2="22" y2="20"/>
           </svg>
-          <span className="text-[11px] font-medium leading-none">Chart</span>
+          <span className="text-[11px] font-bold tracking-wide leading-none">Chart</span>
+          {activeTab === "chart" && <span className="w-1.5 h-1.5 rounded-full bg-secondary-base mt-0.5" />}
         </button>
 
         {/* Insights */}
         <button
           onClick={() => switchTab("insights")}
           className={`flex flex-col items-center justify-center gap-0.5 flex-1 py-2 transition-colors ${
-            activeTab === "insights" ? "text-accent-orange-base" : "text-neutral-400"
+            activeTab === "insights" ? "text-accent-orange-base" : "text-slate-600"
           }`}
         >
-          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
             <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>
           </svg>
-          <span className="text-[11px] font-medium leading-none">Insights</span>
+          <span className="text-[11px] font-bold tracking-wide leading-none">Insights</span>
+          {activeTab === "insights" && <span className="w-1.5 h-1.5 rounded-full bg-accent-orange-base mt-0.5" />}
         </button>
       </nav>
 

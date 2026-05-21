@@ -408,7 +408,7 @@ export default function AIChat({
           flow on desktop where there is no nav bar. */}
       <style>{`
         @media (max-width: 1023px) {
-          form.aichat-input-form { bottom: calc(3.75rem + env(safe-area-inset-bottom, 0px)); }
+          form.aichat-input-form { bottom: calc(4rem + env(safe-area-inset-bottom, 0px)); }
         }
       `}</style>
       <form
@@ -423,22 +423,22 @@ export default function AIChat({
           placeholder="Ask about your plan…"
           rows={1}
           disabled={isStreaming || showUpsellChip}
-          className="flex-1 resize-none rounded-xl border border-neutral-200 px-3 py-2 focus:outline-none focus:ring-2 focus:ring-primary-base/30 focus:border-primary-base placeholder:text-neutral-400 disabled:opacity-50 leading-5 max-h-28 overflow-y-auto"
+          className="flex-1 resize-none rounded-xl border-2 border-slate-300 px-3 py-2 focus:outline-none focus:ring-2 focus:ring-primary-base/50 focus:border-primary-base placeholder:text-slate-400 disabled:opacity-50 leading-5 max-h-28 overflow-y-auto text-slate-800"
           style={{ minHeight: "36px", fontSize: "16px" }}
         />
         <button
           type="submit"
           disabled={!input.trim() || isStreaming || showUpsellChip}
-          className="shrink-0 w-9 h-9 rounded-xl bg-primary-base text-white flex items-center justify-center hover:opacity-90 transition-opacity disabled:opacity-30"
+          className="shrink-0 w-10 h-10 rounded-xl bg-accent-orange-base text-white flex items-center justify-center hover:brightness-110 transition-all shadow-md disabled:opacity-30 disabled:shadow-none"
           aria-label="Send"
         >
           {isStreaming ? (
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor" className="animate-spin opacity-70">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor" className="animate-spin opacity-90">
               <path d="M12 2a10 10 0 1 0 10 10A10 10 0 0 0 12 2zm0 18a8 8 0 1 1 8-8 8 8 0 0 1-8 8z" opacity=".3"/>
               <path d="M20 12h2A10 10 0 0 0 12 2v2a8 8 0 0 1 8 8z"/>
             </svg>
           ) : (
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
               <line x1="22" y1="2" x2="11" y2="13"/>
               <polygon points="22 2 15 22 11 13 2 9 22 2"/>
             </svg>
