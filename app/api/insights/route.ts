@@ -51,6 +51,16 @@ type InsightsRequest = {
   interestEarned: number;
   goalAmount?: number;
   currency?: string;
+  locale?: string;
+};
+
+const LOCALE_LANGUAGE: Record<string, string> = {
+  "en":    "English",
+  "es-ES": "Spanish (Spain)",
+  "es-MX": "Spanish (Mexico)",
+  "it":    "Italian",
+  "pt-BR": "Portuguese (Brazil)",
+  "pt-PT": "Portuguese (Portugal)",
 };
 
 function fmt(n: number, currency = "USD"): string {
@@ -69,7 +79,12 @@ function buildSystemPrompt(body: InsightsRequest): string {
     : annualGrowth + body.monthlyContribution * 12;
   const isNetPositive = netAnnualChange >= 0;
 
-  return `You are a sharp, warm financial co-pilot for simplesavings.app. Your job is to help users deeply understand their savings or drawdown plan and make better decisions — not to give generic advice.
+  const language = LOCALE_LANGUAGE[body.locale ?? "en"] ?? "English";
+
+  return `You are a sharp financial co-pilot for simplesavings.app. Your job is to help users deeply understand their savings or drawdown plan and make better decisions — not to give generic advice.
+
+## Language
+Respond entirely in ${language}. Do not switch languages mid-response.
 
 ## Their Plan (pre-calculated facts — treat as ground truth)
 - Starting balance: ${fmt(body.startingAmount, currency)}

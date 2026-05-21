@@ -814,6 +814,7 @@ export default function Calculator() {
                 calculatorState={state}
                 results={results}
                 currency={currency}
+                locale={locale}
                 isPaid={!!(isPro || hasCredits)}
                 freeTokenBudget={freeTokenBudget}
                 onUpsellNeeded={() => setUpsellContext({ question: aiBlurbQuestion, pitch: aiBlurbPitch })}

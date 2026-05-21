@@ -5,15 +5,21 @@ import { useQuery, useMutation } from "convex/react";
 import { api } from "@/convex/_generated/api";
 import type { Id } from "@/convex/_generated/dataModel";
 import type { CalculatorState } from "@/lib/defaultValues";
+import { useIsAdmin } from "@/hooks/useIsAdmin";
 
 type CalcUpdate = { field: string; value: number; reason: string };
+
+type Usage = { inputTokens: number; outputTokens: number; costCents: number };
 
 type Message = {
   id: string;
   role: "user" | "assistant";
   content: string;
   calcUpdate?: CalcUpdate | null;
+  usage?: Usage | null;
   streaming?: boolean;
+  provider?: string;
+  model?: string;
 };
 
 type Props = {
@@ -23,6 +29,7 @@ type Props = {
   calculatorState: CalculatorState;
   results: { totalValue: number; interestEarned: number; principalPaid: number };
   currency: string;
+  locale: string;
   isPaid: boolean;
   freeTokenBudget: number;
   onUpsellNeeded: () => void;
@@ -44,6 +51,7 @@ export default function AIChat({
   calculatorState,
   results,
   currency,
+  locale,
   isPaid,
   freeTokenBudget,
   onUpsellNeeded,
@@ -70,6 +78,7 @@ export default function AIChat({
   const defaultModel = useQuery(api.appConfig.getConfig, { key: "defaultModel" });
   const provider = defaultProvider ?? "anthropic";
   const model = defaultModel ?? "claude-haiku-4-5-20251001";
+  const isAdmin = useIsAdmin();
 
   // Load persisted messages once on mount
   useEffect(() => {
@@ -134,6 +143,7 @@ export default function AIChat({
         interestEarned: results.interestEarned,
         goalAmount: undefined as number | undefined,
         currency,
+        locale,
       };
 
       abortRef.current = new AbortController();
@@ -160,6 +170,7 @@ export default function AIChat({
         let calcUpdate: CalcUpdate | null = null;
         let inputTokens = 0;
         let outputTokens = 0;
+        let costCents = 0;
 
         const reader = res.body!.getReader();
         const decoder = new TextDecoder();
@@ -189,10 +200,13 @@ export default function AIChat({
                 calcUpdate = evt.calcUpdate ?? null;
                 inputTokens = evt.usage?.inputTokens ?? 0;
                 outputTokens = evt.usage?.outputTokens ?? 0;
+                costCents = evt.usage?.costCents ?? 0;
                 setMessages((prev) =>
                   prev.map((m) =>
                     m.id === assistantId
-                      ? { ...m, content: fullText, streaming: false, calcUpdate }
+                      ? { ...m, content: fullText, streaming: false, calcUpdate,
+                          usage: { inputTokens, outputTokens, costCents },
+                          provider, model }
                       : m
                   )
                 );
@@ -285,7 +299,7 @@ export default function AIChat({
       {/* Message thread */}
       <div className="flex flex-col gap-3 px-4 pt-4 pb-2 max-h-[480px] overflow-y-auto">
         {messages.map((msg) => (
-          <div key={msg.id} className={`flex ${msg.role === "user" ? "justify-end" : "justify-start"}`}>
+          <div key={msg.id} className={`flex flex-col ${msg.role === "user" ? "items-end" : "items-start"}`}>
             <div
               className={`max-w-[85%] rounded-2xl px-4 py-2.5 text-sm leading-relaxed ${
                 msg.role === "user"
@@ -311,6 +325,11 @@ export default function AIChat({
                 </div>
               )}
             </div>
+            {isAdmin && msg.role === "assistant" && msg.usage && !msg.streaming && (
+              <p className="text-[10px] text-neutral-300 font-mono tabular-nums mt-0.5 px-1">
+                {msg.provider} · {msg.model} · {msg.usage.inputTokens}↑ {msg.usage.outputTokens}↓ · ${(msg.usage.costCents / 100).toFixed(6)}
+              </p>
+            )}
           </div>
         ))}
 

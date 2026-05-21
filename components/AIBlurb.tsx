@@ -55,7 +55,7 @@ export default function AIBlurb({ blurb, question, pitch, loading, meta, error, 
           </div>
         ) : blurb ? (
           <p
-            className="flex-1 text-sm text-neutral-500 italic leading-snug transition-opacity duration-500"
+            className="flex-1 text-sm text-neutral-500 italic leading-snug transition-opacity duration-500 -ml-0.5 pl-0.5"
             style={{ opacity: visible ? 1 : 0 }}
           >
             {blurb}
