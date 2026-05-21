@@ -584,25 +584,25 @@ ${doublingYears ? `- Rule of 72: doubles every ${doublingYears} years` : ""}
 ${inflationErosion && timeframeYears >= 5 ? `- Inflation-adjusted real value (2.8% CPI): ${formatCurrency(parseFloat(inflationErosion), currency)}` : ""}
 ${noGoalConstraint}${timeframeConstraint}
 ${hasGoal && goalAmount !== null ? `
-## GOAL FACT MATRIX — highest-priority ground truth, overrides all other reasoning
+GOAL FACTS (do not alter or recalculate):
 - Timeframe: ${Math.round(timeframeYears * 12)} months (${timeframeYears.toFixed(2)} years)
 - Final balance at end of timeframe: ${formatCurrency(totalValue, currency)}
 - Goal amount: ${formatCurrency(goalAmount!, currency)}
-- Goal met within timeframe: ${goalMetWithinTimeframe ? `TRUE ✓ — balance clears goal` : `FALSE ✗ — falls short by ${formatCurrency(goalAmount! - totalValue, currency)}`}
-- ${monthsToReachGoal !== null && yearsToGoal !== "already reached" ? `Months to reach goal at current pace: ${monthsToReachGoal} months (${yearsToGoal} yrs) — THIS IS THE ONLY TIMELINE FIGURE YOU MAY CITE` : yearsToGoal === "already reached" ? "Starting balance already meets the goal" : "Goal never reached at current pace within 200 months"}` : ""}
+- Goal met within timeframe: ${goalMetWithinTimeframe ? `YES` : `NO — falls short by ${formatCurrency(goalAmount! - totalValue, currency)}`}
+- ${monthsToReachGoal !== null && yearsToGoal !== "already reached" ? `Months to reach goal at current pace: ${monthsToReachGoal} months (${yearsToGoal} yrs) — cite this figure only` : yearsToGoal === "already reached" ? "Starting balance already meets the goal" : "Goal never reached at current pace within 200 months"}` : ""}
 
 LEAD WITH: ${leadWith}
 OPEN QUESTION: ${questionHook}
 
-PITCH CONTEXT — use this to write a scenario-specific pitch (not generic copy):
-${isWithdrawal
-  ? `Scenario type: WITHDRAWAL / DRAWDOWN — ${isNetGrowthPositive ? "self-sustaining (interest covers withdrawal)" : "depleting portfolio"}`
-  : hasGoal && goalAmount !== null
-    ? goalMetWithinTimeframe
-      ? `Scenario type: GOAL ACHIEVABLE within the ${Math.round(timeframeYears * 12)}-month plan`
-      : `Scenario type: GOAL MISSED — short by ${formatCurrency(goalAmount! - totalValue, currency)} over the ${Math.round(timeframeYears * 12)}-month window${targetDateFormatted ? ` (deadline: ${targetDateFormatted})` : ""}; takes ${monthsToReachGoal ?? "?"} months at current pace`
-    : `Scenario type: NO GOAL SET — starting balance ${formatCurrency(startingAmount, currency)} at ${interestRate}% generating ${formatCurrency(monthlyInterest, currency)}/month`}
-${targetDateFormatted ? `Target deadline: ${targetDateFormatted}` : ""}
+For the PITCH — write one sentence citing the exact figures above, not generic copy. ${
+  isWithdrawal
+    ? `Focus on the ${withdrawalRate?.toFixed(1)}% withdrawal rate vs 4% rule.`
+    : hasGoal && goalAmount !== null
+      ? goalMetWithinTimeframe
+        ? `The ${formatCurrency(goalAmount!, currency)} goal is reached. Write an achievable hook about what comes next.`
+        : `The balance falls ${formatCurrency(goalAmount! - totalValue, currency)} short of ${formatCurrency(goalAmount!, currency)} over ${Math.round(timeframeYears * 12)} months${targetDateFormatted ? `, missing the ${targetDateFormatted} deadline` : ""}. It takes ${monthsToReachGoal ?? "?"} months at current pace. Reference the shortfall amount and${targetDateFormatted ? ` the ${targetDateFormatted} deadline` : " the timeline gap"} directly.`
+      : `Focus on the ${formatCurrency(startingAmount, currency)} principal at ${interestRate}% generating ${formatCurrency(monthlyInterest, currency)}/month.`
+}
 
 Write the three blocks separated by --- as described above. Output the OPEN QUESTION exactly as written — do not rephrase it.`;
 
