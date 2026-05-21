@@ -179,8 +179,8 @@ export default function ShareModal({ url, snapshot, onClose }: ShareModalProps) 
           </div>
 
           {/* Style pills + refresh */}
-          <div className="flex items-center justify-between">
-            <div className="flex gap-1.5">
+          <div className="flex items-center justify-between flex-wrap gap-y-2">
+            <div className="flex gap-1.5 flex-wrap">
               {(["simple", "expanded", "bare bones"] as const).map((s) => (
                 <button
                   key={s}

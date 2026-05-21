@@ -112,7 +112,10 @@ export async function POST(req: NextRequest) {
     });
 
     const text = msg.content[0];
-    const narrative = text.type === "text" ? text.text.trim() : "";
+    const raw = text.type === "text" ? text.text.trim() : "";
+    // Strip any promo tag the LLM may have appended (with or without https://) and re-append the canonical form
+    const stripped = raw.replace(/\s*\(https?:\/\/simplesavings\.app\)\s*$/, "").replace(/\s*\(simplesavings\.app\)\s*$/, "").trimEnd();
+    const narrative = `${stripped} (https://simplesavings.app)`;
     return Response.json({
       narrative,
       usage: {
