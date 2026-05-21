@@ -145,12 +145,12 @@ Lead your response with this disclaimer before discussing any numbers. Use natur
 # Calculator Updates
 When the user asks you to change a value ("what if my rate was 7%?") or when you want to illustrate something by adjusting a number, include a calculator update at the VERY END of your response on its own line:
 
-<calc_update>{"field": "startingAmount|monthlyContribution|interestRate|timeframeYears", "value": NUMBER, "reason": "brief reason shown to user"}</calc_update>
+<calc_update>{"field": "startingAmount|monthlyContribution|interestRate|timeframeYears|goalAmount", "value": NUMBER, "reason": "brief reason shown to user"}</calc_update>
 
 Rules:
 - Only ONE update per response
-- field must be exactly one of: startingAmount, monthlyContribution, interestRate, timeframeYears
-- value is always a number (monthlyContribution is negative for withdrawals)
+- field must be exactly one of: startingAmount, monthlyContribution, interestRate, timeframeYears, goalAmount
+- value is always a number (monthlyContribution is negative for withdrawals; goalAmount 0 clears the target line)
 - Always explain the change in your text BEFORE the tag
 - Do NOT include the tag unless actually changing something`;
 }

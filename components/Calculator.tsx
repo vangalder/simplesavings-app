@@ -806,44 +806,12 @@ export default function Calculator() {
                 </div>
               </div>
 
-              {/* Goal Amount — optional, always visible, maps to the chart target line */}
-              <div>
-                <label className="block text-sm font-medium text-neutral-700 mb-1.5">
-                  Goal amount{" "}
-                  <span className="text-neutral-400 font-normal text-xs">(optional)</span>
-                </label>
-                <input
-                  type="text"
-                  inputMode="numeric"
-                  value={goalAmount ? goalAmount.toLocaleString() : ""}
-                  onChange={(e) => {
-                    const raw = e.target.value.replace(/[^0-9]/g, "");
-                    const parsed = raw ? parseInt(raw, 10) : 0;
-                    setGoalAmount(parsed);
-                    if (parsed > 0) setShowGoalInput(true);
-                  }}
-                  onFocus={(e) => {
-                    if (goalAmount) e.target.value = String(goalAmount);
-                  }}
-                  onBlur={(e) => {
-                    const raw = e.target.value.replace(/[^0-9]/g, "");
-                    const parsed = raw ? parseInt(raw, 10) : 0;
-                    setGoalAmount(parsed);
-                    setShowGoalInput(parsed > 0);
-                    e.target.value = parsed ? parsed.toLocaleString() : "";
-                  }}
-                  placeholder="e.g. 1,000,000"
-                  className="w-full px-4 py-3 border-2 border-accent-orange-base rounded-xl text-center text-4xl font-display font-semibold text-accent-orange-base focus:outline-none focus:ring-2 focus:ring-accent-orange-base focus:border-accent-orange-base placeholder:text-accent-orange-base/30 placeholder:text-xl"
-                />
-                <p className="text-xs text-neutral-600 mt-0.5 text-center">Sets a target line on the chart</p>
-              </div>
             </div>
             {/* END INPUTS GROUP */}
 
-            {/* ── RESULTS + BLURB GROUP (mobile: chart tab; desktop: always) ── */}
-            {/* border-t separates from inputs on desktop; omitted on mobile chart tab (no inputs above) */}
+            {/* ── RESULTS + BLURB GROUP (always visible when white card shows) ── */}
+            {/* border-t shows when inputs are above (calculator tab); omitted on chart tab */}
             <div className={`
-              ${mobileTab("chart")}
               ${activeTab === "chart" ? "pt-1" : "border-t-2 border-neutral-200 pt-3 mt-3"}
               lg:border-t-2 lg:border-neutral-200 lg:pt-3 lg:mt-3
             `}>
@@ -921,7 +889,19 @@ export default function Calculator() {
                 creditBalance={creditBalance ? { granted: creditBalance.granted, used: creditBalance.used, isPro: creditBalance.isPro } : null}
                 onUpsellNeeded={() => setUpsellContext({ question: aiBlurbQuestion, pitch: aiBlurbPitch })}
                 onCalculatorUpdate={(field, value) => {
-                  setState((prev) => ({ ...prev, [field]: value }));
+                  if (field === "goalAmount") {
+                    setGoalAmount(value);
+                    setShowGoalInput(value > 0);
+                  } else if (field === "timeframeYears" && timeframeMode === "date") {
+                    // AI updated years but user is in date mode — convert to a new target date
+                    const d = new Date();
+                    d.setTime(d.getTime() + value * 365.25 * 24 * 3600 * 1000);
+                    const dateStr = d.toISOString().slice(0, 10);
+                    setTargetDateStr(dateStr);
+                    if (dateInputRef.current) dateInputRef.current.value = dateStr;
+                  } else {
+                    setState((prev) => ({ ...prev, [field]: value }));
+                  }
                 }}
               />
             ) : activeTab === "insights" ? (
@@ -961,6 +941,37 @@ export default function Calculator() {
               currency={currency}
               xAxisUnit={results.chartXUnit}
               onChartTypeChange={setChartType}
+            />
+          </div>
+
+          {/* Goal amount — below chart, accessible on Chart tab */}
+          <div className="mt-2 bg-white/90 rounded-xl px-4 py-3 shadow-sm">
+            <label className="block text-xs font-semibold text-neutral-500 uppercase tracking-wide mb-1.5">
+              Goal amount{" "}
+              <span className="text-neutral-400 font-normal normal-case tracking-normal">(optional)</span>
+            </label>
+            <input
+              type="text"
+              inputMode="numeric"
+              value={goalAmount ? goalAmount.toLocaleString() : ""}
+              onChange={(e) => {
+                const raw = e.target.value.replace(/[^0-9]/g, "");
+                const parsed = raw ? parseInt(raw, 10) : 0;
+                setGoalAmount(parsed);
+                if (parsed > 0) setShowGoalInput(true);
+              }}
+              onFocus={(e) => {
+                if (goalAmount) e.target.value = String(goalAmount);
+              }}
+              onBlur={(e) => {
+                const raw = e.target.value.replace(/[^0-9]/g, "");
+                const parsed = raw ? parseInt(raw, 10) : 0;
+                setGoalAmount(parsed);
+                setShowGoalInput(parsed > 0);
+                e.target.value = parsed ? parsed.toLocaleString() : "";
+              }}
+              placeholder="e.g. 1,500,000 — draws a target line on the chart"
+              className="w-full px-3 py-2 text-sm font-display font-semibold text-secondary-dark bg-transparent border border-neutral-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-secondary-base/40 focus:border-secondary-base placeholder:text-neutral-400 placeholder:font-normal"
             />
           </div>
         </div>

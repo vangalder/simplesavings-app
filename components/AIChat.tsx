@@ -85,6 +85,7 @@ export default function AIChat({
 
   const addMessage = useMutation(api.messages.addMessage);
   const incrementFreeTokens = useMutation(api.scenarios.incrementFreeTokens);
+  const incrementAiUsage = useMutation(api.users.incrementAiUsage);
 
   // Read the conversation model config saved by AdminPanel as "provider:model"
   const defaultConvoModel = useQuery(api.appConfig.getConfig, { key: "defaultConversationModel" });
@@ -279,8 +280,10 @@ export default function AIChat({
           }).catch(() => {});
         }
 
-        // Track free token usage
-        if (!isPaid && outputTokens > 0) {
+        // Track token usage against credit balance / free budget
+        if (isPaid && costCents > 0 && clerkId) {
+          await incrementAiUsage({ clerkId, costInCents: costCents }).catch(() => {});
+        } else if (!isPaid && outputTokens > 0) {
           await incrementFreeTokens({ scenarioId, tokens: outputTokens }).catch(() => {});
         }
       } catch (err: unknown) {
@@ -362,9 +365,19 @@ export default function AIChat({
               <p className="text-[10px] text-neutral-500 font-mono tabular-nums mt-0.5 px-1">
                 {msg.provider} · {msg.model} · {msg.usage.inputTokens}↑ {msg.usage.outputTokens}↓ · ${(msg.usage.costCents / 100).toFixed(6)}
                 {creditBalance && creditBalance.granted > 0 && (() => {
-                  const remaining = Math.max(0, creditBalance.granted - creditBalance.used);
-                  return <span className="text-amber-500"> · ${(remaining / 100).toFixed(2)} left</span>;
+                  const used = creditBalance.used;
+                  const granted = creditBalance.granted;
+                  const remaining = Math.max(0, granted - used);
+                  const pct = Math.min(100, Math.round((used / granted) * 100));
+                  return (
+                    <span className="text-amber-500">
+                      {" "}· ${(used / 100).toFixed(4)} used ({pct}%) · ${(remaining / 100).toFixed(4)} left of ${(granted / 100).toFixed(2)}
+                    </span>
+                  );
                 })()}
+                {creditBalance && creditBalance.granted === 0 && creditBalance.isPro && (
+                  <span className="text-amber-500"> · Pro plan (unlimited)</span>
+                )}
               </p>
             )}
           </div>
