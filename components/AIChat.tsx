@@ -37,9 +37,51 @@ type Props = {
   onCalculatorUpdate: (field: string, value: number) => void;
 };
 
-function renderBold(text: string): React.ReactNode {
+function renderInline(text: string): React.ReactNode {
   const parts = text.split(/\*\*([^*]+)\*\*/g);
   return parts.map((part, i) => i % 2 === 1 ? <strong key={i} className="font-semibold">{part}</strong> : part);
+}
+
+function renderMarkdown(text: string): React.ReactNode {
+  const lines = text.split("\n");
+  const nodes: React.ReactNode[] = [];
+  let i = 0;
+  while (i < lines.length) {
+    const line = lines[i];
+    // H2
+    if (line.startsWith("## ")) {
+      nodes.push(<p key={i} className="font-bold text-sm text-neutral-900 mt-3 mb-0.5 first:mt-0">{renderInline(line.slice(3))}</p>);
+    // H3
+    } else if (line.startsWith("### ")) {
+      nodes.push(<p key={i} className="font-semibold text-sm text-neutral-700 mt-2 mb-0.5">{renderInline(line.slice(4))}</p>);
+    // Bullet: -, *, or leading emoji bullet (✅ ✓ •)
+    } else if (/^[-*] /.test(line) || /^[✅✓•▸→🔹🔸💡📌🎯💰📊🧮🌍💾🔗🤖💬🗂️] /.test(line)) {
+      const content = /^[-*] /.test(line) ? line.slice(2) : line;
+      nodes.push(
+        <div key={i} className="flex gap-1.5 items-baseline text-sm">
+          {/^[-*] /.test(line)
+            ? <span className="shrink-0 text-primary-base font-bold leading-snug">•</span>
+            : null}
+          <span>{renderInline(content)}</span>
+        </div>
+      );
+    // Example callout
+    } else if (line.startsWith("💡 Example:") || line.startsWith("💡 Example :")) {
+      nodes.push(
+        <div key={i} className="rounded-lg bg-amber-50 border border-amber-200 px-3 py-2 text-xs text-amber-900 leading-relaxed">
+          {renderInline(line)}
+        </div>
+      );
+    // Blank line → spacer
+    } else if (line.trim() === "") {
+      nodes.push(<div key={i} className="h-1.5" />);
+    // Normal paragraph line
+    } else {
+      nodes.push(<p key={i} className="text-sm leading-relaxed">{renderInline(line)}</p>);
+    }
+    i++;
+  }
+  return <div className="flex flex-col gap-0.5">{nodes}</div>;
 }
 
 type ConvexMessage = {
@@ -361,7 +403,9 @@ export default function AIChat({
                   <span className="w-1.5 h-1.5 rounded-full bg-neutral-400 animate-bounce" style={{ animationDelay: "300ms" }} />
                 </span>
               ) : (
-                <span className="whitespace-pre-wrap">{renderBold(msg.content)}</span>
+                msg.role === "assistant"
+                  ? renderMarkdown(msg.content)
+                  : <span className="whitespace-pre-wrap">{renderInline(msg.content)}</span>
               )}
               {msg.calcUpdates && msg.calcUpdates.length > 0 && (
                 <div className="mt-2 pt-2 border-t border-neutral-200/60 flex flex-col gap-1">

@@ -34,7 +34,24 @@ When Monthly Contribution is negative the app switches to withdrawal mode automa
 
 ### Chart
 
-Three display styles, switchable via buttons: **Area** (default stacked area), **Bar** (stacked bar), **Line**. The X-axis shows months for projections under 2 years, years otherwise. A goal line is drawn when a goal amount is set.
+Three display styles, switchable via buttons at the top of the chart: **Area** (default — stacked filled areas showing principal vs. interest growth), **Bar** (stacked columns), **Line** (clean trend line). All three update instantly as inputs change.
+
+- The X-axis auto-scales: months for projections under 2 years, years for longer ones
+- Principal (blue) and interest earned (orange) are shown as separate stacked layers so users can visually see the compounding effect grow over time
+- If the balance depletes to zero (withdrawal mode), the chart stops at that point rather than going negative
+- Hovering over any point shows the exact values for that period
+
+### Goal Amount & Goal Line
+
+The optional Goal Amount field sets a horizontal target line across the chart. When set:
+- A dashed line appears at that value on the chart
+- The AI blurb CTA changes to show the specific shortfall if the projection falls short (e.g. "Explore $234,000 gap →")
+- The AI co-pilot receives the goal as part of its context and factors it into strategy recommendations
+- Set Goal Amount to 0 to remove the goal line
+
+### Chart Image Export
+
+Saving the chart as an image file is not currently a feature of the app.
 
 ### Compound interest formula
 
