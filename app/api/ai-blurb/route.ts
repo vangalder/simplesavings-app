@@ -266,7 +266,7 @@ export async function POST(req: NextRequest) {
         provider, modelId,
         TRANSLATION_PROMPT,
         `Translate the following text to ${langName}:\n\n${body.text}`,
-        150,
+        500,
       );
       const latencyMs = Date.now() - t0;
       const costUsd = calcCost(modelId, result.tokensIn, result.tokensOut);
@@ -542,7 +542,7 @@ Write the three blocks separated by --- as described above. Output the OPEN QUES
 
   try {
     const t0 = Date.now();
-    const result = await callLLM(provider, modelId, SYSTEM_PROMPT, userMessage, 180);
+    const result = await callLLM(provider, modelId, SYSTEM_PROMPT, userMessage, 800);
     const latencyMs = Date.now() - t0;
     const costUsd = calcCost(modelId, result.tokensIn, result.tokensOut);
     const { blurb, question, pitch } = parseBlurbParts(result.text);
