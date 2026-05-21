@@ -12,7 +12,7 @@ export const dynamic = "force-dynamic";
 // Loaded once at cold start. Update docs/app-reference.md to keep the AI current.
 const APP_REFERENCE = (() => {
   try {
-    return fs.readFileSync(path.join(process.cwd(), "docs/app-reference.md"), "utf-8");
+    return fs.readFileSync(path.join(process.cwd(), "docs/simplesavings-product-reference.md"), "utf-8");
   } catch {
     return "";
   }

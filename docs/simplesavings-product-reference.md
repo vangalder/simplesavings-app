@@ -1,6 +1,6 @@
 # simplesavings.app — Product Reference
 
-> **Maintenance note:** Update this file whenever a public-facing feature changes. It is loaded into the AI system prompt on every request so the AI can answer user questions about the app accurately.
+> **Maintenance note:** Update this file (`docs/simplesavings-product-reference.md`) whenever a public-facing feature changes. It is loaded into the AI system prompt on every request so the AI can answer user questions about the app accurately.
 
 ---
 
