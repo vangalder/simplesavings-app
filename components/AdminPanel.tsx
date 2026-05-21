@@ -233,7 +233,7 @@ export default function AdminPanel() {
                 <span className="font-mono">https://simplesavings.app/api/webhooks/clerk</span> in the Clerk dashboard.
               </p>
             )}
-            <p className="text-xs text-neutral-400 mt-3">
+            <p className="text-xs text-neutral-600 mt-3">
               Conversation AI spend: ${(stats.totalAiCostCents / 100).toFixed(2)} · Blurb spend: ${stats.totalBlurbCostUsd.toFixed(4)}
             </p>
           </>
@@ -243,7 +243,7 @@ export default function AdminPanel() {
       {/* Model Configuration */}
       <div className="bg-white rounded-2xl border border-neutral-200 p-5">
         <h3 className="text-sm font-semibold text-neutral-700 mb-1">Model Configuration</h3>
-        <p className="text-xs text-neutral-400 mb-4">
+        <p className="text-xs text-neutral-600 mb-4">
           Blurb: <span className="font-mono">{blurbModel ?? "not set"}</span> · Conversation: <span className="font-mono">{convoModel ?? "not set"}</span>
         </p>
         <AdminModelMatrix
@@ -263,7 +263,7 @@ export default function AdminPanel() {
         <div className="flex items-start justify-between gap-4">
           <div>
             <h3 className="text-sm font-semibold text-neutral-700">Developer Tools</h3>
-            <p className="text-xs text-neutral-400 mt-0.5">Test the paid UX without touching Stripe.</p>
+            <p className="text-xs text-neutral-600 mt-0.5">Test the paid UX without touching Stripe.</p>
           </div>
           {isTestModeOn && (
             <span className="shrink-0 px-2 py-0.5 rounded-full bg-amber-200 text-amber-800 text-xs font-semibold">
@@ -274,7 +274,7 @@ export default function AdminPanel() {
         <div className="mt-4 flex items-center justify-between gap-4">
           <div>
             <p className="text-sm font-medium text-neutral-700">Payment test mode</p>
-            <p className="text-xs text-neutral-400 mt-0.5">
+            <p className="text-xs text-neutral-600 mt-0.5">
               {testModeValue === "off" && "Checkout goes through Stripe — no bypass."}
               {testModeValue === "sample" && "Checkout instantly grants $4.99 sample credits — no Stripe, no charge."}
               {testModeValue === "pro" && "Checkout instantly grants full Pro access — no Stripe, no charge."}
@@ -297,7 +297,7 @@ export default function AdminPanel() {
             <div className="flex items-start justify-between gap-4">
               <div>
                 <p className="text-sm font-medium text-neutral-700">Test account credit balance</p>
-                <p className="text-xs text-neutral-400 mt-0.5">
+                <p className="text-xs text-neutral-600 mt-0.5">
                   {creditBalance === null
                     ? "No credits yet — trigger checkout once to seed sample funds."
                     : `${creditBalance.isPro ? "Pro plan · " : ""}credit pool for this account`}
@@ -311,7 +311,7 @@ export default function AdminPanel() {
                   <p className="text-xs text-neutral-500 mt-0.5 tabular-nums">
                     ${(creditBalance.granted / 100).toFixed(2)} granted · ${(creditBalance.used / 100).toFixed(4)} used
                     {creditBalance.granted > 0 && (
-                      <span className="ml-1 text-neutral-400">
+                      <span className="ml-1 text-neutral-500">
                         ({Math.min(100, Math.round((creditBalance.used / creditBalance.granted) * 100))}% consumed)
                       </span>
                     )}
@@ -326,7 +326,7 @@ export default function AdminPanel() {
       {/* Performance Analytics */}
       <div className="bg-white rounded-2xl border border-neutral-200 p-5">
         <h3 className="text-sm font-semibold text-neutral-700 mb-1">Blurb Performance Analytics</h3>
-        <p className="text-xs text-neutral-400 mb-5">
+        <p className="text-xs text-neutral-600 mb-5">
           Real telemetry from every blurb call — last 5,000 requests. Use this to pick the best model for cost, speed, and token efficiency.
         </p>
 
@@ -339,7 +339,7 @@ export default function AdminPanel() {
         )}
 
         {modelStats !== undefined && modelStats.length === 0 && (
-          <div className="py-12 text-center text-neutral-400 text-sm">
+          <div className="py-12 text-center text-neutral-600 text-sm">
             No blurb calls logged yet. Generate a few blurbs to start seeing performance data here.
           </div>
         )}
@@ -425,7 +425,7 @@ export default function AdminPanel() {
       {/* Share Analytics */}
       <div className="bg-white rounded-2xl border border-neutral-200 p-5">
         <h3 className="text-sm font-semibold text-neutral-700 mb-1">Share Analytics</h3>
-        <p className="text-xs text-neutral-400 mb-4">Who&apos;s sharing, how often, and whether it&apos;s driving new sign-ups.</p>
+        <p className="text-xs text-neutral-600 mb-4">Who&apos;s sharing, how often, and whether it&apos;s driving new sign-ups.</p>
 
         {shareAnalytics === undefined && (
           <div className="grid grid-cols-2 gap-3 sm:grid-cols-4 mb-4">
@@ -463,7 +463,7 @@ export default function AdminPanel() {
                         style={{ width: `${Math.round((s.count / (shareAnalytics.topSharers[0]?.count ?? 1)) * 100)}%`, minWidth: 4, maxWidth: "60%" }}
                       />
                       <span className="text-xs text-neutral-600 font-mono truncate">{s.email}</span>
-                      <span className="text-xs text-neutral-400 shrink-0">×{s.count}</span>
+                      <span className="text-xs text-neutral-600 shrink-0">×{s.count}</span>
                     </div>
                   ))}
                 </div>
@@ -492,9 +492,9 @@ export default function AdminPanel() {
                           <td className="py-1.5 text-right">
                             {s.recipientIsUser
                               ? <span className="text-green-500 font-medium">✓ yes</span>
-                              : <span className="text-neutral-300">—</span>}
+                              : <span className="text-neutral-500">—</span>}
                           </td>
-                          <td className="py-1.5 text-right text-neutral-400 tabular-nums whitespace-nowrap">
+                          <td className="py-1.5 text-right text-neutral-600 tabular-nums whitespace-nowrap">
                             {new Date(s.createdAt).toLocaleDateString()}
                           </td>
                         </tr>
@@ -504,7 +504,7 @@ export default function AdminPanel() {
                 </div>
               </div>
             ) : (
-              <p className="text-sm text-neutral-400 text-center py-6">No shares recorded yet.</p>
+              <p className="text-sm text-neutral-600 text-center py-6">No shares recorded yet.</p>
             )}
           </div>
         )}

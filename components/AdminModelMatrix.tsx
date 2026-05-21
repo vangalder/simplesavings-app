@@ -223,7 +223,7 @@ export default function AdminModelMatrix({
 
       {/* Model table for active tab */}
       {tabModels.length === 0 ? (
-        <p className="text-xs text-neutral-400 py-3">No models available for this provider.</p>
+        <p className="text-xs text-neutral-600 py-3">No models available for this provider.</p>
       ) : (
         <div className="rounded-xl border border-neutral-200 overflow-hidden">
           <div className="overflow-x-auto">
@@ -270,7 +270,7 @@ export default function AdminModelMatrix({
                       {/* Model name + ID */}
                       <td className={`px-4 py-2.5 ${isAnyActive ? "border-l-2 border-primary-base" : ""}`}>
                         <p className="font-medium text-neutral-800 leading-tight">{m.name}</p>
-                        <p className="font-mono text-neutral-400 truncate mt-0.5" style={{ fontSize: "10px" }}>
+                        <p className="font-mono text-neutral-500 truncate mt-0.5" style={{ fontSize: "10px" }}>
                           {m.id}
                         </p>
                       </td>
@@ -287,9 +287,9 @@ export default function AdminModelMatrix({
                         )}
                         {profile.cons.length > 0 && (
                           <div className={profile.pros.length > 0 ? "mt-1" : ""}>
-                            <p className="font-semibold text-neutral-400 leading-tight" style={{ fontSize: "10px" }}>⚠️ CONS</p>
+                            <p className="font-semibold text-neutral-600 leading-tight" style={{ fontSize: "10px" }}>⚠️ CONS</p>
                             {profile.cons.map((c) => (
-                              <p key={c} className="text-neutral-400 leading-snug" style={{ fontSize: "10px" }}>• {c}</p>
+                              <p key={c} className="text-neutral-600 leading-snug" style={{ fontSize: "10px" }}>• {c}</p>
                             ))}
                           </div>
                         )}
