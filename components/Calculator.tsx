@@ -125,14 +125,6 @@ export default function Calculator() {
     clerkId && scenarioId ? { scenarioId, clerkId } : "skip"
   );
   const hasConversation = !!(scenarioMessages && scenarioMessages.length > 0);
-  // One-way lock: set only when an actual conversation has started (messages exist).
-  // Not locked just for being eligible — erasing a goal or changing inputs before
-  // the first message should still regenerate the blurb.
-  const blurbLockedRef = useRef(false);
-  if (!blurbLockedRef.current && !!(scenarioId && aiBlurb && hasConversation)) {
-    blurbLockedRef.current = true;
-  }
-
   // Load values from URL params, localStorage, or defaults
   useEffect(() => {
     if (isInitialized) return;
@@ -332,9 +324,6 @@ export default function Calculator() {
   // Debounced real-time AI blurb — fires 1500ms after inputs settle
   useEffect(() => {
     if (!isInitialized) return;
-    // Once the user has an active conversation, the blurb is permanently frozen.
-    // Regenerating it would break the conversation seed that prompted them to convert.
-    if (blurbLockedRef.current) return;
 
     // Check blurb cache — skip LLM call if inputs haven't changed since last save
     const inputsHash = `${state.startingAmount}-${state.monthlyContribution}-${state.interestRate}-${state.timeframeYears}-${goalAmount}`;
@@ -356,13 +345,6 @@ export default function Calculator() {
 
     setAiBlurbLoading(true);
     const id = setTimeout(async () => {
-      // Re-check lock inside the callback — prevents a race where the lock
-      // becomes true while the 1500ms timer was pending (e.g. AI calc update
-      // triggers a new debounce cycle just before Convex data arrives).
-      if (blurbLockedRef.current) {
-        setAiBlurbLoading(false);
-        return;
-      }
       try {
         const res = await fetch("/api/ai-blurb", {
           method: "POST",
