@@ -350,7 +350,7 @@ export default function AIChat({
             {isAdmin && msg.role === "assistant" && msg.usage && !msg.streaming && (
               <p className="text-[10px] text-neutral-500 font-mono tabular-nums mt-0.5 px-1">
                 {msg.provider} · {msg.model} · {msg.usage.inputTokens}↑ {msg.usage.outputTokens}↓ · ${(msg.usage.costCents / 100).toFixed(6)}
-                {creditBalance && !creditBalance.isPro && (() => {
+                {creditBalance && creditBalance.granted > 0 && (() => {
                   const remaining = Math.max(0, creditBalance.granted - creditBalance.used);
                   return <span className="text-amber-500"> · ${(remaining / 100).toFixed(2)} left</span>;
                 })()}
