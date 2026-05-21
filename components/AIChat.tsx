@@ -108,12 +108,21 @@ export default function AIChat({
   }, [savedMessages]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const scrollToBottom = useCallback(() => {
-    bottomRef.current?.scrollIntoView({ behavior: "smooth" });
+    // block:'nearest' scrolls the minimum needed — prevents the aggressive viewport
+    // snap caused by the default block:'start' which jumps bottomRef to the top of screen.
+    // Works for both the bounded lg: scroll container (desktop) and body scroll (mobile).
+    bottomRef.current?.scrollIntoView({ behavior: "smooth", block: "nearest" });
   }, []);
 
   useEffect(() => {
-    scrollToBottom();
-  }, [messages, scrollToBottom]);
+    if (isStreaming) {
+      // During streaming every token fires this effect. Use instant scroll so the
+      // viewport tracks the live text without stuttering smooth-scroll queuing.
+      bottomRef.current?.scrollIntoView({ behavior: "auto", block: "nearest" });
+    } else {
+      scrollToBottom();
+    }
+  }, [messages, isStreaming, scrollToBottom]);
 
   const sendMessage = useCallback(
     async (messageText: string, isOpener = false) => {
@@ -307,9 +316,10 @@ export default function AIChat({
   };
 
   return (
-    <div className="mt-2 rounded-2xl border border-neutral-100 bg-white overflow-hidden">
-      {/* Message thread */}
-      <div className="flex flex-col gap-3 px-4 pt-4 pb-2 max-h-[480px] overflow-y-auto">
+    <div className="mt-2 rounded-2xl border border-neutral-100 bg-white">
+      {/* Message thread: no max-h on mobile (page body = single scroll container).
+          Desktop only gets the bounded 480px region. */}
+      <div className="flex flex-col gap-3 px-4 pt-4 pb-2 lg:max-h-[480px] lg:overflow-y-auto">
         {messages.map((msg) => (
           <div key={msg.id} className={`flex flex-col ${msg.role === "user" ? "items-end" : "items-start"}`}>
             <div
@@ -381,8 +391,9 @@ export default function AIChat({
         </div>
       )}
 
-      {/* Input row */}
-      <form onSubmit={handleSubmit} className="flex items-end gap-2 px-3 py-3 border-t border-neutral-100">
+      {/* Input row — sticky on mobile so it pins above the virtual keyboard.
+          lg:static restores normal flow inside the desktop bounded chat box. */}
+      <form onSubmit={handleSubmit} className="flex items-end gap-2 px-3 py-3 border-t border-neutral-100 sticky bottom-0 bg-white z-10 lg:static lg:z-auto">
         <textarea
           ref={inputRef}
           value={input}
@@ -391,8 +402,8 @@ export default function AIChat({
           placeholder="Ask about your plan…"
           rows={1}
           disabled={isStreaming || showUpsellChip}
-          className="flex-1 resize-none rounded-xl border border-neutral-200 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary-base/30 focus:border-primary-base placeholder:text-neutral-400 disabled:opacity-50 leading-5 max-h-28 overflow-y-auto"
-          style={{ minHeight: "36px" }}
+          className="flex-1 resize-none rounded-xl border border-neutral-200 px-3 py-2 focus:outline-none focus:ring-2 focus:ring-primary-base/30 focus:border-primary-base placeholder:text-neutral-400 disabled:opacity-50 leading-5 max-h-28 overflow-y-auto"
+          style={{ minHeight: "36px", fontSize: "16px" }}
         />
         <button
           type="submit"
