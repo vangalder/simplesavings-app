@@ -42,12 +42,27 @@ function stripProviderPrefix(name: string): string {
   return idx !== -1 ? name.slice(idx + 2) : name;
 }
 
-// Filter routing aliases and utility/safety models not suited for conversational AI
-function isAliasOrUtility(id: string): boolean {
+// Filter routing aliases, utility/safety models, and multimodal/image models
+// not suited for text-only conversational AI use cases.
+// Checks both the raw model id and the human-readable name.
+function isAliasOrUtility(id: string, name: string): boolean {
+  // Routing aliases
   if (id.endsWith("-latest")) return true;
   if (id.includes("chat-latest")) return true;
-  if (id.includes("gpt-oss")) return true;       // OpenAI OSS safety/utility models
+  // OpenAI OSS safety/utility models
+  if (id.includes("gpt-oss")) return true;
   if (id.includes("safeguard")) return true;
+  // Multimodal / image-generation models — check both id and name (case-insensitive)
+  const combined = `${id} ${name}`.toLowerCase();
+  if (combined.includes("-image"))          return true;
+  if (combined.includes("-vision"))         return true;
+  if (combined.includes("dall-e"))          return true;
+  if (combined.includes("stable-diffusion")) return true;
+  if (combined.includes("flux"))            return true;
+  if (combined.includes("midjourney"))      return true;
+  // Explicit name-based checks for display names that don't encode type in the id
+  if (name.includes("Image"))              return true;
+  if (name.includes("Vision"))             return true;
   return false;
 }
 
@@ -68,7 +83,7 @@ function bucketModels(raw: ORModel[]): DynamicModel[] {
     (m) =>
       PROVIDER_PREFIXES.some((p) => m.id.startsWith(p)) &&
       !m.id.endsWith(":free") &&
-      !isAliasOrUtility(m.id) &&
+      !isAliasOrUtility(m.id, m.name) &&
       combinedPricePer1MTok(m) > 0
   );
 
