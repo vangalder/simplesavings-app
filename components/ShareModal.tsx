@@ -54,7 +54,7 @@ export default function ShareModal({ url, snapshot, onClose }: ShareModalProps) 
   const [narrativeError, setNarrativeError] = useState("");
   const [narrativeCopied, setNarrativeCopied] = useState(false);
   const [narrativeUsage, setNarrativeUsage] = useState<{ inputTokens: number; outputTokens: number; model: string; provider: string } | null>(null);
-  const [narrativeStyle, setNarrativeStyle] = useState<"simple" | "expanded">("simple");
+  const [narrativeStyle, setNarrativeStyle] = useState<"simple" | "expanded" | "bare bones">("simple");
   const [refreshesUsed, setRefreshesUsed] = useState(0);
   const MAX_REFRESHES = 3;
 
@@ -66,11 +66,32 @@ export default function ShareModal({ url, snapshot, onClose }: ShareModalProps) 
     return "auth";
   })();
 
-  const generateNarrative = useCallback(async (style: "simple" | "expanded", isRefresh = false) => {
-    setNarrativeLoading(true);
+  const buildBareBonesNarrative = useCallback((): string => {
+    const { startingAmount, monthlyContribution, timeframeYears, interestRate, totalValue, currency = "USD", goalAmount } = snapshot;
+    const c = currency;
+    const exact = (n: number) => new Intl.NumberFormat("en-US", { style: "currency", currency: c, minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(n);
+    const years = timeframeYears % 1 === 0 ? `${timeframeYears} year${timeframeYears !== 1 ? "s" : ""}` : `${timeframeYears.toFixed(1)} years`;
+    const contrib = monthlyContribution === 0
+      ? "with no contributions"
+      : monthlyContribution > 0
+      ? `+ ${exact(monthlyContribution)}/mo`
+      : `- ${exact(Math.abs(monthlyContribution))}/mo withdrawal`;
+    const goalPart = goalAmount ? `, goal ${exact(goalAmount)}` : "";
+    return `${exact(startingAmount)} for ${years} at ${interestRate}%${goalPart} ${contrib}: ${exact(totalValue)} (https://simplesavings.app)`;
+  }, [snapshot]);
+
+  const generateNarrative = useCallback(async (style: "simple" | "expanded" | "bare bones", isRefresh = false) => {
     setNarrativeError("");
     setNarrativeCopied(false);
     if (isRefresh) setRefreshesUsed((n) => n + 1);
+
+    if (style === "bare bones") {
+      setNarrative(buildBareBonesNarrative());
+      setNarrativeUsage(null);
+      return;
+    }
+
+    setNarrativeLoading(true);
     try {
       const res = await fetch("/api/narrative", {
         method: "POST",
@@ -86,9 +107,9 @@ export default function ShareModal({ url, snapshot, onClose }: ShareModalProps) 
     } finally {
       setNarrativeLoading(false);
     }
-  }, [snapshot]);
+  }, [snapshot, buildBareBonesNarrative]);
 
-  const handleStyleChange = useCallback((style: "simple" | "expanded") => {
+  const handleStyleChange = useCallback((style: "simple" | "expanded" | "bare bones") => {
     setNarrativeStyle(style);
     setRefreshesUsed(0);
     generateNarrative(style);
@@ -139,7 +160,7 @@ export default function ShareModal({ url, snapshot, onClose }: ShareModalProps) 
 
   // ── Narrative view ─────────────────────────────────────────────────────────
   if (currentView === "narrative") {
-    const canRefresh = !narrativeLoading && refreshesUsed < MAX_REFRESHES;
+    const canRefresh = !narrativeLoading && refreshesUsed < MAX_REFRESHES && narrativeStyle !== "bare bones";
     return (
       <Modal onClose={onClose}>
         <ModalHeader title="Share Your Calculation" onClose={onClose} />
@@ -160,7 +181,7 @@ export default function ShareModal({ url, snapshot, onClose }: ShareModalProps) 
           {/* Style pills + refresh */}
           <div className="flex items-center justify-between">
             <div className="flex gap-1.5">
-              {(["simple", "expanded"] as const).map((s) => (
+              {(["simple", "expanded", "bare bones"] as const).map((s) => (
                 <button
                   key={s}
                   onClick={() => handleStyleChange(s)}
@@ -175,18 +196,20 @@ export default function ShareModal({ url, snapshot, onClose }: ShareModalProps) 
                 </button>
               ))}
             </div>
-            <button
-              onClick={() => generateNarrative(narrativeStyle, true)}
-              disabled={!canRefresh || !!narrativeError}
-              title={refreshesUsed >= MAX_REFRESHES ? "No more regenerations" : `Regenerate (${MAX_REFRESHES - refreshesUsed} left)`}
-              className="flex items-center gap-1 text-xs text-neutral-400 hover:text-neutral-600 transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
-            >
-              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-                <path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/>
-                <path d="M3 3v5h5"/>
-              </svg>
-              {refreshesUsed < MAX_REFRESHES ? `${MAX_REFRESHES - refreshesUsed} left` : "used up"}
-            </button>
+            {narrativeStyle !== "bare bones" && (
+              <button
+                onClick={() => generateNarrative(narrativeStyle, true)}
+                disabled={!canRefresh || !!narrativeError}
+                title={refreshesUsed >= MAX_REFRESHES ? "No more regenerations" : `Regenerate (${MAX_REFRESHES - refreshesUsed} left)`}
+                className="flex items-center gap-1 text-xs text-neutral-400 hover:text-neutral-600 transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
+              >
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                  <path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/>
+                  <path d="M3 3v5h5"/>
+                </svg>
+                {refreshesUsed < MAX_REFRESHES ? `${MAX_REFRESHES - refreshesUsed} left` : "used up"}
+              </button>
+            )}
           </div>
 
           {isAdmin && narrativeUsage && !narrativeLoading && (

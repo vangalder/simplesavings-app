@@ -60,7 +60,7 @@ Rules:
 - Use exact dollar amounts with cents (e.g. $1,093.81 not $1,094)
 - If there are monthly contributions, work them in naturally
 - No financial jargon
-- End the sentence with " (simplesavings.app)" — no period before it, just append it
+- End the sentence with " (https://simplesavings.app)" — no period before it, just append it
 - Output only the sentence — no quotes around it, no intro
 
 Plan:
@@ -75,7 +75,7 @@ Rules:
 - Use exact dollar amounts with cents where appropriate
 - First person ("I'm", "my")
 - Conversational, not formal
-- End the last sentence with " (simplesavings.app)" — no period before it, just append it
+- End the last sentence with " (https://simplesavings.app)" — no period before it, just append it
 - Output only the narrative — no quotes around it, no intro
 
 Plan:
