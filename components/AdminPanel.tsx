@@ -26,10 +26,17 @@ export default function AdminPanel() {
     user?.id ? { clerkId: user.id } : "skip"
   );
 
+  const seedTestCredits = useMutation(api.users.seedTestCredits);
+
   const testModeValue = (paymentTestMode === "true" ? "sample" : paymentTestMode) ?? "off";
   const isTestModeOn = testModeValue !== "off";
   const handleTestModeChange = async (value: string) => {
     await setConfig({ key: "paymentTestMode", value });
+    // When toggling to Pro Sample, immediately reset the test account to a
+    // fresh $4.99 credit balance so the tier badge and usage bar are live.
+    if (value === "sample" && user?.id) {
+      await seedTestCredits({ clerkId: user.id });
+    }
   };
 
   type StatSortCol = "model" | "calls" | "avgLatency" | "p95Latency" | "avgCost" | "totalCost" | "translations";

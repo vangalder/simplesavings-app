@@ -45,6 +45,12 @@ function UserDropdown() {
     api.users.getAiCreditBalance,
     isSignedIn && clerkId ? { clerkId } : "skip"
   );
+  // Admins can set test mode in the admin panel — read it so the tier badge
+  // reflects the active test mode even before a test checkout is triggered.
+  const testMode = useQuery(
+    api.appConfig.getConfig,
+    isAdmin ? { key: "paymentTestMode" } : "skip"
+  );
 
   // Close on outside click
   useEffect(() => {
@@ -67,7 +73,12 @@ function UserDropdown() {
   }
 
   const avatarUrl = user.imageUrl;
-  const tier = resolveTier(creditBalance);
+  // Admins: if test mode is active, show the test tier rather than the real balance tier
+  const baseTier = resolveTier(creditBalance);
+  const tier: Tier =
+    isAdmin && testMode === "pro"     ? "Pro"        :
+    isAdmin && testMode === "sample"  ? "Pro Sample" :
+    baseTier;
   const granted = creditBalance?.granted ?? 0;
   const used = creditBalance?.used ?? 0;
   const pct = granted > 0 ? Math.min(100, Math.round((used / granted) * 100)) : 0;

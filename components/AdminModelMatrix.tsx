@@ -74,6 +74,25 @@ function getProfile(id: string): Profile {
 
 const CONS_ICON = "⚠️";
 
+type Recommendation = "Blurbs" | "Conversations" | "—";
+
+function getRecommendation(id: string): Recommendation {
+  const lc = id.toLowerCase();
+  if (["flash", "mini", "lite", "nano", "haiku", "scout", "small", "fast", "turbo", "gemma"].some((k) => lc.includes(k))) {
+    return "Blurbs";
+  }
+  if (
+    /\/o\d/.test(lc) || lc.includes("-r1") || lc.includes("/o3") || lc.includes("/o4") ||
+    lc.includes("reasoning") || lc.includes("think") ||
+    lc.includes("sonnet") || lc.includes("opus") || lc.includes("-pro") ||
+    lc.includes("gpt-4") || lc.includes("gpt-5") || lc.includes("claude") ||
+    lc.includes("gemini") || lc.includes("grok") || lc.includes("deepseek")
+  ) {
+    return "Conversations";
+  }
+  return "—";
+}
+
 function parseActiveId(stored: string | null): string {
   if (!stored) return "";
   const idx = stored.indexOf(":");
@@ -233,21 +252,24 @@ export default function AdminModelMatrix({
               <thead>
                 <tr className="border-b border-neutral-100 bg-neutral-50">
                   <th
-                    className="text-left px-4 py-2 font-medium text-neutral-400 w-[24%] cursor-pointer select-none hover:text-neutral-600 transition-colors"
+                    className="text-left px-4 py-2 font-medium text-neutral-400 w-[22%] cursor-pointer select-none hover:text-neutral-600 transition-colors"
                     onClick={() => handleSort("name")}
                   >
                     Model / Identifier{sortArrow("name")}
                   </th>
-                  <th className="text-left px-3 py-2 font-medium text-neutral-400 w-[42%]">
+                  <th className="text-left px-3 py-2 font-medium text-neutral-400 w-[36%]">
                     Pros and Cons
                   </th>
                   <th
-                    className="text-right px-3 py-2 font-medium text-neutral-400 w-[12%] cursor-pointer select-none hover:text-neutral-600 transition-colors"
+                    className="text-right px-3 py-2 font-medium text-neutral-400 w-[10%] cursor-pointer select-none hover:text-neutral-600 transition-colors"
                     onClick={() => handleSort("cost")}
                   >
                     Cost / 1M{sortArrow("cost")}
                   </th>
-                  <th className="text-right px-4 py-2 font-medium text-neutral-400 w-[22%]">
+                  <th className="text-left px-3 py-2 font-medium text-neutral-400 w-[12%]">
+                    Recommended for
+                  </th>
+                  <th className="text-right px-4 py-2 font-medium text-neutral-400 w-[20%]">
                     Allocation
                   </th>
                 </tr>
@@ -297,6 +319,24 @@ export default function AdminModelMatrix({
                           {formatCost(m.pricePerMTok)}
                         </span>
                         {isHighCost && <span className="ml-0.5 text-xs">⚠️</span>}
+                      </td>
+
+                      {/* Recommended for */}
+                      <td className="px-3 py-2.5">
+                        {(() => {
+                          const rec = getRecommendation(m.id);
+                          return (
+                            <span
+                              className={`text-[10px] font-semibold whitespace-nowrap ${
+                                rec === "Blurbs"        ? "text-emerald-600" :
+                                rec === "Conversations" ? "text-blue-600"    :
+                                "text-neutral-400"
+                              }`}
+                            >
+                              {rec}
+                            </span>
+                          );
+                        })()}
                       </td>
 
                       {/* Allocation buttons */}

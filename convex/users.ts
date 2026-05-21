@@ -129,6 +129,26 @@ export const grantAiCredits = mutation({
   },
 });
 
+// Resets the test account to a fresh Pro Sample state: zeros out usage and
+// sets granted to the standard $4.99 sample amount. Only called from the
+// admin panel when test mode is toggled to "sample".
+export const seedTestCredits = mutation({
+  args: { clerkId: v.string() },
+  handler: async (ctx, args) => {
+    const user = await ctx.db
+      .query("users")
+      .withIndex("by_clerk_id", (q) => q.eq("clerkId", args.clerkId))
+      .first();
+    if (!user) throw new Error("User not found");
+    await ctx.db.patch(user._id, {
+      aiCreditsGranted: 499,
+      aiCreditsUsed: 0,
+      isPro: false,
+      updatedAt: Date.now(),
+    });
+  },
+});
+
 export const getClerkIdByStripeCustomer = query({
   args: { stripeCustomerId: v.string() },
   handler: async (ctx, args) => {
