@@ -54,6 +54,9 @@ export default function ShareModal({ url, snapshot, onClose }: ShareModalProps) 
   const [narrativeError, setNarrativeError] = useState("");
   const [narrativeCopied, setNarrativeCopied] = useState(false);
   const [narrativeUsage, setNarrativeUsage] = useState<{ inputTokens: number; outputTokens: number; model: string; provider: string } | null>(null);
+  const [narrativeStyle, setNarrativeStyle] = useState<"simple" | "expanded">("simple");
+  const [refreshesUsed, setRefreshesUsed] = useState(0);
+  const MAX_REFRESHES = 3;
 
   const currentView: View = (() => {
     if (view === "narrative") return "narrative";
@@ -63,15 +66,16 @@ export default function ShareModal({ url, snapshot, onClose }: ShareModalProps) 
     return "auth";
   })();
 
-  const generateNarrative = useCallback(async () => {
+  const generateNarrative = useCallback(async (style: "simple" | "expanded", isRefresh = false) => {
     setNarrativeLoading(true);
     setNarrativeError("");
     setNarrativeCopied(false);
+    if (isRefresh) setRefreshesUsed((n) => n + 1);
     try {
       const res = await fetch("/api/narrative", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(snapshot),
+        body: JSON.stringify({ ...snapshot, style }),
       });
       const data = await res.json();
       if (data.error || !data.narrative) throw new Error(data.error ?? "Empty response");
@@ -84,9 +88,15 @@ export default function ShareModal({ url, snapshot, onClose }: ShareModalProps) 
     }
   }, [snapshot]);
 
+  const handleStyleChange = useCallback((style: "simple" | "expanded") => {
+    setNarrativeStyle(style);
+    setRefreshesUsed(0);
+    generateNarrative(style);
+  }, [generateNarrative]);
+
   useEffect(() => {
     if (view === "narrative" && !narrative && !narrativeLoading) {
-      generateNarrative();
+      generateNarrative(narrativeStyle);
     }
   }, [view]); // eslint-disable-line react-hooks/exhaustive-deps
 
@@ -129,10 +139,12 @@ export default function ShareModal({ url, snapshot, onClose }: ShareModalProps) 
 
   // ── Narrative view ─────────────────────────────────────────────────────────
   if (currentView === "narrative") {
+    const canRefresh = !narrativeLoading && refreshesUsed < MAX_REFRESHES;
     return (
       <Modal onClose={onClose}>
         <ModalHeader title="Share Your Calculation" onClose={onClose} />
         <div className="px-6 py-5 space-y-3">
+          {/* Narrative text box */}
           <div className="min-h-[88px] rounded-xl border-2 border-neutral-200 bg-neutral-50 px-4 py-3 text-sm text-neutral-700 leading-relaxed">
             {narrativeLoading && (
               <span className="inline-flex gap-1 items-center h-5 text-neutral-400">
@@ -144,14 +156,42 @@ export default function ShareModal({ url, snapshot, onClose }: ShareModalProps) 
             {!narrativeLoading && narrativeError && <span className="text-error-base">{narrativeError}</span>}
             {!narrativeLoading && !narrativeError && narrative}
           </div>
-          {!narrativeLoading && narrativeError && (
-            <button onClick={generateNarrative} className="text-xs text-neutral-400 hover:text-neutral-600 transition-colors">
-              Try again
+
+          {/* Style pills + refresh */}
+          <div className="flex items-center justify-between">
+            <div className="flex gap-1.5">
+              {(["simple", "expanded"] as const).map((s) => (
+                <button
+                  key={s}
+                  onClick={() => handleStyleChange(s)}
+                  disabled={narrativeLoading}
+                  className={`px-3 py-1 rounded-full text-xs font-medium transition-colors capitalize ${
+                    narrativeStyle === s
+                      ? "bg-primary-base text-white"
+                      : "bg-neutral-100 text-neutral-500 hover:bg-neutral-200 disabled:opacity-40"
+                  }`}
+                >
+                  {s}
+                </button>
+              ))}
+            </div>
+            <button
+              onClick={() => generateNarrative(narrativeStyle, true)}
+              disabled={!canRefresh || !!narrativeError}
+              title={refreshesUsed >= MAX_REFRESHES ? "No more regenerations" : `Regenerate (${MAX_REFRESHES - refreshesUsed} left)`}
+              className="flex items-center gap-1 text-xs text-neutral-400 hover:text-neutral-600 transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
+            >
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/>
+                <path d="M3 3v5h5"/>
+              </svg>
+              {refreshesUsed < MAX_REFRESHES ? `${MAX_REFRESHES - refreshesUsed} left` : "used up"}
             </button>
-          )}
+          </div>
+
           {isAdmin && narrativeUsage && !narrativeLoading && (
             <p className="text-[10px] text-neutral-400 font-mono tabular-nums">
-              {narrativeUsage.provider} · {narrativeUsage.model} · {narrativeUsage.inputTokens}↑ {narrativeUsage.outputTokens}↓ · ${(((narrativeUsage.inputTokens * 0.25 + narrativeUsage.outputTokens * 1.25) / 1_000_000)).toFixed(6)}
+              {narrativeUsage.provider} · {narrativeUsage.model} · {narrativeUsage.inputTokens}↑ {narrativeUsage.outputTokens}↓ · ${((narrativeUsage.inputTokens * 0.25 + narrativeUsage.outputTokens * 1.25) / 1_000_000).toFixed(6)}
             </p>
           )}
         </div>
