@@ -40,8 +40,8 @@ export default function AIBlurb({ blurb, question, pitch, loading, meta, error, 
 
   const ctaLabel =
     goalMet === false && goalShortfall && goalShortfall > 0
-      ? `Let AI calculate how to bridge your ${fmtCurrency(goalShortfall, currency)} gap`
-      : "Unlock AI Insights to optimize your savings timeline";
+      ? `Let's work out how to close your ${fmtCurrency(goalShortfall, currency)} gap`
+      : "Let's optimize your savings timeline";
 
   useEffect(() => {
     if (blurb) {

@@ -283,7 +283,7 @@ export default function InsightsPanel({ scenarioId, clerkId, scenarioData }: Pro
           {!isSignedIn ? (
             <SignInButton mode="modal">
               <button className="w-full py-2.5 px-4 rounded-xl bg-primary-base text-white font-semibold text-sm hover:opacity-90 transition-opacity">
-                Sign in to unlock AI Insights
+                Sign in to see your insights
               </button>
             </SignInButton>
           ) : creditBalance === undefined ? (

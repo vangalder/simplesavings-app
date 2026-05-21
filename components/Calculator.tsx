@@ -894,17 +894,17 @@ export default function Calculator() {
             ) : activeTab === "insights" ? (
               <div className="bg-white rounded-2xl border border-neutral-100 p-8 text-center space-y-4">
                 {!isSignedIn ? (
-                  <p className="text-sm text-neutral-500">Sign in to unlock AI insights</p>
+                  <p className="text-sm text-neutral-500">Sign in to see your personalized insights</p>
                 ) : !aiBlurb ? (
                   <p className="text-sm text-neutral-400 animate-pulse">Loading your analysis…</p>
                 ) : (
                   <>
-                    <p className="text-sm font-medium text-neutral-700">Unlock AI-powered financial co-pilot</p>
+                    <p className="text-sm font-medium text-neutral-700">Let's dig into your plan together</p>
                     <button
                       onClick={() => setUpsellContext({ question: aiBlurbQuestion, pitch: aiBlurbPitch })}
                       className="inline-flex items-center gap-1.5 px-5 py-2.5 rounded-full bg-gradient-to-r from-accent-orange-base to-accent-base text-neutral-900 text-sm font-semibold hover:opacity-90 transition-opacity"
                     >
-                      <span>✦</span><span>Get AI Access →</span>
+                      <span>✦</span><span>Unlock insights →</span>
                     </button>
                   </>
                 )}

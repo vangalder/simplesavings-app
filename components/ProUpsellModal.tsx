@@ -99,7 +99,7 @@ export default function ProUpsellModal({ open, onClose, insightContext, monthlyC
           <div className="flex items-start justify-between gap-4">
             <div>
               <h2 className="text-lg font-display font-bold text-neutral-900">
-                AI Insights ✦
+                Insights ✦
               </h2>
               <p className="text-sm text-neutral-500 mt-0.5 leading-snug">
                 {pitch}
