@@ -809,10 +809,10 @@ export default function Calculator() {
             </div>
             {/* END INPUTS GROUP */}
 
-            {/* ── RESULTS + BLURB GROUP (always visible when white card shows) ── */}
-            {/* border-t shows when inputs are above (calculator tab); omitted on chart tab */}
+            {/* ── RESULTS + BLURB GROUP (mobile: inputs tab; desktop: always) ── */}
             <div className={`
-              ${activeTab === "chart" ? "pt-1" : "border-t-2 border-neutral-200 pt-3 mt-3"}
+              ${mobileTab("calculator")}
+              border-t-2 border-neutral-200 pt-3 mt-3
               lg:border-t-2 lg:border-neutral-200 lg:pt-3 lg:mt-3
             `}>
               <h2 className="text-lg font-display font-semibold text-neutral-800 mb-2 text-center">{t("totalValue")}</h2>
