@@ -214,6 +214,11 @@ WITHDRAWAL OVERRIDE — HIGHEST PRIORITY:
 - If the facts say "is_net_growth_positive: TRUE", you are STRICTLY FORBIDDEN from calling the strategy "unsustainable", declaring a "deficit", or claiming the portfolio will run out of money. The interest fully covers the drawdown — the portfolio is growing. Acknowledge this.
 - If the projected final value exceeds the starting balance, the body MUST reflect net growth. Do not introduce depletion warnings, panic language, or sustainability concerns that contradict this arithmetic fact.
 
+GOAL ATTAINMENT RULES — enforced whenever a GOAL FACT MATRIX is present:
+- "Goal met within timeframe: FALSE ✗" → STRICTLY FORBIDDEN from stating or implying the user will reach, hit, or is on track for the goal within the plan window. You must reflect the shortfall or the extended timeline.
+- "Goal met within timeframe: TRUE ✓" → acknowledge completion naturally; do not introduce doubt.
+- NEVER invent, halve, or recalculate timelines. If you cite when the goal is reached, use ONLY the exact "Months to reach goal" figure from the GOAL FACT MATRIX. No arithmetic on your own.
+
 OTHER RULES:
 - NEVER recalculate or contradict GROWING/DEPLETING or SAFE/UNSUSTAINABLE labels.
 - Never use the acronym "FIRE" — use "work-optional", "fully self-sustaining", or "financial freedom target".
@@ -343,18 +348,30 @@ export async function POST(req: NextRequest) {
   // Goal facts — only computed when user has explicitly set a goal
   const goalProgress = hasGoal && goalAmount! > 0
     ? ((startingAmount / goalAmount!) * 100).toFixed(1) : null;
-  const yearsToGoal = hasGoal && !isWithdrawal
-    ? (() => {
-        if (startingAmount >= goalAmount!) return "already reached";
-        const monthlyRate = interestRate / 100 / 12;
-        let balance = startingAmount;
-        for (let m = 1; m <= 200 * 12; m++) {
-          balance = balance * (1 + monthlyRate) + contributionAbs;
-          if (balance >= goalAmount!) return (m / 12).toFixed(1);
+
+  // Definitive boolean: does the ACTUAL final balance clear the goal?
+  const goalMetWithinTimeframe = hasGoal && goalAmount !== null && totalValue >= goalAmount!;
+
+  // Month-exact simulation: how long until goal is reached at current pace (ignores timeframe)
+  let yearsToGoal: string | null = null;
+  let monthsToReachGoal: number | null = null;
+  if (hasGoal && !isWithdrawal) {
+    if (startingAmount >= goalAmount!) {
+      yearsToGoal = "already reached";
+      monthsToReachGoal = 0;
+    } else {
+      const monthlyRate = interestRate / 100 / 12;
+      let balance = startingAmount;
+      for (let m = 1; m <= 200 * 12; m++) {
+        balance = balance * (1 + monthlyRate) + contributionAbs;
+        if (balance >= goalAmount!) {
+          yearsToGoal = (m / 12).toFixed(1);
+          monthsToReachGoal = m;
+          break;
         }
-        return null;
-      })()
-    : null;
+      }
+    }
+  }
 
   // Rate context vs. historical benchmarks
   const spNominal = 10.0;
@@ -546,6 +563,13 @@ ${depletionYears ? `- Portfolio depletes in: ${depletionYears} years` : ""}
 ${doublingYears ? `- Rule of 72: doubles every ${doublingYears} years` : ""}
 ${inflationErosion && timeframeYears >= 5 ? `- Inflation-adjusted real value (2.8% CPI): ${formatCurrency(parseFloat(inflationErosion), currency)}` : ""}
 ${noGoalConstraint}${timeframeConstraint}
+${hasGoal && goalAmount !== null ? `
+## GOAL FACT MATRIX — highest-priority ground truth, overrides all other reasoning
+- Timeframe: ${Math.round(timeframeYears * 12)} months (${timeframeYears.toFixed(2)} years)
+- Final balance at end of timeframe: ${formatCurrency(totalValue, currency)}
+- Goal amount: ${formatCurrency(goalAmount!, currency)}
+- Goal met within timeframe: ${goalMetWithinTimeframe ? `TRUE ✓ — balance clears goal` : `FALSE ✗ — falls short by ${formatCurrency(goalAmount! - totalValue, currency)}`}
+- ${monthsToReachGoal !== null && yearsToGoal !== "already reached" ? `Months to reach goal at current pace: ${monthsToReachGoal} months (${yearsToGoal} yrs) — THIS IS THE ONLY TIMELINE FIGURE YOU MAY CITE` : yearsToGoal === "already reached" ? "Starting balance already meets the goal" : "Goal never reached at current pace within 200 months"}` : ""}
 
 LEAD WITH: ${leadWith}
 OPEN QUESTION: ${questionHook}
