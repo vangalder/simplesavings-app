@@ -81,7 +81,7 @@ function fmt(n: number, currency = "USD"): string {
   }).format(n);
 }
 
-function buildSystemPrompt(body: InsightsRequest): string {
+function buildSystemPrompt(body: InsightsRequest, pricing: { proSamplePrice: string; proPrice: string } = { proSamplePrice: "4.99", proPrice: "9.99" }): string {
   const isWithdrawal = body.monthlyContribution < 0;
   const currency = body.currency ?? "USD";
   const annualGrowth = body.startingAmount * (body.interestRate / 100);
@@ -110,6 +110,13 @@ If the user is building or working on simplesavings.app itself, acknowledge that
 
 ## What you know about yourself
 ${APP_REFERENCE}
+
+## ⚡ Live Pricing (always use these — they override anything in the reference above)
+| Plan | Current Price | What's included |
+|---|---|---|
+| **Pro Sample** | $${pricing.proSamplePrice} | Deep AI analysis on one plan |
+| **Pro** | $${pricing.proPrice}/month | Unlimited AI conversations |
+| **Free** | $0 | Full calculator, sharing, blurbs — no AI chat |
 
 ---
 
@@ -337,12 +344,16 @@ export async function POST(req: NextRequest) {
     return new Response(JSON.stringify({ error: "Invalid JSON" }), { status: 400 });
   }
 
-  // Access check
+  // Access check + live config
   const clerkId = userId ?? body.clerkId ?? "";
-  const [creditBalance, chatBudgetRaw] = await Promise.all([
+  const [creditBalance, chatBudgetRaw, proSamplePriceRaw, proPriceRaw] = await Promise.all([
     clerkId ? convex.query(api.users.getAiCreditBalance, { clerkId }).catch(() => null) : null,
     convex.query(api.appConfig.getConfig, { key: "chatFreeTokenBudget" }).catch(() => "0"),
+    convex.query(api.appConfig.getConfig, { key: "proSamplePriceDisplay" }).catch(() => null),
+    convex.query(api.appConfig.getConfig, { key: "proPriceDisplay" }).catch(() => null),
   ]);
+  const proSamplePrice = proSamplePriceRaw ?? "4.99";
+  const proPrice = proPriceRaw ?? "9.99";
 
   const isPro = creditBalance?.isPro;
   const hasCredits = (creditBalance?.granted ?? 0) > (creditBalance?.used ?? 0);
@@ -363,7 +374,7 @@ export async function POST(req: NextRequest) {
   }
 
   const { provider, model, conversationHistory } = body;
-  const systemPrompt = buildSystemPrompt(body);
+  const systemPrompt = buildSystemPrompt(body, { proSamplePrice, proPrice });
 
   let fullText = "";
 
