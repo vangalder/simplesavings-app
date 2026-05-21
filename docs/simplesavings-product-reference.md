@@ -51,7 +51,9 @@ The optional Goal Amount field sets a horizontal target line across the chart. W
 
 ### Chart Image Export
 
-Saving the chart as an image file is not currently a feature of the app.
+The chart has a built-in toolbox in the top-right corner with two buttons:
+- **Save as Image** — downloads the current chart as `savings-chart.png` directly to the user's device. Captures the full chart including the goal line if set.
+- **Restore** — resets the chart view if it has been panned or zoomed.
 
 ### Compound interest formula
 
