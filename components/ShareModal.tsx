@@ -35,7 +35,7 @@ interface ShareModalProps {
   onClose: () => void;
 }
 
-type View = "auth" | "form" | "narrative" | "success";
+type View = "picker" | "auth" | "form" | "narrative" | "success";
 
 function ModalHeader({ title, onClose }: { title: string; onClose: () => void }) {
   return (
@@ -59,7 +59,7 @@ export default function ShareModal({ url, snapshot, onClose }: ShareModalProps) 
   const [emailError, setEmailError] = useState("");
   const [linkCopied, setLinkCopied] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [view, setView] = useState<View>("auth");
+  const [view, setView] = useState<View>("picker");
 
   // narrative state
   const [narrative, setNarrative] = useState("");
@@ -72,6 +72,7 @@ export default function ShareModal({ url, snapshot, onClose }: ShareModalProps) 
   const MAX_REFRESHES = 3;
 
   const currentView: View = (() => {
+    if (view === "picker") return "picker";
     if (view === "narrative") return "narrative";
     if (view === "success") return "success";
     if (!isLoaded) return "auth";
@@ -174,6 +175,53 @@ export default function ShareModal({ url, snapshot, onClose }: ShareModalProps) 
     setView("success");
   };
 
+  // ── Picker view ────────────────────────────────────────────────────────────
+  if (currentView === "picker") {
+    return (
+      <Modal onClose={onClose}>
+        <ModalHeader title="Share Your Calculation" onClose={onClose} />
+        <div className="px-6 py-6 space-y-3">
+          <button
+            onClick={() => setView(isSignedIn ? "form" : "auth")}
+            className="w-full flex items-center gap-4 px-5 py-4 rounded-2xl border-2 border-neutral-200 hover:border-primary-base hover:bg-primary-base/5 transition-colors text-left group"
+          >
+            <div className="w-9 h-9 rounded-xl bg-primary-base/10 flex items-center justify-center shrink-0 group-hover:bg-primary-base/20 transition-colors">
+              <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-primary-base">
+                <path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/>
+                <path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/>
+              </svg>
+            </div>
+            <div>
+              <p className="font-semibold text-neutral-800 text-sm">Share Link</p>
+              <p className="text-xs text-neutral-500 mt-0.5">Send a link that opens this exact calculation</p>
+            </div>
+          </button>
+
+          <button
+            onClick={() => setView("narrative")}
+            className="w-full flex items-center gap-4 px-5 py-4 rounded-2xl border-2 border-neutral-200 hover:border-accent-orange-base hover:bg-accent-orange-base/5 transition-colors text-left group"
+          >
+            <div className="w-9 h-9 rounded-xl bg-accent-orange-base/10 flex items-center justify-center shrink-0 group-hover:bg-accent-orange-base/20 transition-colors">
+              <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-accent-orange-base">
+                <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>
+              </svg>
+            </div>
+            <div>
+              <p className="font-semibold text-neutral-800 text-sm">Share Narrative</p>
+              <p className="text-xs text-neutral-500 mt-0.5">Copy a plain-English summary to paste anywhere</p>
+            </div>
+          </button>
+        </div>
+
+        <div className="px-6 pb-5 flex justify-end">
+          <button onClick={onClose} className="text-sm text-neutral-400 hover:text-neutral-600 transition-colors">
+            Cancel
+          </button>
+        </div>
+      </Modal>
+    );
+  }
+
   // ── Narrative view ─────────────────────────────────────────────────────────
   if (currentView === "narrative") {
     const canRefresh = !narrativeLoading && refreshesUsed < MAX_REFRESHES && narrativeStyle !== "bare bones";
@@ -252,10 +300,10 @@ export default function ShareModal({ url, snapshot, onClose }: ShareModalProps) 
 
         <div className="px-6 pb-5 text-center">
           <button
-            onClick={() => setView(isSignedIn ? "form" : "auth")}
+            onClick={() => setView("picker")}
             className="text-xs text-neutral-400 hover:text-neutral-600 transition-colors underline underline-offset-2"
           >
-            Share Link
+            ← Back
           </button>
         </div>
       </Modal>
@@ -290,14 +338,6 @@ export default function ShareModal({ url, snapshot, onClose }: ShareModalProps) 
         <div className="px-6 pb-4 flex justify-end">
           <button onClick={onClose} className="px-5 py-2.5 text-neutral-600 font-medium rounded-xl hover:bg-neutral-100 transition-colors">
             Cancel
-          </button>
-        </div>
-        <div className="px-6 pb-5 text-center">
-          <button
-            onClick={() => setView("narrative")}
-            className="text-xs text-neutral-400 hover:text-neutral-600 transition-colors underline underline-offset-2"
-          >
-            Share Narrative Only
           </button>
         </div>
       </Modal>
@@ -391,14 +431,6 @@ export default function ShareModal({ url, snapshot, onClose }: ShareModalProps) 
         </button>
       </div>
 
-      <div className="px-6 pb-5 text-center">
-        <button
-          onClick={() => setView("narrative")}
-          className="text-xs text-neutral-400 hover:text-neutral-600 transition-colors underline underline-offset-2"
-        >
-          Share Narrative Only
-        </button>
-      </div>
     </Modal>
   );
 }
