@@ -15,7 +15,7 @@ type Message = {
   id: string;
   role: "user" | "assistant";
   content: string;
-  calcUpdate?: CalcUpdate | null;
+  calcUpdates?: CalcUpdate[];
   usage?: Usage | null;
   streaming?: boolean;
   provider?: string;
@@ -197,7 +197,7 @@ export default function AIChat({
         }
 
         let fullText = "";
-        let calcUpdate: CalcUpdate | null = null;
+        let calcUpdates: CalcUpdate[] = [];
         let inputTokens = 0;
         let outputTokens = 0;
         let costCents = 0;
@@ -227,14 +227,14 @@ export default function AIChat({
                 );
               } else if (evt.type === "done") {
                 fullText = evt.cleanText ?? fullText;
-                calcUpdate = evt.calcUpdate ?? null;
+                calcUpdates = evt.calcUpdates ?? [];
                 inputTokens = evt.usage?.inputTokens ?? 0;
                 outputTokens = evt.usage?.outputTokens ?? 0;
                 costCents = evt.usage?.costCents ?? 0;
                 setMessages((prev) =>
                   prev.map((m) =>
                     m.id === assistantId
-                      ? { ...m, content: fullText, streaming: false, calcUpdate,
+                      ? { ...m, content: fullText, streaming: false, calcUpdates,
                           usage: { inputTokens, outputTokens, costCents },
                           provider, model }
                       : m
@@ -249,9 +249,9 @@ export default function AIChat({
           }
         }
 
-        // Apply calculator update
-        if (calcUpdate?.field && typeof calcUpdate.value === "number") {
-          onCalculatorUpdate(calcUpdate.field, calcUpdate.value);
+        // Apply calculator updates
+        for (const u of calcUpdates) {
+          if (u.field && typeof u.value === "number") onCalculatorUpdate(u.field, u.value);
         }
 
         // Persist messages
@@ -354,12 +354,16 @@ export default function AIChat({
               ) : (
                 <span className="whitespace-pre-wrap">{renderBold(msg.content)}</span>
               )}
-              {msg.calcUpdate && (
-                <div className="mt-2 pt-2 border-t border-neutral-200/60 text-xs text-neutral-500 flex items-center gap-1.5">
-                  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" className="shrink-0 text-primary-base">
-                    <path d="M12 20h9M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"/>
-                  </svg>
-                  <span>Calculator updated: {msg.calcUpdate.reason}</span>
+              {msg.calcUpdates && msg.calcUpdates.length > 0 && (
+                <div className="mt-2 pt-2 border-t border-neutral-200/60 flex flex-col gap-1">
+                  {msg.calcUpdates.map((u, i) => (
+                    <div key={i} className="text-xs text-neutral-500 flex items-center gap-1.5">
+                      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" className="shrink-0 text-primary-base">
+                        <path d="M12 20h9M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"/>
+                      </svg>
+                      <span>Calculator updated: {u.reason}</span>
+                    </div>
+                  ))}
                 </div>
               )}
             </div>
