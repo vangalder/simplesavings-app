@@ -41,16 +41,17 @@ export async function POST(req: NextRequest) {
   const origin = req.headers.get("origin") ?? "https://simplesavings.app";
 
   // Check payment test mode — admin bypass, skips Stripe entirely
+  // Values: "off" | "sample" (force $4.99 credits) | "pro" (force Pro) | "true" (legacy: respects checkout type)
   const testMode = await convex.query(api.appConfig.getConfig, { key: "paymentTestMode" });
-  if (testMode === "true") {
-    // Ensure user exists in Convex (handles case where Clerk webhook isn't configured yet)
+  const grantType = testMode === "pro" ? "subscription" : testMode === "sample" ? "one_time" : testMode === "true" ? type : null;
+  if (grantType) {
     const clerkUser = await currentUser();
     await convex.mutation(api.users.upsertUser, {
       clerkId: userId,
       email: clerkUser?.primaryEmailAddress?.emailAddress ?? undefined,
       name: clerkUser?.fullName ?? clerkUser?.firstName ?? undefined,
     });
-    if (type === "subscription") {
+    if (grantType === "subscription") {
       await convex.mutation(api.users.setUserPro, { clerkId: userId });
     } else {
       await convex.mutation(api.users.grantAiCredits, { clerkId: userId, creditsInCents: 199 });

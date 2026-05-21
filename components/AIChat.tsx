@@ -32,9 +32,15 @@ type Props = {
   locale: string;
   isPaid: boolean;
   freeTokenBudget: number;
+  creditBalance?: { granted: number; used: number; isPro?: boolean } | null;
   onUpsellNeeded: () => void;
   onCalculatorUpdate: (field: string, value: number) => void;
 };
+
+function renderBold(text: string): React.ReactNode {
+  const parts = text.split(/\*\*([^*]+)\*\*/g);
+  return parts.map((part, i) => i % 2 === 1 ? <strong key={i} className="font-semibold">{part}</strong> : part);
+}
 
 type ConvexMessage = {
   _id: Id<"messages">;
@@ -54,6 +60,7 @@ export default function AIChat({
   locale,
   isPaid,
   freeTokenBudget,
+  creditBalance,
   onUpsellNeeded,
   onCalculatorUpdate,
 }: Props) {
@@ -76,10 +83,13 @@ export default function AIChat({
   const addMessage = useMutation(api.messages.addMessage);
   const incrementFreeTokens = useMutation(api.scenarios.incrementFreeTokens);
 
-  const defaultProvider = useQuery(api.appConfig.getConfig, { key: "defaultProvider" });
-  const defaultModel = useQuery(api.appConfig.getConfig, { key: "defaultModel" });
-  const provider = defaultProvider ?? "anthropic";
-  const model = defaultModel ?? "claude-haiku-4-5-20251001";
+  // Read the conversation model config saved by AdminPanel as "provider:model"
+  const defaultConvoModel = useQuery(api.appConfig.getConfig, { key: "defaultConversationModel" });
+  const [provider, model] = (() => {
+    if (defaultConvoModel?.includes(":")) return defaultConvoModel.split(":", 2);
+    return ["anthropic", "claude-haiku-4-5-20251001"];
+  })();
+  const clearMessages = useMutation(api.messages.clearMessages);
   const isAdmin = useIsAdmin();
 
   // Load persisted messages once on mount
@@ -316,7 +326,7 @@ export default function AIChat({
                   <span className="w-1.5 h-1.5 rounded-full bg-neutral-400 animate-bounce" style={{ animationDelay: "300ms" }} />
                 </span>
               ) : (
-                <span className="whitespace-pre-wrap">{msg.content}</span>
+                <span className="whitespace-pre-wrap">{renderBold(msg.content)}</span>
               )}
               {msg.calcUpdate && (
                 <div className="mt-2 pt-2 border-t border-neutral-200/60 text-xs text-neutral-500 flex items-center gap-1.5">
@@ -330,6 +340,10 @@ export default function AIChat({
             {isAdmin && msg.role === "assistant" && msg.usage && !msg.streaming && (
               <p className="text-[10px] text-neutral-500 font-mono tabular-nums mt-0.5 px-1">
                 {msg.provider} · {msg.model} · {msg.usage.inputTokens}↑ {msg.usage.outputTokens}↓ · ${(msg.usage.costCents / 100).toFixed(6)}
+                {creditBalance && !creditBalance.isPro && (() => {
+                  const remaining = Math.max(0, creditBalance.granted - creditBalance.used);
+                  return <span className="text-amber-500"> · ${(remaining / 100).toFixed(2)} left</span>;
+                })()}
               </p>
             )}
           </div>
@@ -349,6 +363,23 @@ export default function AIChat({
 
         <div ref={bottomRef} />
       </div>
+
+      {/* Admin: clear conversation */}
+      {isAdmin && messages.length > 0 && !isStreaming && (
+        <div className="flex justify-end px-3 pb-1">
+          <button
+            onClick={async () => {
+              if (!clerkId) return;
+              await clearMessages({ scenarioId, clerkId }).catch(() => {});
+              setMessages([]);
+              setOpenerStarted(false);
+            }}
+            className="text-[10px] text-neutral-400 hover:text-red-400 transition-colors font-mono"
+          >
+            clear conversation ↺
+          </button>
+        </div>
+      )}
 
       {/* Input row */}
       <form onSubmit={handleSubmit} className="flex items-end gap-2 px-3 py-3 border-t border-neutral-100">

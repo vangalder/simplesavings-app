@@ -1,7 +1,6 @@
 "use client";
 
 import { useState, useEffect, useRef } from "react";
-import { useRouter } from "next/navigation";
 import { locales, localeNames, localeFlags, LOCALE_COOKIE, type Locale } from "@/i18n/config";
 
 interface LanguagePickerProps {
@@ -13,7 +12,6 @@ export default function LanguagePicker({ currentLocale, compact = false }: Langu
   const [isOpen, setIsOpen] = useState(false);
   const [locale, setLocale] = useState<Locale>(currentLocale ?? "en");
   const ref = useRef<HTMLDivElement>(null);
-  const router = useRouter();
 
   useEffect(() => {
     if (currentLocale) return;
@@ -36,7 +34,10 @@ export default function LanguagePicker({ currentLocale, compact = false }: Langu
     document.cookie = `${LOCALE_COOKIE}=${loc}; path=/; max-age=31536000; SameSite=Lax`;
     setLocale(loc);
     setIsOpen(false);
-    router.refresh();
+    // Full reload required — router.refresh() in Next.js 14 doesn't re-render the root
+    // layout's NextIntlClientProvider with new messages, leaving translations stale.
+    // Calculator state is preserved in URL params + localStorage.
+    window.location.reload();
   };
 
   return (

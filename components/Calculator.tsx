@@ -109,9 +109,12 @@ export default function Calculator() {
   const isPro = creditBalance?.isPro;
   const hasCredits = (creditBalance?.granted ?? 0) > (creditBalance?.used ?? 0);
   const isChatEligible = isPro || hasCredits || freeTokenBudget > 0;
-  // Freeze blurb regeneration once the user has an active scenario and is chat-eligible.
-  // The blurb that seeded the conversation must not change as calculator inputs evolve.
-  const blurbFrozen = !!(scenarioId && aiBlurb && isChatEligible);
+  // One-way lock: set when the user first becomes chat-eligible with a blurb loaded.
+  // A ref (not state) so locale translation's temporary aiBlurb="" never unlocks it.
+  const blurbLockedRef = useRef(false);
+  if (!blurbLockedRef.current && !!(scenarioId && aiBlurb && isChatEligible)) {
+    blurbLockedRef.current = true;
+  }
 
   // Load values from URL params, localStorage, or defaults
   useEffect(() => {
@@ -314,7 +317,7 @@ export default function Calculator() {
     if (!isInitialized) return;
     // Once the user has an active conversation, the blurb is permanently frozen.
     // Regenerating it would break the conversation seed that prompted them to convert.
-    if (blurbFrozen) return;
+    if (blurbLockedRef.current) return;
 
     // Check blurb cache — skip LLM call if inputs haven't changed since last save
     const inputsHash = `${state.startingAmount}-${state.monthlyContribution}-${state.interestRate}-${state.timeframeYears}-${goalAmount}`;
@@ -823,6 +826,7 @@ export default function Calculator() {
                 locale={locale}
                 isPaid={!!(isPro || hasCredits)}
                 freeTokenBudget={freeTokenBudget}
+                creditBalance={creditBalance ? { granted: creditBalance.granted, used: creditBalance.used, isPro: creditBalance.isPro } : null}
                 onUpsellNeeded={() => setUpsellContext({ question: aiBlurbQuestion, pitch: aiBlurbPitch })}
                 onCalculatorUpdate={(field, value) => {
                   setState((prev) => ({ ...prev, [field]: value }));

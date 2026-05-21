@@ -19,9 +19,10 @@ export default function AdminPanel() {
   const setConfig = useMutation(api.appConfig.setConfig);
   const modelStats = useQuery(api.blurbLogs.getModelStats, {});
 
-  const isTestModeOn = paymentTestMode === "true";
-  const handleToggleTestMode = async () => {
-    await setConfig({ key: "paymentTestMode", value: isTestModeOn ? "false" : "true" });
+  const testModeValue = (paymentTestMode === "true" ? "sample" : paymentTestMode) ?? "off";
+  const isTestModeOn = testModeValue !== "off";
+  const handleTestModeChange = async (value: string) => {
+    await setConfig({ key: "paymentTestMode", value });
   };
 
   // Model config state
@@ -274,32 +275,29 @@ export default function AdminPanel() {
             <p className="text-xs text-neutral-400 mt-0.5">Test the paid UX without touching Stripe.</p>
           </div>
           {isTestModeOn && (
-            <span className="shrink-0 px-2 py-0.5 rounded-full bg-amber-200 text-amber-800 text-xs font-semibold">TEST MODE ON</span>
+            <span className="shrink-0 px-2 py-0.5 rounded-full bg-amber-200 text-amber-800 text-xs font-semibold">
+              TEST MODE: {testModeValue === "pro" ? "PRO" : "PRO SAMPLE"}
+            </span>
           )}
         </div>
-        <div className="mt-4 flex items-center justify-between">
+        <div className="mt-4 flex items-center justify-between gap-4">
           <div>
             <p className="text-sm font-medium text-neutral-700">Payment test mode</p>
             <p className="text-xs text-neutral-400 mt-0.5">
-              {isTestModeOn
-                ? "Clicking a payment button will instantly grant access — no Stripe, no charge."
-                : "When enabled, the checkout flow grants credits/Pro immediately without Stripe."}
+              {testModeValue === "off" && "Checkout goes through Stripe — no bypass."}
+              {testModeValue === "sample" && "Checkout instantly grants $4.99 sample credits — no Stripe, no charge."}
+              {testModeValue === "pro" && "Checkout instantly grants full Pro access — no Stripe, no charge."}
             </p>
           </div>
-          <button
-            onClick={handleToggleTestMode}
-            className={`relative inline-flex h-6 w-11 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors focus:outline-none ${
-              isTestModeOn ? "bg-amber-400" : "bg-neutral-200"
-            }`}
-            role="switch"
-            aria-checked={isTestModeOn}
+          <select
+            value={testModeValue}
+            onChange={(e) => handleTestModeChange(e.target.value)}
+            className="shrink-0 px-3 py-1.5 rounded-lg border border-neutral-200 text-sm text-neutral-700 bg-white focus:outline-none focus:ring-2 focus:ring-primary-base/30"
           >
-            <span
-              className={`inline-block h-5 w-5 rounded-full bg-white shadow-sm ring-0 transition-transform ${
-                isTestModeOn ? "translate-x-5" : "translate-x-0"
-              }`}
-            />
-          </button>
+            <option value="off">Off</option>
+            <option value="sample">Pro Sample</option>
+            <option value="pro">Pro</option>
+          </select>
         </div>
       </div>
 
