@@ -38,8 +38,19 @@ type Props = {
 };
 
 function renderInline(text: string): React.ReactNode {
-  const parts = text.split(/\*\*([^*]+)\*\*/g);
-  return parts.map((part, i) => i % 2 === 1 ? <strong key={i} className="font-semibold">{part}</strong> : part);
+  // Split on **bold** markers first, then apply app-name styling within plain segments
+  const boldParts = text.split(/\*\*([^*]+)\*\*/g);
+  return boldParts.map((part, i) => {
+    if (i % 2 === 1) return <strong key={i} className="font-semibold">{part}</strong>;
+    // Within plain text, highlight "simplesavings.app"
+    const appParts = part.split(/(simplesavings\.app)/g);
+    if (appParts.length === 1) return part;
+    return appParts.map((seg, j) =>
+      seg === "simplesavings.app"
+        ? <strong key={`${i}-${j}`} className="font-bold text-accent-orange-base">{seg}</strong>
+        : seg
+    );
+  });
 }
 
 function renderMarkdown(text: string): React.ReactNode {
@@ -50,38 +61,42 @@ function renderMarkdown(text: string): React.ReactNode {
     const line = lines[i];
     // H2
     if (line.startsWith("## ")) {
-      nodes.push(<p key={i} className="font-bold text-sm text-neutral-900 mt-3 mb-0.5 first:mt-0">{renderInline(line.slice(3))}</p>);
+      nodes.push(<p key={i} className="font-bold text-sm text-neutral-900 mt-4 mb-1 first:mt-0">{renderInline(line.slice(3))}</p>);
     // H3
     } else if (line.startsWith("### ")) {
-      nodes.push(<p key={i} className="font-semibold text-sm text-neutral-700 mt-2 mb-0.5">{renderInline(line.slice(4))}</p>);
-    // Bullet: -, *, or leading emoji bullet (✅ ✓ •)
-    } else if (/^[-*] /.test(line) || /^[✅✓•▸→🔹🔸💡📌🎯💰📊🧮🌍💾🔗🤖💬🗂️] /.test(line)) {
-      const content = /^[-*] /.test(line) ? line.slice(2) : line;
+      nodes.push(<p key={i} className="font-semibold text-sm text-neutral-700 mt-3 mb-1">{renderInline(line.slice(4))}</p>);
+    // Bullet: -, *, ✓, or other leading emoji bullet
+    } else if (/^[-*] /.test(line) || /^[✓•▸→🔹🔸💡📌🎯💰📊🧮🌍💾🔗🤖💬🗂️] /.test(line)) {
+      const isCheckmark = line.startsWith("✓ ");
+      const isDash = /^[-*] /.test(line);
+      const content = isDash ? line.slice(2) : isCheckmark ? line.slice(2) : line;
       nodes.push(
-        <div key={i} className="flex gap-1.5 items-baseline text-sm">
-          {/^[-*] /.test(line)
+        <div key={i} className="flex gap-2 items-baseline text-sm py-0.5">
+          {isCheckmark
+            ? <span className="shrink-0 text-green-600 font-bold leading-snug">✓</span>
+            : isDash
             ? <span className="shrink-0 text-primary-base font-bold leading-snug">•</span>
             : null}
-          <span>{renderInline(content)}</span>
+          <span className="leading-snug">{renderInline(content)}</span>
         </div>
       );
     // Example callout
     } else if (line.startsWith("💡 Example:") || line.startsWith("💡 Example :")) {
       nodes.push(
-        <div key={i} className="rounded-lg bg-amber-50 border border-amber-200 px-3 py-2 text-xs text-amber-900 leading-relaxed">
+        <div key={i} className="rounded-lg bg-amber-50 border border-amber-200 px-3 py-2.5 my-1 text-xs text-amber-900 leading-relaxed">
           {renderInline(line)}
         </div>
       );
     // Blank line → spacer
     } else if (line.trim() === "") {
-      nodes.push(<div key={i} className="h-1.5" />);
+      nodes.push(<div key={i} className="h-2" />);
     // Normal paragraph line
     } else {
       nodes.push(<p key={i} className="text-sm leading-relaxed">{renderInline(line)}</p>);
     }
     i++;
   }
-  return <div className="flex flex-col gap-0.5">{nodes}</div>;
+  return <div className="flex flex-col gap-1">{nodes}</div>;
 }
 
 type ConvexMessage = {
