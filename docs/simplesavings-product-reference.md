@@ -10,6 +10,36 @@ simplesavings.app is a free compound interest calculator and financial planning 
 
 ---
 
+## 🚀 What Makes simplesavings.app Different
+
+Every phone has a compound interest calculator. simplesavings.app is something different. Here is what sets it apart — and why it matters:
+
+### 🤖 A Financial Co-Pilot Built Into the Calculator
+Most calculators give you a number and leave you alone. simplesavings.app has a live AI strategist built directly into the interface. The moment you enter your numbers, it generates a personalized insight about your specific projection — not generic tips. Then it opens a full conversation where you can ask anything, test scenarios, and get real strategic advice tailored to your exact situation. The AI can update the calculator fields mid-conversation so you see the impact on the chart instantly.
+
+### 🌍 Multilingual — Fully, Not Partially
+simplesavings.app works in 7 languages — English, Spanish (Mexico), Spanish (Spain), Italian, Portuguese (Brazil), Portuguese (Portugal), and French — with automatic currency switching (USD, MXN, EUR, BRL). Every label, result, chart tooltip, and AI response adapts. The AI itself responds in your language. No other free calculator does this.
+
+### 📅 Target Date Mode
+Instead of entering "25 years," you can pick an actual target date — a retirement date, a home purchase, a milestone. The calculator counts down in exact years and months and recalculates live. This makes the plan feel real, not hypothetical.
+
+### 📤 Share Your Plan — Two Ways
+One tap opens two sharing options: send a direct link that reproduces your exact scenario down to every input, or generate an AI-crafted narrative summary of your plan in Simple, Expanded, or Bare Bones style — ready to copy and paste anywhere. No other free calculator generates a narrative.
+
+### 💾 Your Plan Follows You
+Sign in with Google and your calculator state, goal, and full AI conversation history are saved to the cloud. Return on any device and pick up exactly where you left off — no re-entering anything.
+
+### 📊 Three Chart Styles, One Click
+Switch between Area, Bar, and Line views instantly to see your projection from different angles. The chart always shows principal vs. interest as separate layers so the compounding effect is immediately visible. Save the chart as a PNG with one click.
+
+### 🎯 Goal Tracking Built In
+Set a goal amount and a dashed target line appears on the chart. The AI blurb CTA shows your exact shortfall if you're falling short. The AI co-pilot receives your goal as context and builds strategy advice around closing that specific gap.
+
+### 💸 Genuinely Free Tier
+The calculator, all three chart types, goal tracking, sharing, narrative generation, and the insight blurb are completely free — no account required, no time limit, no watermark. Premium unlocks the AI conversation.
+
+---
+
 ## The Calculator
 
 ### Inputs

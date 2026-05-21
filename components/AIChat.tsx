@@ -47,7 +47,7 @@ function renderInline(text: string): React.ReactNode {
     if (appParts.length === 1) return part;
     return appParts.map((seg, j) =>
       seg === "simplesavings.app"
-        ? <strong key={`${i}-${j}`} className="font-bold text-accent-orange-base">{seg}</strong>
+        ? <strong key={`${i}-${j}`} style={{ color: '#F58634' }}>{seg}</strong>
         : seg
     );
   });
@@ -73,7 +73,7 @@ function renderMarkdown(text: string): React.ReactNode {
       nodes.push(
         <div key={i} className="flex gap-2 items-baseline text-sm py-0.5">
           {isCheckmark
-            ? <span className="shrink-0 text-green-600 font-bold leading-snug">✓</span>
+            ? <span className="shrink-0 font-bold leading-snug" style={{ color: '#16a34a' }}>✓</span>
             : isDash
             ? <span className="shrink-0 text-primary-base font-bold leading-snug">•</span>
             : null}
