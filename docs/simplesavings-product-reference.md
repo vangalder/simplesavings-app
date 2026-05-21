@@ -14,7 +14,7 @@ simplesavings.app is a free compound interest calculator and financial planning 
 
 Every phone has a compound interest calculator. simplesavings.app is something different. Here is what sets it apart — and why it matters:
 
-### 🤖 A Financial Co-Pilot Built Into the Calculator
+### 🤖 A Live AI Strategist Built Into the Calculator
 Most calculators give you a number and leave you alone. simplesavings.app has a live AI strategist built directly into the interface. The moment you enter your numbers, it generates a personalized insight about your specific projection — not generic tips. Then it opens a full conversation where you can ask anything, test scenarios, and get real strategic advice tailored to your exact situation. The AI can update the calculator fields mid-conversation so you see the impact on the chart instantly.
 
 ### 🌍 Multilingual — Fully, Not Partially
@@ -33,7 +33,7 @@ Sign in with Google and your calculator state, goal, and full AI conversation hi
 Switch between Area, Bar, and Line views instantly to see your projection from different angles. The chart always shows principal vs. interest as separate layers so the compounding effect is immediately visible. Save the chart as a PNG with one click.
 
 ### 🎯 Goal Tracking Built In
-Set a goal amount and a dashed target line appears on the chart. The AI blurb CTA shows your exact shortfall if you're falling short. The AI co-pilot receives your goal as context and builds strategy advice around closing that specific gap.
+Set a goal amount and a dashed target line appears on the chart. The AI blurb CTA shows your exact shortfall if you're falling short. The AI receives your goal as context and builds strategy advice around closing that specific gap.
 
 ### 💸 Genuinely Free Tier
 The calculator, all three chart types, goal tracking, sharing, narrative generation, and the insight blurb are completely free — no account required, no time limit, no watermark. Premium unlocks the AI conversation.
@@ -50,7 +50,7 @@ The calculator, all three chart types, goal tracking, sharing, narrative generat
 | **Monthly Contribution** | Amount added each month. Enter a negative number to model withdrawals instead | `mc` |
 | **Timeframe** | How long to project. Two modes: a plain number of years, or a specific target date (date picker). Switch between them with the toggle button. | `ty` (years) or `td` (ISO date) |
 | **Annual Return Rate** | Expected yearly growth rate as a percentage (e.g. 7 for 7%) | `ir` |
-| **Goal Amount** | Optional. Sets a horizontal target line on the chart. Appears in the AI co-pilot context as the user's stated objective. | `ga` |
+| **Goal Amount** | Optional. Sets a horizontal target line on the chart. Appears in the AI context as the user's stated objective. | `ga` |
 
 ### Outputs
 
@@ -60,7 +60,7 @@ The calculator, all three chart types, goal tracking, sharing, narrative generat
 
 ### Withdrawal mode
 
-When Monthly Contribution is negative the app switches to withdrawal mode automatically: labels change, the chart shows the balance depleting, and the AI co-pilot frames advice around sustainability and sequence risk.
+When Monthly Contribution is negative the app switches to withdrawal mode automatically: labels change, the chart shows the balance depleting, and the AI frames advice around sustainability and sequence risk.
 
 ### Chart
 
@@ -82,7 +82,7 @@ On mobile, the chart is on the **Chart** tab (second tab at the bottom). On desk
 The optional Goal Amount field sets a horizontal target line across the chart. When set:
 - A dashed line appears at that value on the chart
 - The AI blurb CTA changes to show the specific shortfall if the projection falls short (e.g. "Explore $234,000 gap →")
-- The AI co-pilot receives the goal as part of its context and factors it into strategy recommendations
+- The AI receives the goal as part of its context and factors it into strategy recommendations
 - Set Goal Amount to 0 to remove the goal line
 
 ### Chart Image Export
@@ -111,7 +111,7 @@ The app is fully multilingual. The language/currency is set by the URL locale pr
 | `pt-PT` | Português (Portugal) | EUR |
 | `fr-FR` | Français (France) | EUR |
 
-All calculator labels, results, chart tooltips, and the AI co-pilot responses are delivered in the active language. The AI always responds in the user's locale language regardless of what language the user writes in.
+All calculator labels, results, chart tooltips, and the AI responses are delivered in the active language. The AI always responds in the user's locale language regardless of what language the user writes in.
 
 ---
 
