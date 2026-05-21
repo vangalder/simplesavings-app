@@ -114,24 +114,24 @@ function UserDropdown() {
             <div className="min-w-0">
               <p className="text-sm font-semibold text-neutral-900 truncate">{user.fullName ?? "—"}</p>
               <p className="text-xs text-neutral-500 truncate">{user.primaryEmailAddress?.emailAddress}</p>
+              <span className={`inline-block mt-1 px-2 py-0.5 rounded-full text-[10px] font-semibold tracking-wide ${TIER_STYLES[tier]}`}>
+                {tier}
+              </span>
             </div>
-            <span className={`ml-auto shrink-0 px-2 py-0.5 rounded-full text-[10px] font-semibold tracking-wide ${TIER_STYLES[tier]}`}>
-              {tier}
-            </span>
           </div>
 
           {/* Usage block — Pro Sample tier only */}
           {showUsage && (
-            <div className="px-4 py-2.5 border-b border-neutral-100 bg-neutral-50">
-              <p className="text-[10px] font-medium text-neutral-500 uppercase tracking-wide mb-1.5">Usage</p>
+            <div className="px-4 py-2.5 border-b border-neutral-100 bg-neutral-50/70">
+              <p className="text-[10px] font-semibold text-neutral-500 uppercase tracking-widest mb-1.5">Usage</p>
               {isAdmin && (
-                <p className="text-[10px] text-neutral-500 font-mono tabular-nums mb-1">
+                <p className="text-[10px] text-neutral-500 font-mono tabular-nums mb-1.5">
                   Tokens Used: ${(used / 100).toFixed(4)} / ${(granted / 100).toFixed(2)} ({pct}%)
                 </p>
               )}
-              <div className="h-1.5 bg-neutral-200 rounded-full overflow-hidden">
+              <div className="h-2 bg-neutral-200 rounded-full overflow-hidden">
                 <div
-                  className={`h-full rounded-full transition-all ${pct > 80 ? "bg-red-400" : "bg-primary-base"}`}
+                  className={`h-full rounded-full transition-all duration-500 ${pct > 80 ? "bg-gradient-to-r from-red-400 to-red-500" : "bg-gradient-to-r from-primary-base to-primary-base/80"}`}
                   style={{ width: `${pct}%` }}
                 />
               </div>

@@ -72,7 +72,6 @@ function getProfile(id: string): Profile {
   };
 }
 
-const PROS_ICON = "✅";
 const CONS_ICON = "⚠️";
 
 function parseActiveId(stored: string | null): string {
@@ -282,7 +281,9 @@ export default function AdminModelMatrix({
                       <td className="px-3 py-2.5">
                         <div className="space-y-0.5">
                           {profile.pros.map((p) => (
-                            <p key={p} className="text-neutral-600 leading-snug whitespace-nowrap" style={{ fontSize: "10px" }}>{PROS_ICON} {p}</p>
+                            <p key={p} className="text-neutral-600 leading-snug whitespace-nowrap" style={{ fontSize: "10px" }}>
+                              <span className="text-emerald-600 font-semibold">✓</span> {p}
+                            </p>
                           ))}
                           {profile.cons.map((c) => (
                             <p key={c} className="text-neutral-600 leading-snug whitespace-nowrap" style={{ fontSize: "10px" }}>{CONS_ICON} {c}</p>
