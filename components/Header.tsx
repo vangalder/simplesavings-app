@@ -2,46 +2,188 @@
 
 import Image from "next/image";
 import Link from "next/link";
-import { UserButton, SignInButton, useUser } from "@clerk/nextjs";
+import { useRef, useState, useEffect } from "react";
+import { useRouter } from "next/navigation";
+import { useUser, useClerk, SignInButton } from "@clerk/nextjs";
+import { useQuery } from "convex/react";
+import { api } from "@/convex/_generated/api";
+import { useIsAdmin } from "@/hooks/useIsAdmin";
 import CurrencyPicker from "@/components/CurrencyPicker";
 import LanguagePicker from "@/components/LanguagePicker";
 
 const isClerkConfigured = !!process.env.NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY;
 
-const ProfileIcon = () => (
-  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-    <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/>
-    <circle cx="12" cy="7" r="4"/>
-  </svg>
-);
+// ── Tier helpers ──────────────────────────────────────────────────────────────
 
-function AuthControls() {
-  const { isSignedIn, isLoaded } = useUser();
+type Tier = "Pro" | "Pro Sample" | "Free";
 
-  if (!isLoaded) return <div className="w-8 h-8 rounded-full bg-primary-base/30 animate-pulse" />;
+function resolveTier(balance: { granted: number; used: number; isPro?: boolean } | null | undefined): Tier {
+  if (!balance) return "Free";
+  if (balance.isPro) return "Pro";
+  if (balance.granted > 0) return "Pro Sample";
+  return "Free";
+}
 
-  if (isSignedIn) {
+const TIER_STYLES: Record<Tier, string> = {
+  "Pro":        "bg-gradient-to-r from-accent-orange-base to-accent-base text-neutral-900",
+  "Pro Sample": "bg-amber-100 text-amber-800",
+  "Free":       "bg-neutral-200 text-neutral-600",
+};
+
+// ── Custom user dropdown ───────────────────────────────────────────────────────
+
+function UserDropdown() {
+  const { user, isSignedIn } = useUser();
+  const { signOut, openUserProfile } = useClerk();
+  const router = useRouter();
+  const isAdmin = useIsAdmin();
+  const [open, setOpen] = useState(false);
+  const menuRef = useRef<HTMLDivElement>(null);
+
+  const clerkId = user?.id ?? "";
+  const creditBalance = useQuery(
+    api.users.getAiCreditBalance,
+    isSignedIn && clerkId ? { clerkId } : "skip"
+  );
+
+  // Close on outside click
+  useEffect(() => {
+    if (!open) return;
+    function handleOutside(e: MouseEvent) {
+      if (menuRef.current && !menuRef.current.contains(e.target as Node)) setOpen(false);
+    }
+    document.addEventListener("mousedown", handleOutside);
+    return () => document.removeEventListener("mousedown", handleOutside);
+  }, [open]);
+
+  if (!isSignedIn) {
     return (
-      <UserButton appearance={{ elements: { avatarBox: "w-8 h-8" } }}>
-        <UserButton.MenuItems>
-          <UserButton.Link
-            label="Profile"
-            labelIcon={<ProfileIcon />}
-            href="/profile"
-          />
-        </UserButton.MenuItems>
-      </UserButton>
+      <SignInButton mode="modal">
+        <button className="text-sm font-medium text-white bg-primary-base/40 hover:bg-primary-base/60 px-3 py-1.5 rounded-lg transition-colors">
+          Sign in
+        </button>
+      </SignInButton>
     );
   }
 
+  const avatarUrl = user.imageUrl;
+  const tier = resolveTier(creditBalance);
+  const granted = creditBalance?.granted ?? 0;
+  const used = creditBalance?.used ?? 0;
+  const pct = granted > 0 ? Math.min(100, Math.round((used / granted) * 100)) : 0;
+  const showUsage = tier === "Pro Sample";
+
   return (
-    <SignInButton mode="modal">
-      <button className="text-sm font-medium text-white bg-primary-base/40 hover:bg-primary-base/60 px-3 py-1.5 rounded-lg transition-colors">
-        Sign in
+    <div ref={menuRef} className="relative">
+      {/* Avatar trigger */}
+      <button
+        onClick={() => setOpen((v) => !v)}
+        className="w-8 h-8 rounded-full overflow-hidden ring-2 ring-transparent hover:ring-white/40 transition-all focus:outline-none focus-visible:ring-white/60"
+        aria-label="Open account menu"
+      >
+        {avatarUrl ? (
+          // eslint-disable-next-line @next/next/no-img-element
+          <img src={avatarUrl} alt={user.fullName ?? "Account"} className="w-full h-full object-cover" />
+        ) : (
+          <div className="w-full h-full bg-primary-base/40 flex items-center justify-center">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2">
+              <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/>
+              <circle cx="12" cy="7" r="4"/>
+            </svg>
+          </div>
+        )}
       </button>
-    </SignInButton>
+
+      {/* Dropdown panel */}
+      {open && (
+        <div className="absolute right-0 top-full mt-2 w-72 bg-white rounded-2xl shadow-xl border border-neutral-200 overflow-hidden z-[200]">
+
+          {/* Identity row */}
+          <div className="px-4 pt-4 pb-3 flex items-center gap-3 border-b border-neutral-100">
+            {avatarUrl ? (
+              // eslint-disable-next-line @next/next/no-img-element
+              <img src={avatarUrl} alt="" className="w-10 h-10 rounded-full object-cover shrink-0" />
+            ) : (
+              <div className="w-10 h-10 rounded-full bg-primary-base/20 flex items-center justify-center shrink-0">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="text-primary-base">
+                  <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/>
+                  <circle cx="12" cy="7" r="4"/>
+                </svg>
+              </div>
+            )}
+            <div className="min-w-0">
+              <p className="text-sm font-semibold text-neutral-900 truncate">{user.fullName ?? "—"}</p>
+              <p className="text-xs text-neutral-500 truncate">{user.primaryEmailAddress?.emailAddress}</p>
+            </div>
+            <span className={`ml-auto shrink-0 px-2 py-0.5 rounded-full text-[10px] font-semibold tracking-wide ${TIER_STYLES[tier]}`}>
+              {tier}
+            </span>
+          </div>
+
+          {/* Usage block — Pro Sample tier only */}
+          {showUsage && (
+            <div className="px-4 py-2.5 border-b border-neutral-100 bg-neutral-50">
+              <p className="text-[10px] font-medium text-neutral-500 uppercase tracking-wide mb-1.5">Usage</p>
+              {isAdmin && (
+                <p className="text-[10px] text-neutral-500 font-mono tabular-nums mb-1">
+                  Tokens Used: ${(used / 100).toFixed(4)} / ${(granted / 100).toFixed(2)} ({pct}%)
+                </p>
+              )}
+              <div className="h-1.5 bg-neutral-200 rounded-full overflow-hidden">
+                <div
+                  className={`h-full rounded-full transition-all ${pct > 80 ? "bg-red-400" : "bg-primary-base"}`}
+                  style={{ width: `${pct}%` }}
+                />
+              </div>
+            </div>
+          )}
+
+          {/* Nav actions */}
+          <div className="py-1">
+            <button
+              onClick={() => { setOpen(false); openUserProfile(); }}
+              className="w-full flex items-center gap-3 px-4 py-2.5 text-sm text-neutral-700 hover:bg-neutral-50 transition-colors text-left"
+            >
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="text-neutral-400 shrink-0">
+                <circle cx="12" cy="12" r="3"/>
+                <path d="M19.07 4.93a10 10 0 0 1 0 14.14M4.93 4.93a10 10 0 0 0 0 14.14"/>
+              </svg>
+              Manage account
+            </button>
+            <button
+              onClick={() => { setOpen(false); router.push("/profile"); }}
+              className="w-full flex items-center gap-3 px-4 py-2.5 text-sm text-neutral-700 hover:bg-neutral-50 transition-colors text-left"
+            >
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="text-neutral-400 shrink-0">
+                <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/>
+                <circle cx="12" cy="7" r="4"/>
+              </svg>
+              Profile
+            </button>
+          </div>
+
+          {/* Sign out */}
+          <div className="border-t border-neutral-100 py-1">
+            <button
+              onClick={() => signOut()}
+              className="w-full flex items-center gap-3 px-4 py-2.5 text-sm text-neutral-500 hover:bg-neutral-50 hover:text-neutral-700 transition-colors text-left"
+            >
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="text-neutral-400 shrink-0">
+                <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/>
+                <polyline points="16 17 21 12 16 7"/>
+                <line x1="21" y1="12" x2="9" y2="12"/>
+              </svg>
+              Sign out
+            </button>
+          </div>
+
+        </div>
+      )}
+    </div>
   );
 }
+
+// ── Header ─────────────────────────────────────────────────────────────────────
 
 export default function Header() {
   return (
@@ -68,7 +210,7 @@ export default function Header() {
         <div className="flex items-center gap-1.5 md:gap-2 shrink-0">
           <LanguagePicker compact />
           <CurrencyPicker compact />
-          {isClerkConfigured && <AuthControls />}
+          {isClerkConfigured && <UserDropdown />}
         </div>
       </div>
     </header>
