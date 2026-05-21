@@ -806,37 +806,6 @@ export default function Calculator() {
                 </div>
               </div>
 
-              {/* Goal Amount — optional */}
-              <div>
-                <label className="block text-sm font-medium text-neutral-700 mb-1.5">
-                  Goal amount <span className="text-neutral-400 font-normal text-xs">(optional)</span>
-                </label>
-                <input
-                  type="text"
-                  inputMode="numeric"
-                  value={goalAmount ? goalAmount.toLocaleString() : ""}
-                  onChange={(e) => {
-                    const raw = e.target.value.replace(/[^0-9]/g, "");
-                    const parsed = raw ? parseInt(raw, 10) : 0;
-                    setGoalAmount(parsed);
-                    if (parsed > 0) setShowGoalInput(true);
-                  }}
-                  onFocus={(e) => {
-                    if (goalAmount) e.target.value = String(goalAmount);
-                  }}
-                  onBlur={(e) => {
-                    const raw = e.target.value.replace(/[^0-9]/g, "");
-                    const parsed = raw ? parseInt(raw, 10) : 0;
-                    setGoalAmount(parsed);
-                    setShowGoalInput(parsed > 0);
-                    e.target.value = parsed ? parsed.toLocaleString() : "";
-                  }}
-                  placeholder="0"
-                  className="w-full px-4 py-3 border-2 border-accent-orange-base rounded-xl text-center text-4xl font-display font-semibold text-accent-orange-base focus:outline-none focus:ring-2 focus:ring-accent-orange-base focus:border-accent-orange-base placeholder:text-accent-orange-base/30 placeholder:text-xl"
-                />
-                <p className="text-xs text-neutral-600 mt-0.5 text-center">Sets a target line on the chart</p>
-              </div>
-
             </div>
             {/* END INPUTS GROUP */}
 
@@ -973,6 +942,37 @@ export default function Calculator() {
               xAxisUnit={results.chartXUnit}
               onChartTypeChange={setChartType}
             />
+          </div>
+
+          {/* Goal amount — below chart */}
+          <div className="mt-2 bg-white rounded-xl px-4 py-3 shadow-sm">
+            <label className="block text-sm font-medium text-neutral-700 mb-1.5">
+              Goal amount <span className="text-neutral-400 font-normal text-xs">(optional)</span>
+            </label>
+            <input
+              type="text"
+              inputMode="numeric"
+              value={goalAmount ? goalAmount.toLocaleString() : ""}
+              onChange={(e) => {
+                const raw = e.target.value.replace(/[^0-9]/g, "");
+                const parsed = raw ? parseInt(raw, 10) : 0;
+                setGoalAmount(parsed);
+                if (parsed > 0) setShowGoalInput(true);
+              }}
+              onFocus={(e) => {
+                if (goalAmount) e.target.value = String(goalAmount);
+              }}
+              onBlur={(e) => {
+                const raw = e.target.value.replace(/[^0-9]/g, "");
+                const parsed = raw ? parseInt(raw, 10) : 0;
+                setGoalAmount(parsed);
+                setShowGoalInput(parsed > 0);
+                e.target.value = parsed ? parsed.toLocaleString() : "";
+              }}
+              placeholder="0"
+              className="w-full px-4 py-3 border-2 border-accent-orange-base rounded-xl text-center text-4xl font-display font-semibold text-accent-orange-base focus:outline-none focus:ring-2 focus:ring-accent-orange-base focus:border-accent-orange-base placeholder:text-accent-orange-base/30 placeholder:text-xl"
+            />
+            <p className="text-xs text-neutral-600 mt-0.5 text-center">Sets a target line on the chart</p>
           </div>
 
         </div>
