@@ -265,7 +265,7 @@ export default function AIChat({
       }
     },
     [
-      isStreaming, messages, scenarioId, clerkId, provider, model, blurbContext,
+      isStreaming, messages, scenarioId, clerkId, provider, model, locale, blurbContext,
       calculatorState, results, currency, isPaid,
       addMessage, incrementFreeTokens, onCalculatorUpdate,
     ]
@@ -326,7 +326,7 @@ export default function AIChat({
               )}
             </div>
             {isAdmin && msg.role === "assistant" && msg.usage && !msg.streaming && (
-              <p className="text-[10px] text-neutral-300 font-mono tabular-nums mt-0.5 px-1">
+              <p className="text-[10px] text-neutral-500 font-mono tabular-nums mt-0.5 px-1">
                 {msg.provider} · {msg.model} · {msg.usage.inputTokens}↑ {msg.usage.outputTokens}↓ · ${(msg.usage.costCents / 100).toFixed(6)}
               </p>
             )}

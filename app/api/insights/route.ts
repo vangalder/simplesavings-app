@@ -83,8 +83,10 @@ function buildSystemPrompt(body: InsightsRequest): string {
 
   return `You are a sharp financial co-pilot for simplesavings.app. Your job is to help users deeply understand their savings or drawdown plan and make better decisions — not to give generic advice.
 
-## Language
-Respond entirely in ${language}. Do not switch languages mid-response.
+## LANGUAGE — NON-NEGOTIABLE
+You MUST respond entirely in ${language}. Every word of every response must be in ${language}.
+If the user writes in a different language, still respond in ${language} only.
+Never switch languages. Never default to English.
 
 ## Their Plan (pre-calculated facts — treat as ground truth)
 - Starting balance: ${fmt(body.startingAmount, currency)}
@@ -250,7 +252,7 @@ async function streamAnthropic(
   ];
 
   let inputTokens = 0, outputTokens = 0;
-  const stream = client.messages.stream({ model, max_tokens: 1024, system: systemPrompt, messages });
+  const stream = client.messages.stream({ model, max_tokens: 2048, system: systemPrompt, messages });
 
   for await (const chunk of stream) {
     if (chunk.type === "message_start") inputTokens = chunk.message.usage.input_tokens;
@@ -276,7 +278,7 @@ async function streamOpenAI(
   ];
 
   let inputTokens = 0, outputTokens = 0;
-  const stream = await client.chat.completions.create({ model, messages, stream: true, stream_options: { include_usage: true }, max_tokens: 1024 });
+  const stream = await client.chat.completions.create({ model, messages, stream: true, stream_options: { include_usage: true }, max_tokens: 2048 });
 
   for await (const chunk of stream) {
     const delta = chunk.choices[0]?.delta?.content;
