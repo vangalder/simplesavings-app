@@ -1,0 +1,180 @@
+{
+  "app": {
+    "name": "simplesavings.app",
+    "tagline": "Calculez la croissance de votre épargne avec les intérêts composés"
+  },
+  "header": {
+    "share": "Partager",
+    "signIn": "Se connecter",
+    "signOut": "Se déconnecter"
+  },
+  "calculator": {
+    "startingAmount": "montant de départ",
+    "startingAmountHint": "votre épargne initiale",
+    "startingAmountPlaceholder": "0,00",
+    "monthlyContribution": "versement mensuel",
+    "monthlyContributionHint": "montant que vous épargnez chaque mois",
+    "monthlyWithdrawal": "retrait mensuel",
+    "monthlyWithdrawalHint": "montant que vous retirez chaque mois",
+    "monthlyContributionPlaceholder": "0,00",
+    "timeframeYears": "durée en années",
+    "timeframeYearsHint": "combien de temps vous prévoyez d'épargner",
+    "timeframeYearsWithdrawalHint": "combien de temps vous prévoyez de décaisser",
+    "timeframeDate": "date cible",
+    "timeframeDateHint": "quand vous souhaitez atteindre votre objectif",
+    "timeframeRemaining": "{years} ans {months} mois restants",
+    "interestRate": "taux d'intérêt",
+    "interestRateHint": "rendement annuel estimé",
+    "interestRateCryptoHint": "rendement annuel prévu (les rendements crypto sont très variables)",
+    "goalAmount": "objectif d'épargne",
+    "goalAmountHint": "montant cible à atteindre",
+    "setGoal": "Définir un objectif d'épargne",
+    "totalValue": "Valeur totale",
+    "principalPaid": "capital versé",
+    "startingBalance": "solde initial",
+    "interestEarned": "intérêts générés",
+    "hitGoalAt": "Vous atteignez votre objectif en année {year}",
+    "extendForGoal": "Prolongez de {years} ans pour atteindre votre objectif",
+    "switchToDateMode": "Passer à la date cible",
+    "switchToYearsMode": "Passer aux années",
+    "cryptoNotice": "Les montants sont en {symbol}. Saisissez votre investissement en unités {symbol}."
+  },
+  "results": {
+    "totalValue": "Valeur totale",
+    "principalPaid": "capital versé",
+    "interestEarned": "intérêts générés"
+  },
+  "save": {
+    "save": "Enregistrer",
+    "saving": "Enregistrement…",
+    "saved": "Enregistré !",
+    "savedCount": "Enregistré ! ({count} {count, plural, one {fois} other {fois}})",
+    "saveLocally": "Enregistrer localement",
+    "saveToCloud": "Enregistrer dans le cloud",
+    "signInToSave": "Se connecter pour enregistrer",
+    "failedToSave": "Échec de l'enregistrement. Vérifiez vos paramètres de navigateur.",
+    "scenarioName": "Nom du scénario",
+    "scenarioNamePlaceholder": "ex. Fonds de retraite",
+    "description": "Description",
+    "descriptionPlaceholder": "À quoi sert ce plan d'épargne ?",
+    "goals": "Objectifs",
+    "goalsPlaceholder": "Que souhaitez-vous accomplir ?",
+    "cancel": "Annuler",
+    "confirm": "Enregistrer le scénario"
+  },
+  "share": {
+    "share": "Partager",
+    "shareCalculation": "Partager ce calcul",
+    "linkCopied": "Lien copié dans le presse-papiers !",
+    "copyLink": "Copier le lien",
+    "shareVia": "Partager via",
+    "close": "Fermer",
+    "modalTitle": "Partagez votre calcul",
+    "shareLink": "Partager le lien",
+    "shareLinkDesc": "Envoyez un lien qui ouvre exactement ce calcul",
+    "shareNarrative": "Partager le résumé",
+    "shareNarrativeDesc": "Copiez un résumé en langage simple à coller n'importe où",
+    "cancel": "Annuler",
+    "back": "← Retour",
+    "signInToShare": "Connectez-vous pour partager",
+    "signInToShareDesc": "Connectez-vous pour créer un lien partageable et suivre avec qui vous l'avez partagé.",
+    "signInWithGoogle": "Se connecter avec Google",
+    "yourShareableLink": "Votre lien partageable",
+    "shareWithEmail": "Partager avec (adresse e-mail)",
+    "emailPlaceholder": "ami@exemple.com",
+    "invalidEmail": "Veuillez saisir une adresse e-mail valide.",
+    "sharing": "Partage en cours…",
+    "linkShared": "Lien partagé !",
+    "linkCopiedTo": "Votre lien a été copié dans le presse-papiers. Envoyez-le à",
+    "done": "Terminé",
+    "copyText": "Copier le texte",
+    "copied": "Copié !",
+    "narrativeSimple": "Simple",
+    "narrativeExpanded": "Détaillé",
+    "narrativeBareBones": "Essentiel",
+    "narrativeError": "Une erreur s'est produite. Réessayez.",
+    "regenerateLeft": "{n} restants",
+    "tryAgain": "Réessayer"
+  },
+  "profile": {
+    "title": "Mes scénarios",
+    "noScenarios": "Aucun scénario enregistré pour l'instant",
+    "noScenariosHint": "Enregistrez un calcul pour le voir ici",
+    "signInPrompt": "Connectez-vous pour voir vos scénarios enregistrés",
+    "load": "Charger",
+    "delete": "Supprimer",
+    "deleteConfirm": "Supprimer ce scénario ?",
+    "lastUpdated": "Mis à jour le {date}",
+    "created": "Créé le {date}"
+  },
+  "insights": {
+    "title": "Analyses",
+    "comingSoon": "Analyses bientôt disponibles",
+    "comingSoonHint": "Une analyse approfondie de votre plan d'épargne sera disponible ici.",
+    "askPlaceholder": "Posez une question sur votre plan d'épargne…",
+    "send": "Envoyer",
+    "refresh": "Actualiser les analyses",
+    "provider": "Fournisseur IA",
+    "model": "Modèle",
+    "cryptoNote": "Les rendements des actifs crypto sont très volatils. Les analyses tiendront compte de ce risque.",
+    "blurbCta": "Optimisons votre horizon d'épargne",
+    "blurbCtaGoalGap": "Travaillons à combler votre écart de {amount}"
+  },
+  "tiers": {
+    "anonymous": "Gratuit",
+    "registered": "Inscrit",
+    "pro": "Pro",
+    "upgradeTitle": "Passer à Pro",
+    "upgradeDescription": "Débloquez {feature} avec un abonnement Pro.",
+    "upgrade": "Mettre à niveau",
+    "maybeLater": "Peut-être plus tard"
+  },
+  "currency": {
+    "label": "Devise",
+    "fiat": "Monnaie fiduciaire",
+    "crypto": "Crypto"
+  },
+  "language": {
+    "label": "Langue"
+  },
+  "nav": {
+    "calculator": "Calculatrice",
+    "insights": "Analyses",
+    "profile": "Profil"
+  },
+  "errors": {
+    "generic": "Une erreur s'est produite. Veuillez réessayer.",
+    "networkError": "Erreur réseau. Vérifiez votre connexion.",
+    "authRequired": "Veuillez vous connecter pour continuer."
+  },
+  "milestones": {
+    "quarter": "Vous êtes à 25 % de votre objectif ! Continuez comme ça.",
+    "half": "À mi-chemin ! Votre argent travaille dur.",
+    "threeQuarters": "75 % du chemin parcouru ! Presque au but."
+  },
+  "upsell": {
+    "title": "Analyses ✦",
+    "bullet1": "Posez toutes vos questions — vos chiffres, vos objectifs, votre horizon",
+    "bullet2": "Objectifs d'indépendance financière, limites de retrait sûr, jalons de capitalisation",
+    "hook0": "Voyez exactement ce que change un seul chiffre sur votre horizon, mois par mois",
+    "hook1": "Test de résistance : que vous coûte vraiment une baisse de rendement de 2 % en première année ?",
+    "hook2": "Découvrez quelle variable fait le plus de travail dans votre plan",
+    "hook3": "Simulez ce qui se passe si vous augmentez vos versements de seulement 200 € par mois",
+    "signInFirst": "Connectez-vous d'abord pour voir vos analyses personnalisées.",
+    "signInButton": "Se connecter pour continuer",
+    "hasPro": "Vous avez Pro — enregistrez un scénario pour commencer à discuter.",
+    "gotIt": "Compris"
+  },
+  "chart": {
+    "years": "Années",
+    "value": "Valeur",
+    "area": "Aire",
+    "bar": "Barres",
+    "line": "Ligne",
+    "doublingMilestone": "×2 en année {year}",
+    "goalReached": "🎯 Vous atteignez votre objectif de {amount} en année {year}",
+    "goalNotReached": "📈 Prolongez votre horizon pour atteindre votre objectif de {amount}",
+    "months": "Mois",
+    "goalLabel": "Objectif"
+  }
+}

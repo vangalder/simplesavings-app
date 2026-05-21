@@ -61,6 +61,7 @@ const LOCALE_LANGUAGE: Record<string, string> = {
   "it":    "Italian",
   "pt-BR": "Portuguese (Brazil)",
   "pt-PT": "Portuguese (Portugal)",
+  "fr-FR": "French",
 };
 
 function fmt(n: number, currency = "USD"): string {

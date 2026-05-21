@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { useTranslations } from "next-intl";
 
 export type BlurbMeta = {
   provider: string;
@@ -37,11 +38,12 @@ function fmtCurrency(n: number, currency = "USD"): string {
 
 export default function AIBlurb({ blurb, question, pitch, loading, meta, error, isAdmin, goalMet, goalShortfall, currency, onUpsellClick }: AIBlurbProps) {
   const [visible, setVisible] = useState(false);
+  const t = useTranslations("insights");
 
   const ctaLabel =
     goalMet === false && goalShortfall && goalShortfall > 0
-      ? `Let's work out how to close your ${fmtCurrency(goalShortfall, currency)} gap`
-      : "Let's optimize your savings timeline";
+      ? t("blurbCtaGoalGap", { amount: fmtCurrency(goalShortfall, currency) })
+      : t("blurbCta");
 
   useEffect(() => {
     if (blurb) {

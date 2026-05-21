@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useCallback } from "react";
 import { useUser, SignInButton } from "@clerk/nextjs";
+import { useTranslations } from "next-intl";
 import Modal from "@/components/Modal";
 import { useIsAdmin } from "@/hooks/useIsAdmin";
 
@@ -27,6 +28,7 @@ const LOCALE_STRINGS: Record<string, {
   "it":    { years: "anni",   year: "anno",  at: "al",  startingWith: "a partire da",  noContributions: "senza contributi", moContrib: "/mese",    moWithdrawal: "/mese di prelievo",     goal: "obiettivo" },
   "pt-BR": { years: "anos",   year: "ano",   at: "a",   startingWith: "começando com", noContributions: "sem contribuições",moContrib: "/mês",     moWithdrawal: "/mês de retirada",      goal: "objetivo"  },
   "pt-PT": { years: "anos",   year: "ano",   at: "a",   startingWith: "começando com", noContributions: "sem contribuições",moContrib: "/mês",     moWithdrawal: "/mês de levantamento",  goal: "objetivo"  },
+  "fr-FR": { years: "ans",    year: "an",    at: "à",   startingWith: "en commençant par", noContributions: "sans apports",  moContrib: "/mois",    moWithdrawal: "/mois de retrait",      goal: "objectif"  },
 };
 
 interface ShareModalProps {
@@ -55,6 +57,7 @@ function ModalHeader({ title, onClose }: { title: string; onClose: () => void })
 export default function ShareModal({ url, snapshot, onClose }: ShareModalProps) {
   const { isSignedIn, isLoaded, user } = useUser();
   const isAdmin = useIsAdmin();
+  const t = useTranslations("share");
   const [recipientEmail, setRecipientEmail] = useState("");
   const [emailError, setEmailError] = useState("");
   const [linkCopied, setLinkCopied] = useState(false);
@@ -120,7 +123,7 @@ export default function ShareModal({ url, snapshot, onClose }: ShareModalProps) 
       setNarrative(data.narrative);
       if (data.usage) setNarrativeUsage(data.usage);
     } catch {
-      setNarrativeError("Something went wrong. Try again.");
+      setNarrativeError(t("narrativeError"));
     } finally {
       setNarrativeLoading(false);
     }
@@ -157,7 +160,7 @@ export default function ShareModal({ url, snapshot, onClose }: ShareModalProps) 
   const handleShare = async () => {
     const trimmed = recipientEmail.trim();
     if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(trimmed)) {
-      setEmailError("Please enter a valid email address.");
+      setEmailError(t("invalidEmail"));
       return;
     }
     setEmailError("");
@@ -179,7 +182,7 @@ export default function ShareModal({ url, snapshot, onClose }: ShareModalProps) 
   if (currentView === "picker") {
     return (
       <Modal onClose={onClose}>
-        <ModalHeader title="Share Your Calculation" onClose={onClose} />
+        <ModalHeader title={t("modalTitle")} onClose={onClose} />
         <div className="px-6 py-6 space-y-3">
           <button
             onClick={() => setView(isSignedIn ? "form" : "auth")}
@@ -192,8 +195,8 @@ export default function ShareModal({ url, snapshot, onClose }: ShareModalProps) 
               </svg>
             </div>
             <div>
-              <p className="font-semibold text-neutral-800 text-sm">Share Link</p>
-              <p className="text-xs text-neutral-500 mt-0.5">Send a link that opens this exact calculation</p>
+              <p className="font-semibold text-neutral-800 text-sm">{t("shareLink")}</p>
+              <p className="text-xs text-neutral-500 mt-0.5">{t("shareLinkDesc")}</p>
             </div>
           </button>
 
@@ -207,15 +210,15 @@ export default function ShareModal({ url, snapshot, onClose }: ShareModalProps) 
               </svg>
             </div>
             <div>
-              <p className="font-semibold text-neutral-800 text-sm">Share Narrative</p>
-              <p className="text-xs text-neutral-500 mt-0.5">Copy a plain-English summary to paste anywhere</p>
+              <p className="font-semibold text-neutral-800 text-sm">{t("shareNarrative")}</p>
+              <p className="text-xs text-neutral-500 mt-0.5">{t("shareNarrativeDesc")}</p>
             </div>
           </button>
         </div>
 
         <div className="px-6 pb-5 flex justify-end">
           <button onClick={onClose} className="text-sm text-neutral-400 hover:text-neutral-600 transition-colors">
-            Cancel
+            {t("cancel")}
           </button>
         </div>
       </Modal>
@@ -227,7 +230,7 @@ export default function ShareModal({ url, snapshot, onClose }: ShareModalProps) 
     const canRefresh = !narrativeLoading && refreshesUsed < MAX_REFRESHES && narrativeStyle !== "bare bones";
     return (
       <Modal onClose={onClose}>
-        <ModalHeader title="Share Your Calculation" onClose={onClose} />
+        <ModalHeader title={t("modalTitle")} onClose={onClose} />
         <div className="px-6 py-5 space-y-3">
           {/* Narrative text box */}
           <div className="min-h-[88px] rounded-xl border-2 border-neutral-200 bg-neutral-50 px-4 py-3 text-sm text-neutral-700 leading-relaxed">
@@ -250,13 +253,13 @@ export default function ShareModal({ url, snapshot, onClose }: ShareModalProps) 
                   key={s}
                   onClick={() => handleStyleChange(s)}
                   disabled={narrativeLoading}
-                  className={`px-3 py-1 rounded-full text-xs font-medium transition-colors capitalize ${
+                  className={`px-3 py-1 rounded-full text-xs font-medium transition-colors ${
                     narrativeStyle === s
                       ? "bg-primary-base text-white"
                       : "bg-neutral-100 text-neutral-500 hover:bg-neutral-200 disabled:opacity-40"
                   }`}
                 >
-                  {s}
+                  {s === "simple" ? t("narrativeSimple") : s === "expanded" ? t("narrativeExpanded") : t("narrativeBareBones")}
                 </button>
               ))}
             </div>
@@ -264,14 +267,13 @@ export default function ShareModal({ url, snapshot, onClose }: ShareModalProps) 
               <button
                 onClick={() => generateNarrative(narrativeStyle, true)}
                 disabled={!canRefresh || !!narrativeError}
-                title={refreshesUsed >= MAX_REFRESHES ? "No more regenerations" : `Regenerate (${MAX_REFRESHES - refreshesUsed} left)`}
                 className="flex items-center gap-1 text-xs text-neutral-400 hover:text-neutral-600 transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
               >
                 <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
                   <path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/>
                   <path d="M3 3v5h5"/>
                 </svg>
-                {refreshesUsed < MAX_REFRESHES ? `${MAX_REFRESHES - refreshesUsed} left` : "used up"}
+                {t("regenerateLeft", { n: MAX_REFRESHES - refreshesUsed })}
               </button>
             )}
           </div>
@@ -285,7 +287,7 @@ export default function ShareModal({ url, snapshot, onClose }: ShareModalProps) 
 
         <div className="px-6 pb-4 flex justify-end gap-3">
           <button onClick={onClose} className="px-5 py-2.5 text-neutral-600 font-medium rounded-xl hover:bg-neutral-100 transition-colors">
-            Cancel
+            {t("cancel")}
           </button>
           <button
             onClick={handleCopyNarrative}
@@ -294,7 +296,7 @@ export default function ShareModal({ url, snapshot, onClose }: ShareModalProps) 
               narrativeCopied ? "bg-secondary-base text-white" : "bg-gradient-orange-yellow text-white hover:shadow-md"
             }`}
           >
-            {narrativeCopied ? "Copied!" : "Copy"}
+            {narrativeCopied ? t("copied") : t("copyText")}
           </button>
         </div>
 
@@ -303,7 +305,7 @@ export default function ShareModal({ url, snapshot, onClose }: ShareModalProps) 
             onClick={() => setView("picker")}
             className="text-xs text-neutral-400 hover:text-neutral-600 transition-colors underline underline-offset-2"
           >
-            ← Back
+            {t("back")}
           </button>
         </div>
       </Modal>
@@ -314,7 +316,7 @@ export default function ShareModal({ url, snapshot, onClose }: ShareModalProps) 
   if (currentView === "auth") {
     return (
       <Modal onClose={onClose}>
-        <ModalHeader title="Sign in to Share" onClose={onClose} />
+        <ModalHeader title={t("signInToShare")} onClose={onClose} />
         <div className="px-6 py-5 space-y-4">
           {!isLoaded ? (
             <div className="flex justify-center py-4">
@@ -323,13 +325,12 @@ export default function ShareModal({ url, snapshot, onClose }: ShareModalProps) 
           ) : (
             <>
               <p className="text-neutral-600 text-sm leading-relaxed">
-                Sign in to create a shareable link for your savings calculation
-                and track who you&apos;ve shared it with.
+                {t("signInToShareDesc")}
               </p>
               <SignInButton mode="modal">
                 <button className="w-full py-3 px-4 border-2 border-neutral-300 rounded-xl flex items-center justify-center gap-3 hover:bg-neutral-50 transition-colors font-medium text-neutral-800">
                   <span className="text-lg font-bold w-5 text-center" style={{ color: "#4285F4" }}>G</span>
-                  Sign in with Google
+                  {t("signInWithGoogle")}
                 </button>
               </SignInButton>
             </>
@@ -337,7 +338,7 @@ export default function ShareModal({ url, snapshot, onClose }: ShareModalProps) 
         </div>
         <div className="px-6 pb-4 flex justify-end">
           <button onClick={onClose} className="px-5 py-2.5 text-neutral-600 font-medium rounded-xl hover:bg-neutral-100 transition-colors">
-            Cancel
+            {t("cancel")}
           </button>
         </div>
       </Modal>
@@ -348,12 +349,12 @@ export default function ShareModal({ url, snapshot, onClose }: ShareModalProps) 
   if (currentView === "success") {
     return (
       <Modal onClose={onClose}>
-        <ModalHeader title="Link Shared!" onClose={onClose} />
+        <ModalHeader title={t("linkShared")} onClose={onClose} />
         <div className="px-6 py-6 space-y-3">
           <div className="flex items-start gap-3 p-4 bg-secondary-light/20 border border-secondary-light rounded-xl">
             <span className="text-secondary-base text-xl mt-0.5">✓</span>
             <p className="text-sm text-neutral-700 leading-relaxed">
-              Your link has been copied to clipboard. Send it to{" "}
+              {t("linkCopiedTo")}{" "}
               <strong className="text-neutral-900">{recipientEmail}</strong>.
             </p>
           </div>
@@ -366,7 +367,7 @@ export default function ShareModal({ url, snapshot, onClose }: ShareModalProps) 
             onClick={onClose}
             className="px-6 py-2.5 bg-gradient-orange-yellow text-white font-semibold rounded-xl shadow hover:shadow-md transition-shadow"
           >
-            Done
+            {t("done")}
           </button>
         </div>
       </Modal>
@@ -376,11 +377,11 @@ export default function ShareModal({ url, snapshot, onClose }: ShareModalProps) 
   // ── Form view (signed in) ──────────────────────────────────────────────────
   return (
     <Modal onClose={onClose}>
-      <ModalHeader title="Share Your Calculation" onClose={onClose} />
+      <ModalHeader title={t("modalTitle")} onClose={onClose} />
       <div className="px-6 py-5 space-y-4">
         <div>
           <label className="block text-sm font-medium text-neutral-700 mb-1.5">
-            Your shareable link
+            {t("yourShareableLink")}
           </label>
           <div className="flex gap-2">
             <div className="flex-1 min-w-0 px-3 py-2.5 bg-neutral-50 border-2 border-neutral-200 rounded-xl text-xs text-neutral-500 font-mono truncate flex items-center">
@@ -392,21 +393,21 @@ export default function ShareModal({ url, snapshot, onClose }: ShareModalProps) 
                 linkCopied ? "bg-secondary-base text-white" : "bg-neutral-100 text-neutral-700 hover:bg-neutral-200"
               }`}
             >
-              {linkCopied ? "Copied!" : "Copy"}
+              {linkCopied ? t("copied") : t("copyLink")}
             </button>
           </div>
         </div>
 
         <div>
           <label className="block text-sm font-medium text-neutral-700 mb-1.5">
-            Share with (email address)
+            {t("shareWithEmail")}
           </label>
           <input
             type="email"
             value={recipientEmail}
             onChange={(e) => { setRecipientEmail(e.target.value); if (emailError) setEmailError(""); }}
             onKeyDown={(e) => { if (e.key === "Enter") handleShare(); }}
-            placeholder="friend@example.com"
+            placeholder={t("emailPlaceholder")}
             autoFocus
             className={`w-full px-4 py-3 border-2 rounded-xl text-base focus:outline-none focus:ring-2 transition-colors ${
               emailError
@@ -420,14 +421,14 @@ export default function ShareModal({ url, snapshot, onClose }: ShareModalProps) 
 
       <div className="px-6 pb-4 flex justify-end gap-3">
         <button onClick={onClose} className="px-5 py-2.5 text-neutral-600 font-medium rounded-xl hover:bg-neutral-100 transition-colors">
-          Cancel
+          {t("cancel")}
         </button>
         <button
           onClick={handleShare}
           disabled={isSubmitting}
           className="px-6 py-2.5 bg-gradient-orange-yellow text-white font-semibold rounded-xl shadow hover:shadow-md transition-shadow disabled:opacity-60"
         >
-          {isSubmitting ? "Sharing…" : "Share Link"}
+          {isSubmitting ? t("sharing") : t("shareLink")}
         </button>
       </div>
 
