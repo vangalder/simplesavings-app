@@ -125,11 +125,11 @@ export default function Calculator() {
     clerkId && scenarioId ? { scenarioId, clerkId } : "skip"
   );
   const hasConversation = !!(scenarioMessages && scenarioMessages.length > 0);
-  // One-way lock: set as soon as an active conversation exists, OR once the user
-  // is chat-eligible and a blurb is showing. A ref (not state) so locale
-  // translation's temporary aiBlurb="" never unlocks it.
+  // One-way lock: set only when an actual conversation has started (messages exist).
+  // Not locked just for being eligible — erasing a goal or changing inputs before
+  // the first message should still regenerate the blurb.
   const blurbLockedRef = useRef(false);
-  if (!blurbLockedRef.current && !!(scenarioId && aiBlurb && (hasConversation || isChatEligible))) {
+  if (!blurbLockedRef.current && !!(scenarioId && aiBlurb && hasConversation)) {
     blurbLockedRef.current = true;
   }
 

@@ -245,10 +245,12 @@ function parseBlurbParts(raw: string): { blurb: string; question: string; pitch:
   // Try newline-wrapped first (preferred), then space-wrapped (some models omit newlines)
   let parts = raw.split("\n---\n");
   if (parts.length < 2) parts = raw.split(/\s+---\s+/);
+  // Strip stray plural 's' appended to 4-digit years — LLM artifact e.g. "2027s" → "2027"
+  const clean = (s: string) => stripBrackets(s).replace(/\b(\d{4})s\b/g, "$1");
   return {
-    blurb:    stripBrackets(parts[0]?.trim() ?? raw),
-    question: stripBrackets(parts[1]?.trim() ?? ""),
-    pitch:    stripBrackets(parts[2]?.trim() ?? ""),
+    blurb:    clean(parts[0]?.trim() ?? raw),
+    question: clean(parts[1]?.trim() ?? ""),
+    pitch:    clean(parts[2]?.trim() ?? ""),
   };
 }
 
@@ -600,7 +602,7 @@ For the PITCH — write one sentence citing the exact figures above, not generic
     : hasGoal && goalAmount !== null
       ? goalMetWithinTimeframe
         ? `The ${formatCurrency(goalAmount!, currency)} goal is reached. Write an achievable hook about what comes next.`
-        : `The balance falls ${formatCurrency(goalAmount! - totalValue, currency)} short of ${formatCurrency(goalAmount!, currency)} over ${Math.round(timeframeYears * 12)} months${targetDateFormatted ? `, missing the ${targetDateFormatted} deadline` : ""}. It takes ${monthsToReachGoal ?? "?"} months at current pace. Reference the shortfall amount and${targetDateFormatted ? ` the ${targetDateFormatted} deadline` : " the timeline gap"} directly.`
+        : `The balance falls ${formatCurrency(goalAmount! - totalValue, currency)} short of ${formatCurrency(goalAmount!, currency)} over ${Math.round(timeframeYears * 12)} months${targetDateFormatted ? `, missing the deadline of ${targetDateFormatted}` : ""}. It takes ${monthsToReachGoal ?? "?"} months at current pace. Reference the shortfall amount${targetDateFormatted ? ` and write the deadline as "by ${targetDateFormatted}" verbatim` : " and the timeline gap"}.`
       : `Focus on the ${formatCurrency(startingAmount, currency)} principal at ${interestRate}% generating ${formatCurrency(monthlyInterest, currency)}/month.`
 }
 
