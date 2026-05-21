@@ -34,7 +34,13 @@ When Monthly Contribution is negative the app switches to withdrawal mode automa
 
 ### Chart
 
-Three display styles, switchable via buttons at the top of the chart: **Area** (default — stacked filled areas showing principal vs. interest growth), **Bar** (stacked columns), **Line** (clean trend line). All three update instantly as inputs change.
+Three labeled buttons sit at the top-left of the chart — **Area**, **Bar**, **Line** — and switching between them is instant. The active style is highlighted.
+
+- **Area** (default) — stacked filled areas; best for seeing how interest compounds over the full timeframe
+- **Bar** — stacked columns per period; easy to compare principal vs. interest at any specific year
+- **Line** — clean single trend line; best for a quick read of the trajectory
+
+On mobile, the chart is on the **Chart** tab (second tab at the bottom). On desktop it's always visible on the right side of the screen.
 
 - The X-axis auto-scales: months for projections under 2 years, years for longer ones
 - Principal (blue) and interest earned (orange) are shown as separate stacked layers so users can visually see the compounding effect grow over time
