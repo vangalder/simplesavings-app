@@ -72,12 +72,12 @@ export default function ShareModal({ url, snapshot, onClose }: ShareModalProps) 
     const exact = (n: number) => new Intl.NumberFormat("en-US", { style: "currency", currency: c, minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(n);
     const years = timeframeYears % 1 === 0 ? `${timeframeYears} year${timeframeYears !== 1 ? "s" : ""}` : `${timeframeYears.toFixed(1)} years`;
     const contrib = monthlyContribution === 0
-      ? "with no contributions"
+      ? "no contributions"
       : monthlyContribution > 0
       ? `+ ${exact(monthlyContribution)}/mo`
       : `- ${exact(Math.abs(monthlyContribution))}/mo withdrawal`;
     const goalPart = goalAmount ? `, goal ${exact(goalAmount)}` : "";
-    return `${exact(startingAmount)} for ${years} at ${interestRate}%${goalPart} ${contrib}: ${exact(totalValue)} (https://simplesavings.app)`;
+    return `${years} at ${interestRate}%, starting with ${exact(startingAmount)}${goalPart} ${contrib}: ${exact(totalValue)} (https://simplesavings.app)`;
   }, [snapshot]);
 
   const generateNarrative = useCallback(async (style: "simple" | "expanded" | "bare bones", isRefresh = false) => {
