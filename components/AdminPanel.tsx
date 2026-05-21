@@ -42,6 +42,7 @@ export default function AdminPanel() {
   const latencyChartOption = useMemo(() => {
     if (!chartData) return null;
     return {
+      color: ["#3B82F6", "#10B981"],
       tooltip: { trigger: "axis", axisPointer: { type: "shadow" } },
       legend: { data: ["Avg (ms)", "P95 (ms)"], textStyle: { fontSize: 10 }, top: 4 },
       grid: { left: 8, right: 16, bottom: 8, top: 32, containLabel: true },
@@ -56,14 +57,15 @@ export default function AdminPanel() {
         {
           name: "Avg (ms)",
           type: "bar",
-          data: chartData.stats.map((s, i) => ({ value: s.avgLatencyMs, itemStyle: { color: CHART_COLORS[i % CHART_COLORS.length] } })),
+          data: chartData.stats.map((s) => s.avgLatencyMs),
           barMaxWidth: 14,
         },
         {
           name: "P95 (ms)",
           type: "bar",
-          data: chartData.stats.map((s, i) => ({ value: s.p95LatencyMs, itemStyle: { color: CHART_COLORS[i % CHART_COLORS.length], opacity: 0.4 } })),
+          data: chartData.stats.map((s) => s.p95LatencyMs),
           barMaxWidth: 14,
+          itemStyle: { opacity: 0.5 },
         },
       ],
     };
@@ -127,6 +129,7 @@ export default function AdminPanel() {
   const tokenChartOption = useMemo(() => {
     if (!chartData) return null;
     return {
+      color: ["#3B82F6", "#10B981"],
       tooltip: { trigger: "axis", axisPointer: { type: "shadow" } },
       legend: { data: ["Tokens in", "Tokens out"], textStyle: { fontSize: 10 }, top: 4 },
       grid: { left: 8, right: 16, bottom: 8, top: 32, containLabel: true },
@@ -142,14 +145,15 @@ export default function AdminPanel() {
           name: "Tokens in",
           type: "bar",
           stack: "tokens",
-          data: chartData.stats.map((s, i) => ({ value: s.avgTokensIn, itemStyle: { color: CHART_COLORS[i % CHART_COLORS.length], opacity: 0.5 } })),
+          data: chartData.stats.map((s) => s.avgTokensIn),
           barMaxWidth: 14,
+          itemStyle: { opacity: 0.6 },
         },
         {
           name: "Tokens out",
           type: "bar",
           stack: "tokens",
-          data: chartData.stats.map((s, i) => ({ value: s.avgTokensOut, itemStyle: { color: CHART_COLORS[i % CHART_COLORS.length] } })),
+          data: chartData.stats.map((s) => s.avgTokensOut),
           barMaxWidth: 14,
         },
       ],

@@ -17,7 +17,7 @@ export type DynamicModel = {
 };
 
 // OpenRouter uses x-ai/ (with hyphen) for xAI/Grok models
-const PROVIDER_PREFIXES = ["openai/", "anthropic/", "google/", "x-ai/"] as const;
+const PROVIDER_PREFIXES = ["openai/", "anthropic/", "google/", "x-ai/", "deepseek/"] as const;
 
 const STATIC_FALLBACK: DynamicModel[] = [
   { id: "anthropic/claude-opus-4.7",           name: "Claude Opus 4.7",             tier: "latest",      pricePerMTok: 30.0  },
@@ -32,11 +32,23 @@ const STATIC_FALLBACK: DynamicModel[] = [
   { id: "google/gemini-2.5-flash-lite",        name: "Gemini 2.5 Flash Lite",       tier: "penultimate", pricePerMTok: 0.5   },
   { id: "x-ai/grok-4.3",                       name: "Grok 4.3",                    tier: "latest",      pricePerMTok: 3.75  },
   { id: "x-ai/grok-4.20",                      name: "Grok 4.20",                   tier: "penultimate", pricePerMTok: 2.5   },
+  { id: "deepseek/deepseek-r1-0528",           name: "DeepSeek R1",                 tier: "latest",      pricePerMTok: 2.74  },
+  { id: "deepseek/deepseek-chat",              name: "DeepSeek V3 Chat",            tier: "latest",      pricePerMTok: 0.42  },
+  { id: "deepseek/deepseek-v4-flash",          name: "DeepSeek V4 Flash",           tier: "value",       pricePerMTok: 0.50  },
 ];
 
 function stripProviderPrefix(name: string): string {
   const idx = name.indexOf(": ");
   return idx !== -1 ? name.slice(idx + 2) : name;
+}
+
+// Filter routing aliases and utility/safety models not suited for conversational AI
+function isAliasOrUtility(id: string): boolean {
+  if (id.endsWith("-latest")) return true;
+  if (id.includes("chat-latest")) return true;
+  if (id.includes("gpt-oss")) return true;       // OpenAI OSS safety/utility models
+  if (id.includes("safeguard")) return true;
+  return false;
 }
 
 function combinedPricePer1MTok(m: ORModel): number {
@@ -56,6 +68,7 @@ function bucketModels(raw: ORModel[]): DynamicModel[] {
     (m) =>
       PROVIDER_PREFIXES.some((p) => m.id.startsWith(p)) &&
       !m.id.endsWith(":free") &&
+      !isAliasOrUtility(m.id) &&
       combinedPricePer1MTok(m) > 0
   );
 

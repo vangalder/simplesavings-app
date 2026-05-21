@@ -9,31 +9,46 @@ type DynamicModel = {
   pricePerMTok: number;
 };
 
-const PROVIDER_ORDER  = ["openai/", "anthropic/", "google/", "x-ai/"] as const;
-const PROVIDER_LABELS: Record<string, string> = {
+const PROVIDER_ORDER = ["openai/", "anthropic/", "google/", "x-ai/", "deepseek/"] as const;
+type ProviderPrefix = typeof PROVIDER_ORDER[number];
+
+const PROVIDER_LABELS: Record<ProviderPrefix, string> = {
   "openai/":    "OpenAI",
   "anthropic/": "Anthropic",
   "google/":    "Google",
-  "x-ai/":      "xAI / Grok",
-};
-
-const TIER_LABEL: Record<DynamicModel["tier"], string> = {
-  latest:      "Latest Gen",
-  penultimate: "Penultimate Gen",
-  value:       "Value Tier",
-};
-
-const TIER_BADGE: Record<DynamicModel["tier"], string> = {
-  latest:      "bg-emerald-50 text-emerald-700",
-  penultimate: "bg-sky-50 text-sky-700",
-  value:       "bg-amber-50 text-amber-700",
-};
-
-const TIER_ORDER: Record<DynamicModel["tier"], number> = {
-  latest: 0, penultimate: 1, value: 2,
+  "x-ai/":      "xAI",
+  "deepseek/":  "DeepSeek",
 };
 
 const HIGH_COST_THRESHOLD = 15.0;
+
+type Profile = { label: string; strengths: string; caveats: string };
+
+function getProfile(id: string): Profile {
+  const lc = id.toLowerCase();
+  if (
+    /\/o\d/.test(lc) || lc.includes("-r1") || lc.includes("/o3") || lc.includes("/o4") ||
+    lc.includes("reasoning") || lc.includes("think")
+  ) {
+    return {
+      label: "High-Reasoning",
+      strengths: "✓ Elite Math & Chronological Consistency",
+      caveats: "⚠️ Latency / Processing Delay",
+    };
+  }
+  if (["flash", "mini", "lite", "nano", "haiku", "scout", "small", "fast", "turbo"].some((k) => lc.includes(k))) {
+    return {
+      label: "Fast Efficiency",
+      strengths: "✓ Sub-second Latency / Low-cost Copy",
+      caveats: "⚠️ Timeline Hallucination Risk",
+    };
+  }
+  return {
+    label: "General Flagship",
+    strengths: "✓ High Context / Balanced Strategy Copilot",
+    caveats: "",
+  };
+}
 
 function parseActiveId(stored: string | null): string {
   if (!stored) return "";
@@ -41,10 +56,16 @@ function parseActiveId(stored: string | null): string {
   return idx !== -1 ? stored.slice(idx + 1) : stored;
 }
 
+function getDefaultTab(activeConvoId: string): ProviderPrefix {
+  for (const p of PROVIDER_ORDER) {
+    if (activeConvoId.startsWith(p)) return p;
+  }
+  return "openai/";
+}
+
 function formatCost(price: number): string {
   if (!isFinite(price) || price <= 0) return "—";
   if (price < 0.01) return "<$0.01";
-  if (price < 10)   return `$${price.toFixed(2)}`;
   return `$${price.toFixed(2)}`;
 }
 
@@ -66,6 +87,12 @@ export default function AdminModelMatrix({
   const [source,       setSource]       = useState<"live" | "fallback" | null>(null);
   const [pendingBlurb, setPendingBlurb] = useState<string | null>(null);
   const [pendingConvo, setPendingConvo] = useState<string | null>(null);
+  const [activeTab,    setActiveTab]    = useState<ProviderPrefix>(() =>
+    getDefaultTab(parseActiveId(activeConvo ?? ""))
+  );
+
+  const activeConvoId = parseActiveId(activeConvo);
+  const activeBlurbId = parseActiveId(activeBlurb);
 
   useEffect(() => {
     let cancelled = false;
@@ -81,20 +108,20 @@ export default function AdminModelMatrix({
     return () => { cancelled = true; };
   }, []);
 
-  const activeBlurbId = parseActiveId(activeBlurb);
-  const activeConvoId = parseActiveId(activeConvo);
+  const tabModels = useMemo(() =>
+    models
+      .filter((m) => m.id.startsWith(activeTab))
+      .sort((a, b) => b.pricePerMTok - a.pricePerMTok),
+    [models, activeTab]
+  );
 
-  const grouped = useMemo(() =>
-    PROVIDER_ORDER
-      .map((prefix) => ({
-        prefix,
-        label: PROVIDER_LABELS[prefix],
-        models: models
-          .filter((m) => m.id.startsWith(prefix))
-          .sort((a, b) => TIER_ORDER[a.tier] - TIER_ORDER[b.tier]),
-      }))
-      .filter((g) => g.models.length > 0),
-  [models]);
+  const providerCounts = useMemo(() => {
+    const counts: Partial<Record<ProviderPrefix, number>> = {};
+    for (const p of PROVIDER_ORDER) {
+      counts[p] = models.filter((m) => m.id.startsWith(p)).length;
+    }
+    return counts;
+  }, [models]);
 
   async function handleSetBlurb(modelId: string) {
     setPendingBlurb(modelId);
@@ -124,41 +151,61 @@ export default function AdminModelMatrix({
 
   return (
     <div className="space-y-3">
-      {/* Data source status */}
+      {/* Data source note */}
       <p className={`text-[10px] ${source === "live" ? "text-neutral-400" : "text-amber-600 font-medium"}`}>
         {source === "live"
           ? `Live from OpenRouter · ${models.length} models · refreshes on every page load`
           : "⚠️ OpenRouter unreachable — showing static fallback configuration"}
       </p>
 
-      {/* Provider groups */}
-      {grouped.map((group) => (
-        <div key={group.prefix} className="rounded-xl border border-neutral-200 overflow-hidden">
-          {/* Provider section header */}
-          <div className="flex items-center gap-2 px-4 py-2 bg-neutral-50 border-b border-neutral-200">
-            <span className="text-xs font-semibold text-neutral-700">{group.label}</span>
-            <span className="text-[10px] text-neutral-400">{group.models.length} models</span>
-          </div>
+      {/* Provider tab bar */}
+      <div className="flex gap-0.5 border-b border-neutral-200">
+        {PROVIDER_ORDER.map((prefix) => {
+          const count = providerCounts[prefix] ?? 0;
+          const isActive = activeTab === prefix;
+          return (
+            <button
+              key={prefix}
+              onClick={() => setActiveTab(prefix)}
+              className={`relative px-3 py-1.5 text-xs font-medium rounded-t-md transition-colors whitespace-nowrap ${
+                isActive
+                  ? "bg-white border border-b-white border-neutral-200 text-neutral-900 -mb-px z-10"
+                  : "text-neutral-500 hover:text-neutral-700 hover:bg-neutral-50"
+              }`}
+            >
+              {PROVIDER_LABELS[prefix]}
+              {count > 0 && (
+                <span className="ml-1.5 text-[10px] text-neutral-400">{count}</span>
+              )}
+            </button>
+          );
+        })}
+      </div>
 
-          {/* Scrollable table wrapper for narrow viewports */}
+      {/* Model table for active tab */}
+      {tabModels.length === 0 ? (
+        <p className="text-xs text-neutral-400 py-3">No models available for this provider.</p>
+      ) : (
+        <div className="rounded-xl border border-neutral-200 overflow-hidden">
           <div className="overflow-x-auto">
-            <table className="w-full text-xs min-w-[580px]">
+            <table className="w-full text-xs min-w-[620px]">
               <thead>
-                <tr className="border-b border-neutral-100">
-                  <th className="text-left   px-4 py-2 font-medium text-neutral-400 w-[34%]">Model / Identifier</th>
-                  <th className="text-left   px-3 py-2 font-medium text-neutral-400 w-[17%]">Classification</th>
-                  <th className="text-right  px-3 py-2 font-medium text-neutral-400 w-[16%]">Blended Cost / 1M</th>
-                  <th className="text-right  px-4 py-2 font-medium text-neutral-400 w-[33%]">Allocation</th>
+                <tr className="border-b border-neutral-100 bg-neutral-50">
+                  <th className="text-left px-4 py-2 font-medium text-neutral-400 w-[26%]">Model / Identifier</th>
+                  <th className="text-left px-3 py-2 font-medium text-neutral-400 w-[40%]">Operational Profile &amp; Known Caveats</th>
+                  <th className="text-right px-3 py-2 font-medium text-neutral-400 w-[12%]">Cost / 1M</th>
+                  <th className="text-right px-4 py-2 font-medium text-neutral-400 w-[22%]">Allocation</th>
                 </tr>
               </thead>
               <tbody>
-                {group.models.map((m) => {
-                  const isBlurbActive  = m.id === activeBlurbId;
-                  const isConvoActive  = m.id === activeConvoId;
-                  const isAnyActive    = isBlurbActive || isConvoActive;
-                  const isSavingBlurb  = pendingBlurb === m.id;
-                  const isSavingConvo  = pendingConvo === m.id;
-                  const isHighCost     = m.pricePerMTok > HIGH_COST_THRESHOLD;
+                {tabModels.map((m) => {
+                  const isBlurbActive = m.id === activeBlurbId;
+                  const isConvoActive = m.id === activeConvoId;
+                  const isAnyActive   = isBlurbActive || isConvoActive;
+                  const isSavingBlurb = pendingBlurb === m.id;
+                  const isSavingConvo = pendingConvo === m.id;
+                  const isHighCost    = m.pricePerMTok > HIGH_COST_THRESHOLD;
+                  const profile       = getProfile(m.id);
 
                   return (
                     <tr
@@ -167,31 +214,28 @@ export default function AdminModelMatrix({
                         isAnyActive ? "bg-primary-base/[0.05]" : "hover:bg-neutral-50/70"
                       }`}
                     >
-                      {/* Model name + raw ID — active rows get a left accent stripe */}
-                      <td
-                        className={`px-4 py-2.5 ${
-                          isAnyActive ? "border-l-2 border-primary-base" : ""
-                        }`}
-                      >
+                      {/* Model name + ID */}
+                      <td className={`px-4 py-2.5 ${isAnyActive ? "border-l-2 border-primary-base" : ""}`}>
                         <p className="font-medium text-neutral-800 leading-tight">{m.name}</p>
-                        <p
-                          className="font-mono text-neutral-400 truncate mt-0.5"
-                          style={{ fontSize: "10px" }}
-                        >
+                        <p className="font-mono text-neutral-400 truncate mt-0.5" style={{ fontSize: "10px" }}>
                           {m.id}
                         </p>
                       </td>
 
-                      {/* Tier badge */}
+                      {/* Operational profile */}
                       <td className="px-3 py-2.5">
-                        <span
-                          className={`inline-block px-1.5 py-0.5 rounded text-[10px] font-medium ${TIER_BADGE[m.tier]}`}
-                        >
-                          {TIER_LABEL[m.tier]}
-                        </span>
+                        <p className="font-medium text-neutral-700 leading-tight" style={{ fontSize: "11px" }}>
+                          {profile.label}
+                        </p>
+                        <p className="text-neutral-500 leading-tight mt-0.5" style={{ fontSize: "10px" }}>
+                          {profile.strengths}
+                          {profile.caveats && (
+                            <span className="text-neutral-400">{"  |  "}{profile.caveats}</span>
+                          )}
+                        </p>
                       </td>
 
-                      {/* Cost — ⚠️ signals budget threshold breach, no decorative emoji elsewhere */}
+                      {/* Cost */}
                       <td className="px-3 py-2.5 text-right tabular-nums">
                         <span className={isHighCost ? "text-amber-600 font-semibold" : "text-neutral-700"}>
                           {formatCost(m.pricePerMTok)}
@@ -202,11 +246,8 @@ export default function AdminModelMatrix({
                       {/* Allocation buttons */}
                       <td className="px-4 py-2.5">
                         <div className="flex items-center justify-end gap-1.5">
-                          {/* Blurb allocation */}
                           <button
-                            onClick={() =>
-                              !isBlurbActive && !isSavingBlurb && handleSetBlurb(m.id)
-                            }
+                            onClick={() => !isBlurbActive && !isSavingBlurb && handleSetBlurb(m.id)}
                             disabled={isBlurbActive || isSavingBlurb}
                             className={`px-2.5 py-1 rounded-lg text-[10px] font-medium transition-all whitespace-nowrap ${
                               isBlurbActive
@@ -219,11 +260,8 @@ export default function AdminModelMatrix({
                             {isBlurbActive ? "Active Blurb ✓" : isSavingBlurb ? "Saving…" : "Set Blurb"}
                           </button>
 
-                          {/* Conversation allocation */}
                           <button
-                            onClick={() =>
-                              !isConvoActive && !isSavingConvo && handleSetConvo(m.id)
-                            }
+                            onClick={() => !isConvoActive && !isSavingConvo && handleSetConvo(m.id)}
                             disabled={isConvoActive || isSavingConvo}
                             className={`px-2.5 py-1 rounded-lg text-[10px] font-medium transition-all whitespace-nowrap ${
                               isConvoActive
@@ -244,7 +282,7 @@ export default function AdminModelMatrix({
             </table>
           </div>
         </div>
-      ))}
+      )}
     </div>
   );
 }
