@@ -90,6 +90,15 @@ export default function Calculator() {
   localeRef.current = locale;
   const [upsellContext, setUpsellContext] = useState<InsightContext | null>(null);
   const [scenarioId, setScenarioId] = useState<Id<"scenarios"> | null>(null);
+  const [activeTab, setActiveTab] = useState<"calculator" | "chart" | "insights">("calculator");
+
+  const switchTab = (tab: "calculator" | "chart" | "insights") => {
+    setActiveTab(tab);
+    window.scrollTo(0, 0);
+  };
+  // Returns "hidden lg:block" when the given tab is not active on mobile (desktop always shows all)
+  const mobileTab = (tab: "calculator" | "chart" | "insights") =>
+    activeTab === tab ? "" : "hidden lg:block";
 
   // Auth + Convex
   const { isSignedIn, user } = useUser();
@@ -109,10 +118,18 @@ export default function Calculator() {
   const isPro = creditBalance?.isPro;
   const hasCredits = (creditBalance?.granted ?? 0) > (creditBalance?.used ?? 0);
   const isChatEligible = isPro || hasCredits || freeTokenBudget > 0;
-  // One-way lock: set when the user first becomes chat-eligible with a blurb loaded.
-  // A ref (not state) so locale translation's temporary aiBlurb="" never unlocks it.
+  // Query message count so the blurb can lock the moment a conversation exists.
+  // Convex deduplicates this subscription with the identical query inside AIChat.
+  const scenarioMessages = useQuery(
+    api.messages.getMessagesByScenario,
+    clerkId && scenarioId ? { scenarioId, clerkId } : "skip"
+  );
+  const hasConversation = !!(scenarioMessages && scenarioMessages.length > 0);
+  // One-way lock: set as soon as an active conversation exists, OR once the user
+  // is chat-eligible and a blurb is showing. A ref (not state) so locale
+  // translation's temporary aiBlurb="" never unlocks it.
   const blurbLockedRef = useRef(false);
-  if (!blurbLockedRef.current && !!(scenarioId && aiBlurb && isChatEligible)) {
+  if (!blurbLockedRef.current && !!(scenarioId && aiBlurb && (hasConversation || isChatEligible))) {
     blurbLockedRef.current = true;
   }
 
@@ -338,6 +355,13 @@ export default function Calculator() {
 
     setAiBlurbLoading(true);
     const id = setTimeout(async () => {
+      // Re-check lock inside the callback — prevents a race where the lock
+      // becomes true while the 1500ms timer was pending (e.g. AI calc update
+      // triggers a new debounce cycle just before Convex data arrives).
+      if (blurbLockedRef.current) {
+        setAiBlurbLoading(false);
+        return;
+      }
       try {
         const res = await fetch("/api/ai-blurb", {
           method: "POST",
@@ -631,191 +655,227 @@ export default function Calculator() {
   };
 
   return (
-    <div className="flex flex-col lg:flex-row gap-6">
-      {/* Calculator Form - Left 50% on desktop/tablet, full width on mobile */}
-      <div className="w-full lg:w-1/2">
-        <div className="bg-white rounded-2xl p-4 md:p-6 space-y-3 shadow-lg">
-          {/* Crypto denomination notice */}
-          {isCryptoCurrency(currency) && (
-            <div className="bg-amber-50 border border-amber-200 rounded-xl px-3 py-2 text-xs text-amber-800">
-              {t("cryptoNotice", { symbol: currency })}
-            </div>
-          )}
-          {/* Starting Amount */}
-          <div>
-            <label className="block text-sm font-medium text-neutral-700 mb-1.5">
-              {t("startingAmount")}
-            </label>
-            <AnimatedNumberInput
-              value={state.startingAmount}
-              onChange={(val) => setState({ ...state, startingAmount: val })}
-              step="0.01"
-              placeholder="$0.00"
-              className="w-full px-4 py-3 border-2 border-accent-orange-base rounded-xl text-center text-4xl font-display font-semibold text-accent-orange-base focus:outline-none focus:ring-2 focus:ring-accent-orange-base focus:border-accent-orange-base"
-              shouldAnimate={shouldAnimateInputs}
-            />
-            <p className="text-xs text-neutral-600 mt-0.5 text-center">{t("startingAmountHint")}</p>
-          </div>
+    <>
+      {/* ─── Main content grid ─── */}
+      {/* pb accounts for the fixed bottom nav + iOS safe-area on mobile */}
+      <div
+        className="flex flex-col lg:flex-row gap-4 lg:gap-6"
+        style={{ paddingBottom: "calc(5rem + env(safe-area-inset-bottom, 0px))" }}
+      >
+        {/* ══ LEFT COLUMN ══ */}
+        <div className="w-full lg:w-1/2">
 
-          {/* Monthly Contribution */}
-          <div>
-            <label className="block text-sm font-medium text-neutral-700 mb-1.5">
-              {state.monthlyContribution < 0 ? t("monthlyWithdrawal") : t("monthlyContribution")}
-            </label>
-            <AnimatedNumberInput
-              value={state.monthlyContribution}
-              onChange={(val) => setState({ ...state, monthlyContribution: val })}
-              step="0.01"
-              placeholder="$0.00"
-              className="w-full px-4 py-3 border-2 border-accent-orange-base rounded-xl text-center text-4xl font-display font-semibold text-accent-orange-base focus:outline-none focus:ring-2 focus:ring-accent-orange-base focus:border-accent-orange-base"
-              shouldAnimate={shouldAnimateInputs}
-            />
-            <p className="text-xs text-neutral-600 mt-0.5 text-center">
-              {state.monthlyContribution < 0 ? t("monthlyWithdrawalHint") : t("monthlyContributionHint")}
-            </p>
-          </div>
+          {/* White card — hidden on mobile insights tab (AIChat renders below instead) */}
+          <div className={`bg-white rounded-2xl p-4 md:p-6 shadow-lg ${activeTab === "insights" ? "hidden lg:block" : ""}`}>
 
-          {/* Timeframe and Interest Rate - Side by side */}
-          <div className="grid grid-cols-2 gap-3">
-            <div className="flex flex-col">
-              <div className="flex flex-wrap items-center gap-x-1.5 gap-y-0.5 mb-1.5">
-                <label className="text-sm font-medium text-neutral-700">
-                  {timeframeMode === "years" ? t("timeframeYears") : t("timeframeDate")}
+            {/* Crypto notice — always visible when the card is shown */}
+            {isCryptoCurrency(currency) && (
+              <div className="bg-amber-50 border border-amber-200 rounded-xl px-3 py-2 text-xs text-amber-800 mb-3">
+                {t("cryptoNotice", { symbol: currency })}
+              </div>
+            )}
+
+            {/* ── INPUTS GROUP (mobile: calculator tab; desktop: always) ── */}
+            <div className={`space-y-3 ${mobileTab("calculator")}`}>
+              {/* Starting Amount */}
+              <div>
+                <label className="block text-sm font-medium text-neutral-700 mb-1.5">
+                  {t("startingAmount")}
                 </label>
-                <button
-                  type="button"
-                  onClick={() => {
-                    if (timeframeMode === "years") {
-                      const years = Math.max(1, state.timeframeYears);
-                      const d = new Date();
-                      d.setFullYear(d.getFullYear() + Math.floor(years));
-                      setTargetDateStr(d.toISOString().slice(0, 10));
-                      setTimeframeMode("date");
-                    } else {
-                      setTimeframeMode("years");
-                    }
-                  }}
-                  className="text-xs text-primary-base hover:underline whitespace-nowrap"
-                >
-                  {timeframeMode === "years" ? t("switchToDateMode") : t("switchToYearsMode")}
-                </button>
+                <AnimatedNumberInput
+                  value={state.startingAmount}
+                  onChange={(val) => setState({ ...state, startingAmount: val })}
+                  step="0.01"
+                  placeholder="$0.00"
+                  className="w-full px-4 py-3 border-2 border-accent-orange-base rounded-xl text-center text-4xl font-display font-semibold text-accent-orange-base focus:outline-none focus:ring-2 focus:ring-accent-orange-base focus:border-accent-orange-base"
+                  shouldAnimate={shouldAnimateInputs}
+                />
+                <p className="text-xs text-neutral-600 mt-0.5 text-center">{t("startingAmountHint")}</p>
               </div>
 
-              {/* mt-auto pushes the input to the bottom of the grid row so it aligns with the interest rate input */}
-              <div className="mt-auto">
-                {timeframeMode === "years" ? (
-                  <>
+              {/* Monthly Contribution */}
+              <div>
+                <label className="block text-sm font-medium text-neutral-700 mb-1.5">
+                  {state.monthlyContribution < 0 ? t("monthlyWithdrawal") : t("monthlyContribution")}
+                </label>
+                <AnimatedNumberInput
+                  value={state.monthlyContribution}
+                  onChange={(val) => setState({ ...state, monthlyContribution: val })}
+                  step="0.01"
+                  placeholder="$0.00"
+                  className="w-full px-4 py-3 border-2 border-accent-orange-base rounded-xl text-center text-4xl font-display font-semibold text-accent-orange-base focus:outline-none focus:ring-2 focus:ring-accent-orange-base focus:border-accent-orange-base"
+                  shouldAnimate={shouldAnimateInputs}
+                />
+                <p className="text-xs text-neutral-600 mt-0.5 text-center">
+                  {state.monthlyContribution < 0 ? t("monthlyWithdrawalHint") : t("monthlyContributionHint")}
+                </p>
+              </div>
+
+              {/* Timeframe and Interest Rate */}
+              <div className="grid grid-cols-2 gap-3">
+                <div className="flex flex-col">
+                  <div className="flex flex-wrap items-center gap-x-1.5 gap-y-0.5 mb-1.5">
+                    <label className="text-sm font-medium text-neutral-700">
+                      {timeframeMode === "years" ? t("timeframeYears") : t("timeframeDate")}
+                    </label>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        if (timeframeMode === "years") {
+                          const years = Math.max(1, state.timeframeYears);
+                          const d = new Date();
+                          d.setFullYear(d.getFullYear() + Math.floor(years));
+                          setTargetDateStr(d.toISOString().slice(0, 10));
+                          setTimeframeMode("date");
+                        } else {
+                          setTimeframeMode("years");
+                        }
+                      }}
+                      className="text-xs text-primary-base hover:underline whitespace-nowrap"
+                    >
+                      {timeframeMode === "years" ? t("switchToDateMode") : t("switchToYearsMode")}
+                    </button>
+                  </div>
+                  <div className="mt-auto">
+                    {timeframeMode === "years" ? (
+                      <>
+                        <AnimatedNumberInput
+                          value={state.timeframeYears}
+                          onChange={(val) => setState({ ...state, timeframeYears: val })}
+                          step="0.1"
+                          min={0}
+                          placeholder="0"
+                          className="w-full px-4 py-3 border-2 border-accent-orange-base rounded-xl text-center text-4xl font-display font-semibold text-accent-orange-base focus:outline-none focus:ring-2 focus:ring-accent-orange-base focus:border-accent-orange-base"
+                          shouldAnimate={shouldAnimateInputs}
+                        />
+                        <p className="text-xs text-neutral-600 mt-0.5 text-center">
+                          {state.monthlyContribution < 0 ? t("timeframeYearsWithdrawalHint") : t("timeframeYearsHint")}
+                        </p>
+                      </>
+                    ) : (
+                      <>
+                        <input
+                          ref={dateInputRef}
+                          type="date"
+                          defaultValue={targetDateStr}
+                          min={new Date().toISOString().slice(0, 10)}
+                          max={`${new Date().getFullYear() + MAX_YEARS_AHEAD}-12-31`}
+                          onChange={(e) => { if (e.target.value) setTargetDateStr(e.target.value); }}
+                          onBlur={(e) => {
+                            if (e.target.value) {
+                              const sanitized = sanitizeDate(e.target.value);
+                              setTargetDateStr(sanitized);
+                              if (dateInputRef.current) dateInputRef.current.value = sanitized;
+                            }
+                          }}
+                          className="w-full px-3 py-3 border-2 border-accent-orange-base rounded-xl text-center text-lg font-display font-semibold text-accent-orange-base focus:outline-none focus:ring-2 focus:ring-accent-orange-base"
+                        />
+                        <p className="text-xs text-neutral-600 mt-0.5 text-center">
+                          {state.timeframeYears > 0
+                            ? (() => {
+                                const totalMonths = Math.round(state.timeframeYears * 12);
+                                const y = Math.floor(totalMonths / 12);
+                                const m = totalMonths % 12;
+                                return t("timeframeRemaining", { years: y, months: m });
+                              })()
+                            : t("timeframeDateHint")}
+                        </p>
+                      </>
+                    )}
+                  </div>
+                </div>
+
+                <div className="flex flex-col">
+                  <div className="mt-auto">
+                    <label className="block text-sm font-medium text-neutral-700 mb-1.5">
+                      {t("interestRate")}
+                    </label>
                     <AnimatedNumberInput
-                      value={state.timeframeYears}
-                      onChange={(val) => setState({ ...state, timeframeYears: val })}
+                      value={state.interestRate}
+                      onChange={(val) => setState({ ...state, interestRate: val })}
                       step="0.1"
-                      min={0}
+                      max={100}
                       placeholder="0"
                       className="w-full px-4 py-3 border-2 border-accent-orange-base rounded-xl text-center text-4xl font-display font-semibold text-accent-orange-base focus:outline-none focus:ring-2 focus:ring-accent-orange-base focus:border-accent-orange-base"
                       shouldAnimate={shouldAnimateInputs}
                     />
                     <p className="text-xs text-neutral-600 mt-0.5 text-center">
-                      {state.monthlyContribution < 0 ? t("timeframeYearsWithdrawalHint") : t("timeframeYearsHint")}
+                      {isCryptoCurrency(currency) ? t("interestRateCryptoHint") : t("interestRateHint")}
                     </p>
-                  </>
-                ) : (
-                  <>
-                    <input
-                      ref={dateInputRef}
-                      type="date"
-                      defaultValue={targetDateStr}
-                      min={new Date().toISOString().slice(0, 10)}
-                      max={`${new Date().getFullYear() + MAX_YEARS_AHEAD}-12-31`}
-                      onChange={(e) => { if (e.target.value) setTargetDateStr(e.target.value); }}
-                      onBlur={(e) => {
-                        if (e.target.value) {
-                          const sanitized = sanitizeDate(e.target.value);
-                          setTargetDateStr(sanitized);
-                          if (dateInputRef.current) dateInputRef.current.value = sanitized;
-                        }
-                      }}
-                      className="w-full px-3 py-3 border-2 border-accent-orange-base rounded-xl text-center text-lg font-display font-semibold text-accent-orange-base focus:outline-none focus:ring-2 focus:ring-accent-orange-base"
-                    />
-                    <p className="text-xs text-neutral-600 mt-0.5 text-center">
-                      {state.timeframeYears > 0
-                        ? (() => {
-                            const totalMonths = Math.round(state.timeframeYears * 12);
-                            const y = Math.floor(totalMonths / 12);
-                            const m = totalMonths % 12;
-                            return t("timeframeRemaining", { years: y, months: m });
-                          })()
-                        : t("timeframeDateHint")}
-                    </p>
-                  </>
-                )}
-              </div>
-            </div>
-
-            <div className="flex flex-col">
-              <div className="mt-auto">
-              <label className="block text-sm font-medium text-neutral-700 mb-1.5">
-                {t("interestRate")}
-              </label>
-                <AnimatedNumberInput
-                  value={state.interestRate}
-                  onChange={(val) => setState({ ...state, interestRate: val })}
-                  step="0.1"
-                  max={100}
-                  placeholder="0"
-                  className="w-full px-4 py-3 border-2 border-accent-orange-base rounded-xl text-center text-4xl font-display font-semibold text-accent-orange-base focus:outline-none focus:ring-2 focus:ring-accent-orange-base focus:border-accent-orange-base"
-                  shouldAnimate={shouldAnimateInputs}
-                />
-                <p className="text-xs text-neutral-600 mt-0.5 text-center">
-                  {isCryptoCurrency(currency) ? t("interestRateCryptoHint") : t("interestRateHint")}
-                </p>
-              </div>
-            </div>
-          </div>
-
-          {/* Results Section */}
-          <div className="border-t-2 border-neutral-200 pt-3 mt-3">
-            <h2 className="text-lg font-display font-semibold text-neutral-800 mb-2 text-center">{t("totalValue")}</h2>
-            <div className="flex items-center justify-center gap-2 mb-3">
-              <div className="font-display font-bold text-secondary-base">
-                <AnimatedCurrency value={results.totalValue} size="xl" locale={locale} currency={currency} />
-              </div>
-              <button
-                onClick={handleShare}
-                className="p-2 hover:bg-secondary-light/20 rounded-lg transition-colors flex items-center justify-center"
-                aria-label="Share calculation"
-                title="Share this calculation"
-              >
-                <Image
-                  src="/Icon-share.svg"
-                  alt="Share"
-                  width={24}
-                  height={24}
-                  unoptimized
-                />
-              </button>
-            </div>
-            <div className="grid grid-cols-2 gap-x-3 text-sm mb-3">
-              <div className="text-center min-w-0">
-                <p className="text-neutral-600 truncate">{results.isWithdrawalMode ? t("startingBalance") : t("principalPaid")}</p>
-                <div className="text-secondary-base font-display font-semibold mt-0.5 flex justify-center overflow-hidden">
-                  <AnimatedCurrency value={results.principalPaid} size="md" locale={locale} currency={currency} />
-                </div>
-              </div>
-              <div className="text-center min-w-0">
-                <p className="text-neutral-600 truncate">{t("interestEarned")}</p>
-                <div className="text-secondary-base font-display font-semibold mt-0.5 flex justify-center overflow-hidden">
-                  <AnimatedCurrency value={results.interestEarned} size="md" locale={locale} currency={currency} />
+                  </div>
                 </div>
               </div>
             </div>
+            {/* END INPUTS GROUP */}
+
+            {/* ── RESULTS + BLURB GROUP (mobile: chart tab; desktop: always) ── */}
+            {/* border-t separates from inputs on desktop; omitted on mobile chart tab (no inputs above) */}
+            <div className={`
+              ${mobileTab("chart")}
+              ${activeTab === "chart" ? "pt-1" : "border-t-2 border-neutral-200 pt-3 mt-3"}
+              lg:border-t-2 lg:border-neutral-200 lg:pt-3 lg:mt-3
+            `}>
+              <h2 className="text-lg font-display font-semibold text-neutral-800 mb-2 text-center">{t("totalValue")}</h2>
+              <div className="flex items-center justify-center gap-2 mb-3">
+                <div className="font-display font-bold text-secondary-base">
+                  <AnimatedCurrency value={results.totalValue} size="xl" locale={locale} currency={currency} />
+                </div>
+                <button
+                  onClick={handleShare}
+                  className="p-2 hover:bg-secondary-light/20 rounded-lg transition-colors flex items-center justify-center"
+                  aria-label="Share calculation"
+                  title="Share this calculation"
+                >
+                  <Image src="/Icon-share.svg" alt="Share" width={24} height={24} unoptimized />
+                </button>
+              </div>
+              <div className="grid grid-cols-2 gap-x-3 text-sm mb-3">
+                <div className="text-center min-w-0">
+                  <p className="text-neutral-600 truncate">{results.isWithdrawalMode ? t("startingBalance") : t("principalPaid")}</p>
+                  <div className="text-secondary-base font-display font-semibold mt-0.5 flex justify-center overflow-hidden">
+                    <AnimatedCurrency value={results.principalPaid} size="md" locale={locale} currency={currency} />
+                  </div>
+                </div>
+                <div className="text-center min-w-0">
+                  <p className="text-neutral-600 truncate">{t("interestEarned")}</p>
+                  <div className="text-secondary-base font-display font-semibold mt-0.5 flex justify-center overflow-hidden">
+                    <AnimatedCurrency value={results.interestEarned} size="md" locale={locale} currency={currency} />
+                  </div>
+                </div>
+              </div>
+              <AIBlurb
+                blurb={aiBlurb}
+                question={aiBlurbQuestion}
+                pitch={aiBlurbPitch}
+                loading={aiBlurbLoading}
+                meta={aiBlurbMeta}
+                error={aiBlurbError}
+                isAdmin={isAdmin}
+                onUpsellClick={(ctx) => setUpsellContext(ctx)}
+              />
+            </div>
+            {/* END RESULTS + BLURB GROUP */}
+
+            {/* ── SAVE BUTTON (mobile: calculator tab; desktop: always) ── */}
+            <div className={`mt-3 ${mobileTab("calculator")}`}>
+              {isConvexConfigured ? (
+                <SaveButtonWithCloud state={state} results={results} onLocalSave={handleSave} />
+              ) : (
+                <button
+                  onClick={handleSave}
+                  className="w-full py-3 bg-gradient-orange-yellow rounded-xl text-white font-semibold text-lg shadow-lg hover:shadow-xl transition-shadow"
+                >
+                  {tSave("save")}
+                </button>
+              )}
+            </div>
+
           </div>
+          {/* END white card */}
 
-          <AIBlurb blurb={aiBlurb} question={aiBlurbQuestion} pitch={aiBlurbPitch} loading={aiBlurbLoading} meta={aiBlurbMeta} error={aiBlurbError} isAdmin={isAdmin} onUpsellClick={(ctx) => setUpsellContext(ctx)} />
-
-          {/* Inline AI Chat — shown for paid users or when free token budget allows */}
-          {isConvexConfigured && scenarioId && aiBlurb && (() => {
-            if (!isChatEligible) return null;
-            return (
+          {/* ── AICHAT (outside white card; mobile: insights tab; desktop: always) ── */}
+          <div className={`lg:mt-2 ${mobileTab("insights")}`}>
+            {isConvexConfigured && scenarioId && aiBlurb && isChatEligible ? (
               <AIChat
                 scenarioId={scenarioId}
                 clerkId={clerkId}
@@ -832,88 +892,149 @@ export default function Calculator() {
                   setState((prev) => ({ ...prev, [field]: value }));
                 }}
               />
-            );
-          })()}
-
-          {/* Save Calculation Button */}
-          {isConvexConfigured ? (
-            <SaveButtonWithCloud
-              state={state}
-              results={results}
-              onLocalSave={handleSave}
-            />
-          ) : (
-            <button
-              onClick={handleSave}
-              className="w-full py-3 bg-gradient-orange-yellow rounded-xl text-white font-semibold text-lg shadow-lg hover:shadow-xl transition-shadow mt-2"
-            >
-              {tSave("save")}
-            </button>
-          )}
-        </div>
-      </div>
-
-      {/* Chart - Right 50% on desktop/tablet, full width below form on mobile */}
-      <div className="w-full lg:w-1/2">
-        <div className="bg-secondary-base rounded-2xl p-4 h-full min-h-[500px] shadow-lg overflow-hidden flex flex-col gap-2">
-          <Chart
-            data={results.chartData}
-            chartType={chartType}
-            goalAmount={goalAmount}
-            locale={locale}
-            currency={currency}
-            xAxisUnit={results.chartXUnit}
-            onChartTypeChange={setChartType}
-          />
-
-          {/* Goal amount toggle + input */}
-          <div className="mt-auto pt-2">
-            {!showGoalInput ? (
-              <button
-                onClick={() => setShowGoalInput(true)}
-                className="text-xs text-white/60 hover:text-white/90 transition-colors"
-              >
-                + {t("setGoal")}
-              </button>
-            ) : (
-              <div className="flex items-center gap-2">
-                <label className="text-xs text-white/70 shrink-0">{tChart("goalLabel")} {getCurrencyMeta(currency).symbol}</label>
-                <input
-                  type="text"
-                  inputMode="numeric"
-                  value={goalAmount ? goalAmount.toLocaleString() : ""}
-                  onChange={(e) => {
-                    const raw = e.target.value.replace(/[^0-9]/g, "");
-                    setGoalAmount(raw ? parseInt(raw, 10) : 0);
-                  }}
-                  onFocus={(e) => {
-                    if (goalAmount) e.target.value = String(goalAmount);
-                  }}
-                  onBlur={(e) => {
-                    const raw = e.target.value.replace(/[^0-9]/g, "");
-                    const parsed = raw ? parseInt(raw, 10) : 0;
-                    setGoalAmount(parsed);
-                    e.target.value = parsed ? parsed.toLocaleString() : "";
-                  }}
-                  placeholder="1,000,000"
-                  className="flex-1 px-3 py-1.5 text-sm font-display font-semibold bg-white text-secondary-dark placeholder:text-secondary-dark/30 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-white/60 transition-all"
-                />
-                <button
-                  onClick={() => { setGoalAmount(0); setShowGoalInput(false); }}
-                  className="text-xs text-white/50 hover:text-white/80"
-                >
-                  ✕
-                </button>
+            ) : activeTab === "insights" ? (
+              <div className="bg-white rounded-2xl border border-neutral-100 p-8 text-center space-y-4">
+                {!isSignedIn ? (
+                  <p className="text-sm text-neutral-500">Sign in to unlock AI insights</p>
+                ) : !aiBlurb ? (
+                  <p className="text-sm text-neutral-400 animate-pulse">Loading your analysis…</p>
+                ) : (
+                  <>
+                    <p className="text-sm font-medium text-neutral-700">Unlock AI-powered financial co-pilot</p>
+                    <button
+                      onClick={() => setUpsellContext({ question: aiBlurbQuestion, pitch: aiBlurbPitch })}
+                      className="inline-flex items-center gap-1.5 px-5 py-2.5 rounded-full bg-gradient-to-r from-accent-orange-base to-accent-base text-neutral-900 text-sm font-semibold hover:opacity-90 transition-opacity"
+                    >
+                      <span>✦</span><span>Get AI Access →</span>
+                    </button>
+                  </>
+                )}
               </div>
-            )}
+            ) : null}
+          </div>
+
+        </div>
+        {/* END LEFT COLUMN */}
+
+        {/* ══ RIGHT COLUMN: Chart ══ */}
+        {/* Mobile: visible only on chart tab, uses order-first so it renders above the metrics card */}
+        {/* Desktop: always visible as the right column */}
+        <div className={`w-full lg:w-1/2 order-first lg:order-none ${mobileTab("chart")}`}>
+          <div className="bg-secondary-base rounded-2xl p-4 min-h-[280px] lg:min-h-[500px] h-full shadow-lg overflow-hidden flex flex-col gap-2">
+            <Chart
+              data={results.chartData}
+              chartType={chartType}
+              goalAmount={goalAmount}
+              locale={locale}
+              currency={currency}
+              xAxisUnit={results.chartXUnit}
+              onChartTypeChange={setChartType}
+            />
+
+            {/* Goal amount toggle + input */}
+            <div className="mt-auto pt-2">
+              {!showGoalInput ? (
+                <button
+                  onClick={() => setShowGoalInput(true)}
+                  className="text-xs text-white/60 hover:text-white/90 transition-colors"
+                >
+                  + {t("setGoal")}
+                </button>
+              ) : (
+                <div className="flex items-center gap-2">
+                  <label className="text-xs text-white/70 shrink-0">{tChart("goalLabel")} {getCurrencyMeta(currency).symbol}</label>
+                  <input
+                    type="text"
+                    inputMode="numeric"
+                    value={goalAmount ? goalAmount.toLocaleString() : ""}
+                    onChange={(e) => {
+                      const raw = e.target.value.replace(/[^0-9]/g, "");
+                      setGoalAmount(raw ? parseInt(raw, 10) : 0);
+                    }}
+                    onFocus={(e) => {
+                      if (goalAmount) e.target.value = String(goalAmount);
+                    }}
+                    onBlur={(e) => {
+                      const raw = e.target.value.replace(/[^0-9]/g, "");
+                      const parsed = raw ? parseInt(raw, 10) : 0;
+                      setGoalAmount(parsed);
+                      e.target.value = parsed ? parsed.toLocaleString() : "";
+                    }}
+                    placeholder="1,000,000"
+                    className="flex-1 px-3 py-1.5 text-sm font-display font-semibold bg-white text-secondary-dark placeholder:text-secondary-dark/30 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-white/60 transition-all"
+                  />
+                  <button
+                    onClick={() => { setGoalAmount(0); setShowGoalInput(false); }}
+                    className="text-xs text-white/50 hover:text-white/80"
+                  >
+                    ✕
+                  </button>
+                </div>
+              )}
+            </div>
           </div>
         </div>
-      </div>
+        {/* END RIGHT COLUMN */}
 
+      </div>
+      {/* END main flex */}
+
+      {/* ─── Sticky bottom navigation — mobile only ─── */}
+      <nav
+        className="fixed bottom-0 left-0 right-0 z-50 bg-white border-t border-neutral-200 flex lg:hidden justify-around"
+        style={{
+          height: `calc(3.75rem + env(safe-area-inset-bottom, 0px))`,
+          paddingBottom: `env(safe-area-inset-bottom, 0px)`,
+          alignItems: "center",
+        }}
+      >
+        {/* Inputs */}
+        <button
+          onClick={() => switchTab("calculator")}
+          className={`flex flex-col items-center justify-center gap-0.5 flex-1 py-2 transition-colors ${
+            activeTab === "calculator" ? "text-primary-base" : "text-neutral-400"
+          }`}
+        >
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+            <line x1="4" y1="6" x2="20" y2="6"/><line x1="4" y1="12" x2="20" y2="12"/><line x1="4" y1="18" x2="20" y2="18"/>
+            <circle cx="10" cy="6" r="2" fill="currentColor" stroke="none"/><circle cx="16" cy="12" r="2" fill="currentColor" stroke="none"/><circle cx="8" cy="18" r="2" fill="currentColor" stroke="none"/>
+          </svg>
+          <span className="text-[11px] font-medium leading-none">Inputs</span>
+        </button>
+
+        {/* Chart */}
+        <button
+          onClick={() => switchTab("chart")}
+          className={`flex flex-col items-center justify-center gap-0.5 flex-1 py-2 transition-colors ${
+            activeTab === "chart" ? "text-secondary-base" : "text-neutral-400"
+          }`}
+        >
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+            <line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/>
+            <line x1="2" y1="20" x2="22" y2="20"/>
+          </svg>
+          <span className="text-[11px] font-medium leading-none">Chart</span>
+        </button>
+
+        {/* Insights */}
+        <button
+          onClick={() => switchTab("insights")}
+          className={`flex flex-col items-center justify-center gap-0.5 flex-1 py-2 transition-colors ${
+            activeTab === "insights" ? "text-accent-orange-base" : "text-neutral-400"
+          }`}
+        >
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+            <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>
+          </svg>
+          <span className="text-[11px] font-medium leading-none">Insights</span>
+        </button>
+      </nav>
+
+      {/* Modals */}
       {showShareModal && isClerkConfigured && (
         <ShareModal url={shareUrl} onClose={() => setShowShareModal(false)} />
       )}
       <ProUpsellModal open={upsellContext !== null} onClose={() => setUpsellContext(null)} insightContext={upsellContext} />
-    </div>
+    </>
   );
 }

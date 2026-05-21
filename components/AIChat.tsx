@@ -402,9 +402,19 @@ export default function AIChat({
         </div>
       )}
 
-      {/* Input row — sticky on mobile so it pins above the virtual keyboard.
-          lg:static restores normal flow inside the desktop bounded chat box. */}
-      <form onSubmit={handleSubmit} className="flex items-end gap-2 px-3 py-3 border-t border-neutral-100 sticky bottom-0 bg-white z-10 lg:static lg:z-auto">
+      {/* Input row — sticky on mobile so it pins above the virtual keyboard AND
+          the fixed bottom nav bar. The style tag adjusts the bottom offset to
+          clear the nav bar (3.75rem + safe-area). lg:static restores normal
+          flow on desktop where there is no nav bar. */}
+      <style>{`
+        @media (max-width: 1023px) {
+          form.aichat-input-form { bottom: calc(3.75rem + env(safe-area-inset-bottom, 0px)); }
+        }
+      `}</style>
+      <form
+        onSubmit={handleSubmit}
+        className="aichat-input-form flex items-end gap-2 px-3 py-3 border-t border-neutral-100 sticky bottom-0 bg-white z-10 lg:static lg:z-auto"
+      >
         <textarea
           ref={inputRef}
           value={input}
