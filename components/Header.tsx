@@ -75,9 +75,10 @@ function UserDropdown() {
   const avatarUrl = user.imageUrl;
   // Admins: if test mode is active, show the test tier rather than the real balance tier
   const baseTier = resolveTier(creditBalance);
+  const isProSampleTestMode = testMode === "sample" || testMode === "true";
   const tier: Tier =
-    isAdmin && testMode === "pro"     ? "Pro"        :
-    isAdmin && testMode === "sample"  ? "Pro Sample" :
+    isAdmin && testMode === "pro"   ? "Pro"        :
+    isAdmin && isProSampleTestMode  ? "Pro Sample" :
     baseTier;
   const granted = creditBalance?.granted ?? 0;
   const used = creditBalance?.used ?? 0;

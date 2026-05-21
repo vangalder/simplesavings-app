@@ -41,6 +41,16 @@ function SignedInProfile({ clerkId }: { clerkId: string }) {
   const router = useRouter();
   const scenarios = useQuery(api.scenarios.getScenariosByUser, { clerkId }) as ScenarioCardData[] | undefined;
   const deleteScenario = useMutation(api.scenarios.deleteScenario);
+  const creditBalance = useQuery(api.users.getAiCreditBalance, { clerkId });
+  const testMode = useQuery(api.appConfig.getConfig, isAdmin ? { key: "paymentTestMode" } : "skip");
+
+  const isProSampleTestMode = testMode === "sample" || testMode === "true";
+  const planLabel =
+    (isAdmin && testMode === "pro")      ? "Pro"        :
+    (isAdmin && isProSampleTestMode)     ? "Pro Sample" :
+    creditBalance?.isPro                 ? "Pro"        :
+    (creditBalance?.granted ?? 0) > 0    ? "Pro Sample" :
+    "Free plan";
   const [deletingId, setDeletingId] = useState<string | null>(null);
   const [showEditProfile, setShowEditProfile] = useState(false);
 
@@ -109,7 +119,7 @@ function SignedInProfile({ clerkId }: { clerkId: string }) {
         <div>
           <p className="text-lg font-semibold text-neutral-900">{user?.fullName ?? "—"}</p>
           <p className="text-sm text-neutral-500">{user?.primaryEmailAddress?.emailAddress ?? "—"}</p>
-          <p className="text-xs text-neutral-400 mt-0.5">Free plan</p>
+          <p className="text-xs text-neutral-500 mt-0.5">{planLabel}</p>
         </div>
         <div className="ml-auto flex items-center gap-2">
           <button
