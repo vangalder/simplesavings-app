@@ -60,6 +60,9 @@ export default defineSchema({
     provider: v.string(),
     model: v.string(),
     tokensUsed: v.optional(v.number()),
+    inputTokens: v.optional(v.number()),
+    outputTokens: v.optional(v.number()),
+    costCents: v.optional(v.number()),
     createdAt: v.number(),
   })
     .index("by_scenario", ["scenarioId"])

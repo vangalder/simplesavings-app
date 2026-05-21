@@ -28,6 +28,9 @@ export const addMessage = mutation({
     provider: v.string(),
     model: v.string(),
     tokensUsed: v.optional(v.number()),
+    inputTokens: v.optional(v.number()),
+    outputTokens: v.optional(v.number()),
+    costCents: v.optional(v.number()),
   },
   handler: async (ctx, args) => {
     const user = await ctx.db

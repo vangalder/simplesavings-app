@@ -48,6 +48,9 @@ type ConvexMessage = {
   content: string;
   provider: string;
   model: string;
+  inputTokens?: number;
+  outputTokens?: number;
+  costCents?: number;
 };
 
 export default function AIChat({
@@ -102,6 +105,11 @@ export default function AIChat({
           id: m._id,
           role: m.role as "user" | "assistant",
           content: m.content,
+          provider: m.provider,
+          model: m.model,
+          usage: (m.inputTokens != null || m.outputTokens != null)
+            ? { inputTokens: m.inputTokens ?? 0, outputTokens: m.outputTokens ?? 0, costCents: m.costCents ?? 0 }
+            : undefined,
         }))
       );
     }
@@ -265,6 +273,9 @@ export default function AIChat({
             provider,
             model,
             tokensUsed: inputTokens + outputTokens,
+            inputTokens,
+            outputTokens,
+            costCents,
           }).catch(() => {});
         }
 
