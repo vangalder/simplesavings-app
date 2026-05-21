@@ -106,6 +106,12 @@ export default function Calculator() {
   );
   const chatFreeTokenBudget = useQuery(api.appConfig.getConfig, { key: "chatFreeTokenBudget" });
   const freeTokenBudget = chatFreeTokenBudget ? parseInt(chatFreeTokenBudget, 10) : 0;
+  const isPro = creditBalance?.isPro;
+  const hasCredits = (creditBalance?.granted ?? 0) > (creditBalance?.used ?? 0);
+  const isChatEligible = isPro || hasCredits || freeTokenBudget > 0;
+  // Freeze blurb regeneration once the user has an active scenario and is chat-eligible.
+  // The blurb that seeded the conversation must not change as calculator inputs evolve.
+  const blurbFrozen = !!(scenarioId && aiBlurb && isChatEligible);
 
   // Load values from URL params, localStorage, or defaults
   useEffect(() => {
@@ -306,6 +312,9 @@ export default function Calculator() {
   // Debounced real-time AI blurb — fires 1500ms after inputs settle
   useEffect(() => {
     if (!isInitialized) return;
+    // Once the user has an active conversation, the blurb is permanently frozen.
+    // Regenerating it would break the conversation seed that prompted them to convert.
+    if (blurbFrozen) return;
 
     // Check blurb cache — skip LLM call if inputs haven't changed since last save
     const inputsHash = `${state.startingAmount}-${state.monthlyContribution}-${state.interestRate}-${state.timeframeYears}-${goalAmount}`;
@@ -802,9 +811,6 @@ export default function Calculator() {
 
           {/* Inline AI Chat — shown for paid users or when free token budget allows */}
           {isConvexConfigured && scenarioId && aiBlurb && (() => {
-            const isPro = creditBalance?.isPro;
-            const hasCredits = (creditBalance?.granted ?? 0) > (creditBalance?.used ?? 0);
-            const isChatEligible = isPro || hasCredits || freeTokenBudget > 0;
             if (!isChatEligible) return null;
             return (
               <AIChat

@@ -65,6 +65,8 @@ export default function AIChat({
   const bottomRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLTextAreaElement>(null);
   const abortRef = useRef<AbortController | null>(null);
+  // Frozen at mount — the blurb that seeded this conversation never changes even if inputs update
+  const frozenBlurbRef = useRef(blurbContext);
 
   const savedMessages = useQuery(
     api.messages.getMessagesByScenario,
@@ -134,7 +136,7 @@ export default function AIChat({
         model,
         message: messageText,
         conversationHistory: history,
-        blurbContext,
+        blurbContext: frozenBlurbRef.current,
         startingAmount: calculatorState.startingAmount,
         monthlyContribution: calculatorState.monthlyContribution,
         timeframeYears: calculatorState.timeframeYears,
@@ -265,7 +267,7 @@ export default function AIChat({
       }
     },
     [
-      isStreaming, messages, scenarioId, clerkId, provider, model, locale, blurbContext,
+      isStreaming, messages, scenarioId, clerkId, provider, model, locale,
       calculatorState, results, currency, isPaid,
       addMessage, incrementFreeTokens, onCalculatorUpdate,
     ]
