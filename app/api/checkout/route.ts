@@ -41,8 +41,12 @@ export async function POST(req: NextRequest) {
   const origin = req.headers.get("origin") ?? "https://simplesavings.app";
 
   // Check payment test mode — admin bypass, skips Stripe entirely
-  // Values: "off" | "sample" (force $4.99 credits) | "pro" (force Pro) | "true" (legacy: respects checkout type)
-  const testMode = await convex.query(api.appConfig.getConfig, { key: "paymentTestMode" });
+  // Values: "off" | "sample" (force sample credits) | "pro" (force Pro) | "true" (legacy: respects checkout type)
+  const [testMode, creditLimitRaw] = await Promise.all([
+    convex.query(api.appConfig.getConfig, { key: "paymentTestMode" }),
+    convex.query(api.appConfig.getConfig, { key: "proSampleCreditLimitCents" }),
+  ]);
+  const creditLimitCents = Math.max(1, parseInt(creditLimitRaw ?? "100", 10) || 100);
   const grantType = testMode === "pro" ? "subscription" : testMode === "sample" ? "one_time" : testMode === "true" ? type : null;
   if (grantType) {
     const clerkUser = await currentUser();
@@ -54,7 +58,7 @@ export async function POST(req: NextRequest) {
     if (grantType === "subscription") {
       await convex.mutation(api.users.setUserPro, { clerkId: userId });
     } else {
-      await convex.mutation(api.users.grantAiCredits, { clerkId: userId, creditsInCents: 199 });
+      await convex.mutation(api.users.grantAiCredits, { clerkId: userId, creditsInCents: creditLimitCents });
     }
     return NextResponse.json({ url: `${origin}/?testPaid=1` });
   }

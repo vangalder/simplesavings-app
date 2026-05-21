@@ -157,8 +157,8 @@ The AI opens every new conversation with a proactive question seeded from the bl
 
 | Plan | Price | What's included |
 |---|---|---|
-| **One-Time** | $4.99 | ~30 messages of AI analysis on one plan |
-| **Pro** | $9.99/month | Unlimited AI conversations |
+| **Pro Sample** | $4.99 (admin-configurable) | Deep AI analysis on one plan, up to the credit cap |
+| **Pro** | $9.99/month (admin-configurable) | Unlimited AI conversations |
 | **Free tier** | $0 | Full calculator, sharing, narratives, insight blurb — no AI chat |
 
 Payment is handled via Stripe. Users who have not purchased see an upsell prompt when they click the AI chat CTA.

@@ -17,6 +17,9 @@ export default function AdminPanel() {
   const blurbModel = useQuery(api.appConfig.getConfig, { key: "defaultBlurbModel" });
   const convoModel = useQuery(api.appConfig.getConfig, { key: "defaultConversationModel" });
   const paymentTestMode = useQuery(api.appConfig.getConfig, { key: "paymentTestMode" });
+  const proSampleCreditLimitRaw = useQuery(api.appConfig.getConfig, { key: "proSampleCreditLimitCents" });
+  const proSamplePriceRaw = useQuery(api.appConfig.getConfig, { key: "proSamplePriceDisplay" });
+  const proPriceRaw = useQuery(api.appConfig.getConfig, { key: "proPriceDisplay" });
   const setConfig = useMutation(api.appConfig.setConfig);
   const modelStats = useQuery(api.blurbLogs.getModelStats, {});
 
@@ -30,12 +33,18 @@ export default function AdminPanel() {
 
   const testModeValue = (paymentTestMode === "true" ? "sample" : paymentTestMode) ?? "off";
   const isTestModeOn = testModeValue !== "off";
+
+  const creditLimitCents = Math.max(1, parseInt(proSampleCreditLimitRaw ?? "100", 10) || 100);
+  const [creditLimitInput, setCreditLimitInput] = useState<string>("");
+  const [proSamplePriceInput, setProSamplePriceInput] = useState<string>("");
+  const [proPriceInput, setProPriceInput] = useState<string>("");
+
   const handleTestModeChange = async (value: string) => {
     await setConfig({ key: "paymentTestMode", value });
-    // When toggling to Pro Sample, immediately reset the test account to a
-    // fresh $4.99 credit balance so the tier badge and usage bar are live.
+    // When toggling to Pro Sample, immediately reset the test account to the
+    // configured credit limit so the tier badge and usage bar are live.
     if (value === "sample" && user?.id) {
-      await seedTestCredits({ clerkId: user.id });
+      await seedTestCredits({ clerkId: user.id, creditsInCents: creditLimitCents });
     }
   };
 
@@ -265,12 +274,12 @@ export default function AdminPanel() {
         />
       </div>
 
-      {/* Developer Tools */}
+      {/* Payments & Testing */}
       <div className={`rounded-2xl border p-5 ${isTestModeOn ? "bg-amber-50 border-amber-300" : "bg-white border-neutral-200"}`}>
         <div className="flex items-start justify-between gap-4">
           <div>
-            <h3 className="text-sm font-semibold text-neutral-700">Developer Tools</h3>
-            <p className="text-xs text-neutral-600 mt-0.5">Test the paid UX without touching Stripe.</p>
+            <h3 className="text-sm font-semibold text-neutral-700">Payments & Testing</h3>
+            <p className="text-xs text-neutral-600 mt-0.5">Configure pricing, credit limits, and test the paid UX without touching Stripe.</p>
           </div>
           {isTestModeOn && (
             <span className="shrink-0 px-2 py-0.5 rounded-full bg-amber-200 text-amber-800 text-xs font-semibold">
@@ -278,12 +287,100 @@ export default function AdminPanel() {
             </span>
           )}
         </div>
-        <div className="mt-4 flex items-center justify-between gap-4">
+
+        {/* Pricing display */}
+        <div className="mt-4 grid grid-cols-2 gap-3">
+          <div>
+            <p className="text-xs font-medium text-neutral-600 mb-1">Pro Sample display price</p>
+            <div className="flex items-center gap-1.5">
+              <span className="text-sm text-neutral-500">$</span>
+              <input
+                type="number"
+                step="0.01"
+                min="0"
+                placeholder={proSamplePriceRaw ?? "4.99"}
+                value={proSamplePriceInput}
+                onChange={(e) => setProSamplePriceInput(e.target.value)}
+                className="w-full px-2 py-1.5 rounded-lg border border-neutral-200 text-sm text-neutral-700 bg-white focus:outline-none focus:ring-2 focus:ring-primary-base/30"
+              />
+              <button
+                onClick={async () => {
+                  if (!proSamplePriceInput) return;
+                  await setConfig({ key: "proSamplePriceDisplay", value: proSamplePriceInput });
+                  setProSamplePriceInput("");
+                }}
+                className="shrink-0 px-2.5 py-1.5 rounded-lg bg-primary-base text-white text-xs font-medium hover:opacity-90"
+              >Save</button>
+            </div>
+            <p className="text-[10px] text-neutral-400 mt-1">Display only — update Stripe price separately.</p>
+          </div>
+          <div>
+            <p className="text-xs font-medium text-neutral-600 mb-1">Pro display price (per month)</p>
+            <div className="flex items-center gap-1.5">
+              <span className="text-sm text-neutral-500">$</span>
+              <input
+                type="number"
+                step="0.01"
+                min="0"
+                placeholder={proPriceRaw ?? "9.99"}
+                value={proPriceInput}
+                onChange={(e) => setProPriceInput(e.target.value)}
+                className="w-full px-2 py-1.5 rounded-lg border border-neutral-200 text-sm text-neutral-700 bg-white focus:outline-none focus:ring-2 focus:ring-primary-base/30"
+              />
+              <button
+                onClick={async () => {
+                  if (!proPriceInput) return;
+                  await setConfig({ key: "proPriceDisplay", value: proPriceInput });
+                  setProPriceInput("");
+                }}
+                className="shrink-0 px-2.5 py-1.5 rounded-lg bg-primary-base text-white text-xs font-medium hover:opacity-90"
+              >Save</button>
+            </div>
+            <p className="text-[10px] text-neutral-400 mt-1">Display only — update Stripe price separately.</p>
+          </div>
+        </div>
+
+        {/* Pro Sample credit cap */}
+        <div className="mt-3 pt-3 border-t border-neutral-200">
+          <div className="flex items-center justify-between gap-4">
+            <div>
+              <p className="text-sm font-medium text-neutral-700">Pro Sample credit cap</p>
+              <p className="text-xs text-neutral-600 mt-0.5">
+                How much AI spend a Pro Sample purchase grants. Currently <span className="font-semibold">${(creditLimitCents / 100).toFixed(2)}</span>.
+              </p>
+            </div>
+            <div className="flex items-center gap-1.5 shrink-0">
+              <span className="text-sm text-neutral-500">$</span>
+              <input
+                type="number"
+                step="0.25"
+                min="0.01"
+                placeholder={(creditLimitCents / 100).toFixed(2)}
+                value={creditLimitInput}
+                onChange={(e) => setCreditLimitInput(e.target.value)}
+                className="w-20 px-2 py-1.5 rounded-lg border border-neutral-200 text-sm text-neutral-700 bg-white focus:outline-none focus:ring-2 focus:ring-primary-base/30"
+              />
+              <button
+                onClick={async () => {
+                  const dollars = parseFloat(creditLimitInput);
+                  if (!dollars || dollars <= 0) return;
+                  const cents = Math.round(dollars * 100);
+                  await setConfig({ key: "proSampleCreditLimitCents", value: String(cents) });
+                  setCreditLimitInput("");
+                }}
+                className="px-2.5 py-1.5 rounded-lg bg-primary-base text-white text-xs font-medium hover:opacity-90"
+              >Save</button>
+            </div>
+          </div>
+        </div>
+
+        {/* Payment test mode */}
+        <div className="mt-3 pt-3 border-t border-neutral-200 flex items-center justify-between gap-4">
           <div>
             <p className="text-sm font-medium text-neutral-700">Payment test mode</p>
             <p className="text-xs text-neutral-600 mt-0.5">
               {testModeValue === "off" && "Checkout goes through Stripe — no bypass."}
-              {testModeValue === "sample" && "Checkout instantly grants $4.99 sample credits — no Stripe, no charge."}
+              {testModeValue === "sample" && `Checkout instantly grants $${(creditLimitCents / 100).toFixed(2)} sample credits — no Stripe, no charge.`}
               {testModeValue === "pro" && "Checkout instantly grants full Pro access — no Stripe, no charge."}
             </p>
           </div>

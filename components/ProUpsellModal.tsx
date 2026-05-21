@@ -61,6 +61,10 @@ export default function ProUpsellModal({ open, onClose, insightContext, monthlyC
   const pitch = insightContext?.pitch || FALLBACK_SUBTITLE;
   const { isSignedIn, user } = useUser();
   const clerkId = user?.id ?? "";
+  const proSamplePriceRaw = useQuery(api.appConfig.getConfig, { key: "proSamplePriceDisplay" });
+  const proPriceRaw = useQuery(api.appConfig.getConfig, { key: "proPriceDisplay" });
+  const proSamplePrice = proSamplePriceRaw ?? "4.99";
+  const proPrice = proPriceRaw ?? "9.99";
   const creditBalance = useQuery(
     api.users.getAiCreditBalance,
     isSignedIn && clerkId ? { clerkId } : "skip"
@@ -162,14 +166,14 @@ export default function ProUpsellModal({ open, onClose, insightContext, monthlyC
                 onClick={() => handleCheckout("one_time")}
                 className="w-full py-3 px-4 rounded-xl bg-gradient-to-r from-accent-orange-base to-accent-base text-neutral-900 font-bold text-sm hover:opacity-90 transition-opacity"
               >
-                Try it — $4.99
-                <span className="block text-xs font-normal opacity-70 mt-0.5">Includes up to 30 messages of deep analysis on one plan</span>
+                Try it — ${proSamplePrice}
+                <span className="block text-xs font-normal opacity-70 mt-0.5">Deep AI analysis on one plan</span>
               </button>
               <button
                 onClick={() => handleCheckout("subscription")}
                 className="w-full py-2.5 px-4 rounded-xl border border-neutral-200 text-neutral-600 text-sm hover:bg-neutral-50 transition-colors"
               >
-                Go Pro — $9.99/month
+                Go Pro — ${proPrice}/month
                 <span className="ml-1 text-xs text-neutral-400">Unlimited conversations</span>
               </button>
             </>
