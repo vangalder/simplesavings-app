@@ -25,11 +25,23 @@ interface AIBlurbProps {
   meta?: BlurbMeta;
   error?: string;
   isAdmin?: boolean;
+  goalMet?: boolean;
+  goalShortfall?: number;
+  currency?: string;
   onUpsellClick?: (ctx: InsightContext) => void;
 }
 
-export default function AIBlurb({ blurb, question, pitch, loading, meta, error, isAdmin, onUpsellClick }: AIBlurbProps) {
+function fmtCurrency(n: number, currency = "USD"): string {
+  return new Intl.NumberFormat("en-US", { style: "currency", currency, maximumFractionDigits: 0 }).format(n);
+}
+
+export default function AIBlurb({ blurb, question, pitch, loading, meta, error, isAdmin, goalMet, goalShortfall, currency, onUpsellClick }: AIBlurbProps) {
   const [visible, setVisible] = useState(false);
+
+  const ctaLabel =
+    goalMet === false && goalShortfall && goalShortfall > 0
+      ? `Let AI calculate how to bridge your ${fmtCurrency(goalShortfall, currency)} gap`
+      : "Unlock AI Insights to optimize your savings timeline";
 
   useEffect(() => {
     if (blurb) {
@@ -71,7 +83,7 @@ export default function AIBlurb({ blurb, question, pitch, loading, meta, error, 
           onClick={() => onUpsellClick({ question: question ?? "", pitch: pitch ?? "" })}
           className="ml-6 text-xs text-primary-base/60 hover:text-primary-base transition-colors text-left"
         >
-          {question || "Want deeper analysis?"} →
+          {ctaLabel} →
         </button>
       )}
       {isAdmin && meta && !loading && (

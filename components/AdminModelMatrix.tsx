@@ -25,7 +25,7 @@ const HIGH_COST_THRESHOLD = 15.0;
 type SortCol = "name" | "cost";
 type SortDir = "asc" | "desc";
 
-type Profile = { label: string; pros: string; cons: string };
+type Profile = { pros: string[]; cons: string[] };
 
 function getProfile(id: string): Profile {
   const lc = id.toLowerCase();
@@ -34,22 +34,41 @@ function getProfile(id: string): Profile {
     lc.includes("reasoning") || lc.includes("think")
   ) {
     return {
-      label: "High-Reasoning",
-      pros:  "Flawless chronological tracking and age milestones, immune to basic math and compounding hallucinations.",
-      cons:  "Severe 5–15s latency, hidden thinking chains burn token counts, prone to dense walls of text.",
+      pros: [
+        "flawless chronological tracking and age milestones",
+        "immune to basic math and compounding hallucinations",
+      ],
+      cons: [
+        "severe 5–15s latency processing delays",
+        "hidden thinking chains burn through token counts",
+        "prone to generating dense walls of text if unconstrained",
+      ],
     };
   }
   if (["flash", "mini", "lite", "nano", "haiku", "scout", "small", "fast", "turbo"].some((k) => lc.includes(k))) {
     return {
-      label: "Fast Efficiency",
-      pros:  "Sub-second rendering, near-zero cost, strictly respects micro-copy token and brevity constraints.",
-      cons:  "Vulnerable to number hallucinations on multi-step horizons (> 10 years), superficial strategy logic.",
+      pros: [
+        "sub-second UI rendering pacing",
+        "near-zero operations cost profile",
+        "strictly respects micro-copy token count and brevity constraints",
+      ],
+      cons: [
+        "high vulnerability to number hallucinations on multi-step horizons (> 10 years)",
+        "prone to superficial or overly optimistic strategy logic",
+      ],
     };
   }
   return {
-    label: "General Flagship",
-    pros:  "Excellent strategic nuance for wealth advising, parses complex compound math, rock-solid output structure.",
-    cons:  "Moderate 2–3s latency, expensive token cost, overkill for high-frequency 2-sentence blurb updates.",
+    pros: [
+      "excellent strategic nuance for wealth advising",
+      "parses complex multi-variable compound math",
+      "rock-solid layout JSON/Markdown output structure",
+    ],
+    cons: [
+      "moderate 2–3s latency delay",
+      "expensive baseline token cost",
+      "complete overkill for high-frequency 2-sentence UI blurb updates",
+    ],
   };
 }
 
@@ -258,15 +277,22 @@ export default function AdminModelMatrix({
 
                       {/* Operational profile */}
                       <td className="px-3 py-2.5">
-                        <p className="font-medium text-neutral-700 leading-tight mb-0.5" style={{ fontSize: "11px" }}>
-                          {profile.label}
-                        </p>
-                        <p className="text-neutral-600 leading-snug" style={{ fontSize: "10px" }}>
-                          🟢 {profile.pros}
-                        </p>
-                        <p className="text-neutral-400 leading-snug mt-0.5" style={{ fontSize: "10px" }}>
-                          ⚠️ {profile.cons}
-                        </p>
+                        {profile.pros.length > 0 && (
+                          <div>
+                            <p className="font-semibold text-neutral-600 leading-tight" style={{ fontSize: "10px" }}>🟢 PROS</p>
+                            {profile.pros.map((p) => (
+                              <p key={p} className="text-neutral-600 leading-snug" style={{ fontSize: "10px" }}>• {p}</p>
+                            ))}
+                          </div>
+                        )}
+                        {profile.cons.length > 0 && (
+                          <div className={profile.pros.length > 0 ? "mt-1" : ""}>
+                            <p className="font-semibold text-neutral-400 leading-tight" style={{ fontSize: "10px" }}>⚠️ CONS</p>
+                            {profile.cons.map((c) => (
+                              <p key={c} className="text-neutral-400 leading-snug" style={{ fontSize: "10px" }}>• {c}</p>
+                            ))}
+                          </div>
+                        )}
                       </td>
 
                       {/* Cost */}

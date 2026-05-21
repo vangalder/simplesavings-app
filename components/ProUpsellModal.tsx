@@ -17,7 +17,18 @@ type Props = {
   open: boolean;
   onClose: () => void;
   insightContext?: InsightContext | null;
+  monthlyContribution?: number;
 };
+
+function suggestedContribStep(monthly: number): string {
+  const base = Math.abs(monthly) * 0.12;
+  let step: number;
+  if (base < 75)       step = 50;
+  else if (base < 350) step = Math.round(base / 50) * 50;
+  else if (base < 1500) step = Math.round(base / 100) * 100;
+  else                  step = Math.round(base / 500) * 500;
+  return `$${step.toLocaleString()}`;
+}
 
 async function handleCheckout(type: "one_time" | "subscription") {
   try {
@@ -45,7 +56,7 @@ function pickRandomIndex(): number {
   return Math.floor(Math.random() * HOOK_COUNT);
 }
 
-export default function ProUpsellModal({ open, onClose, insightContext }: Props) {
+export default function ProUpsellModal({ open, onClose, insightContext, monthlyContribution }: Props) {
   const t = useTranslations("upsell");
   const pitch = insightContext?.pitch || FALLBACK_SUBTITLE;
   const { isSignedIn, user } = useUser();
@@ -107,8 +118,14 @@ export default function ProUpsellModal({ open, onClose, insightContext }: Props)
 
           {/* What's included */}
           <ul className="mt-4 space-y-2">
-            {[t("bullet1"), t("bullet2"), t(`hook${hookIdx}` as "hook0" | "hook1" | "hook2" | "hook3")].map((item) => (
-              <li key={item} className="flex items-start gap-2 text-sm text-neutral-600">
+            {[
+              t("bullet1"),
+              t("bullet2"),
+              hookIdx === 3 && monthlyContribution
+                ? `Model what happens if you increase contributions by just ${suggestedContribStep(monthlyContribution)} a month`
+                : t(`hook${hookIdx}` as "hook0" | "hook1" | "hook2" | "hook3"),
+            ].map((item) => (
+              <li key={item as string} className="flex items-start gap-2 text-sm text-neutral-600">
                 <span className="text-primary-base mt-0.5 shrink-0">✦</span>
                 <span className="leading-snug">{item}</span>
               </li>

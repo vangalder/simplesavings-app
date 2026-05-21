@@ -853,6 +853,9 @@ export default function Calculator() {
                 meta={aiBlurbMeta}
                 error={aiBlurbError}
                 isAdmin={isAdmin}
+                goalMet={goalAmount > 0 ? results.totalValue >= goalAmount : undefined}
+                goalShortfall={goalAmount > 0 ? Math.max(0, goalAmount - results.totalValue) : undefined}
+                currency={currency}
                 onUpsellClick={(ctx) => setUpsellContext(ctx)}
               />
             </div>
@@ -1043,7 +1046,7 @@ export default function Calculator() {
       {showShareModal && isClerkConfigured && (
         <ShareModal url={shareUrl} onClose={() => setShowShareModal(false)} />
       )}
-      <ProUpsellModal open={upsellContext !== null} onClose={() => setUpsellContext(null)} insightContext={upsellContext} />
+      <ProUpsellModal open={upsellContext !== null} onClose={() => setUpsellContext(null)} insightContext={upsellContext} monthlyContribution={state.monthlyContribution} />
     </>
   );
 }

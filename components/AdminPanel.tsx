@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo } from "react";
+import { useMemo, useState } from "react";
 import { useQuery, useMutation } from "convex/react";
 import { useUser } from "@clerk/nextjs";
 import { api } from "@/convex/_generated/api";
@@ -32,12 +32,37 @@ export default function AdminPanel() {
     await setConfig({ key: "paymentTestMode", value });
   };
 
+  type StatSortCol = "model" | "calls" | "avgLatency" | "p95Latency" | "avgCost" | "totalCost" | "translations";
+  type StatSortDir = "asc" | "desc";
+  const [statSortCol, setStatSortCol] = useState<StatSortCol>("calls");
+  const [statSortDir, setStatSortDir] = useState<StatSortDir>("desc");
+
+  function handleStatSort(col: StatSortCol) {
+    if (statSortCol === col) {
+      setStatSortDir((d) => (d === "asc" ? "desc" : "asc"));
+    } else {
+      setStatSortCol(col);
+      setStatSortDir(col === "model" ? "asc" : "desc");
+    }
+  }
+
   // Build chart data from model stats
   const chartData = useMemo(() => {
     if (!modelStats || modelStats.length === 0) return null;
-    const labels = modelStats.map((s) => `${s.provider}/${s.model.split("/").pop()}`);
-    return { stats: modelStats, labels };
-  }, [modelStats]);
+    const sorted = [...modelStats].sort((a, b) => {
+      let cmp = 0;
+      if (statSortCol === "model")       cmp = `${a.provider}/${a.model}`.localeCompare(`${b.provider}/${b.model}`);
+      else if (statSortCol === "calls")       cmp = a.callCount - b.callCount;
+      else if (statSortCol === "avgLatency")  cmp = a.avgLatencyMs - b.avgLatencyMs;
+      else if (statSortCol === "p95Latency")  cmp = a.p95LatencyMs - b.p95LatencyMs;
+      else if (statSortCol === "avgCost")     cmp = a.avgCostUsd - b.avgCostUsd;
+      else if (statSortCol === "totalCost")   cmp = a.totalCostUsd - b.totalCostUsd;
+      else if (statSortCol === "translations") cmp = a.translationCount - b.translationCount;
+      return statSortDir === "asc" ? cmp : -cmp;
+    });
+    const labels = sorted.map((s) => `${s.provider}/${s.model.split("/").pop()}`);
+    return { stats: sorted, labels };
+  }, [modelStats, statSortCol, statSortDir]);
 
   const latencyChartOption = useMemo(() => {
     if (!chartData) return null;
@@ -326,13 +351,25 @@ export default function AdminPanel() {
               <table className="w-full text-xs">
                 <thead>
                   <tr className="border-b border-neutral-100">
-                    <th className="text-left pb-2 text-neutral-500 font-medium">Model</th>
-                    <th className="text-right pb-2 text-neutral-500 font-medium">Calls</th>
-                    <th className="text-right pb-2 text-neutral-500 font-medium">Avg latency</th>
-                    <th className="text-right pb-2 text-neutral-500 font-medium">P95 latency</th>
-                    <th className="text-right pb-2 text-neutral-500 font-medium">Avg cost</th>
-                    <th className="text-right pb-2 text-neutral-500 font-medium">Total cost</th>
-                    <th className="text-right pb-2 text-neutral-500 font-medium">Translations</th>
+                    {(
+                      [
+                        ["model",        "Model",        "text-left"],
+                        ["calls",        "Calls",        "text-right"],
+                        ["avgLatency",   "Avg latency",  "text-right"],
+                        ["p95Latency",   "P95 latency",  "text-right"],
+                        ["avgCost",      "Avg cost",     "text-right"],
+                        ["totalCost",    "Total cost",   "text-right"],
+                        ["translations", "Translations", "text-right"],
+                      ] as [StatSortCol, string, string][]
+                    ).map(([col, label, align]) => (
+                      <th
+                        key={col}
+                        className={`${align} pb-2 text-neutral-500 font-medium cursor-pointer select-none hover:text-neutral-800 transition-colors`}
+                        onClick={() => handleStatSort(col)}
+                      >
+                        {label}{statSortCol === col ? (statSortDir === "asc" ? " ↑" : " ↓") : ""}
+                      </th>
+                    ))}
                   </tr>
                 </thead>
                 <tbody>
