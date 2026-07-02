@@ -19,10 +19,12 @@ in production first, or the live site's signed-in features will break.
 
 ## External gates (only you can do these)
 
-### 1. Clerk — create the `convex` JWT template
+### 1. Clerk — create the `convex` JWT template  ← NEXT ACTION (you)
 Clerk Dashboard → JWT Templates → New → **Convex** preset (name must be exactly
 `convex`). Ensure `email` is in the claims. This is required for `ctx.auth` to
-work at all. *(Verified 2026-07: no JWT templates exist yet.)*
+work at all. *(Verified 2026-07: no JWT templates exist yet.)* Do this on the
+**dev** instance first so we can verify the full auth flow before the prod
+migration. Once created, tell me and I'll run verification.
 
 ### 2. Clerk — production instance/keys (P0-clerk-prod)
 The site currently runs on a **dev** Clerk instance (`allowed-terrier-50.clerk.
@@ -32,10 +34,11 @@ Clerk instance, then set in Vercel prod env: `NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY`
 template on the production instance too. Update `CLERK_JWT_ISSUER_DOMAIN` (below)
 to the production issuer.
 
-### 3. Stripe — create the two live prices
-Live mode → products: **Pro** recurring **$6.99/mo**, **Pro Sample** one-time
-**$2.99**. Set Vercel prod env `STRIPE_PRO_PRICE_ID` and
-`STRIPE_PRO_SAMPLE_PRICE_ID` to the new price IDs.
+### 3. Stripe — create the two live prices  ✅ DONE (2026-07-02)
+Live prices created via API and set in Vercel prod env:
+- Pro $6.99/mo → `STRIPE_PRO_PRICE_ID=price_1Too8rPp1GiGIJG14FPoacji`
+- Pro Sample $2.99 one-time → `STRIPE_PRO_SAMPLE_PRICE_ID=price_1Too8sPp1GiGIJG1FbLkwfoq`
+- `ADMIN_EMAIL` also set in Vercel prod. (`.env.local` updated for local runs.)
 
 ### 4. Stripe — point the webhook at Convex
 Add endpoint `https://simplesavings-app-ae970.convex.site/stripe-webhook` with
