@@ -39,9 +39,9 @@ function SignedInProfile({ clerkId }: { clerkId: string }) {
   const { user } = useUser();
   const isAdmin = user?.primaryEmailAddress?.emailAddress === ADMIN_EMAIL;
   const router = useRouter();
-  const scenarios = useQuery(api.scenarios.getScenariosByUser, { clerkId }) as ScenarioCardData[] | undefined;
+  const scenarios = useQuery(api.scenarios.getScenariosByUser, {}) as ScenarioCardData[] | undefined;
   const deleteScenario = useMutation(api.scenarios.deleteScenario);
-  const creditBalance = useQuery(api.users.getAiCreditBalance, { clerkId });
+  const creditBalance = useQuery(api.users.getAiCreditBalance, {});
   const testMode = useQuery(api.appConfig.getConfig, isAdmin ? { key: "paymentTestMode" } : "skip");
 
   const isProSampleTestMode = testMode === "sample" || testMode === "true";
@@ -76,7 +76,7 @@ function SignedInProfile({ clerkId }: { clerkId: string }) {
     if (deletingId) return;
     setDeletingId(scenario._id);
     try {
-      await deleteScenario({ scenarioId: scenario._id, clerkId });
+      await deleteScenario({ scenarioId: scenario._id });
       toast.success(`Deleted "${scenario.name}"`);
     } catch {
       toast.error("Failed to delete scenario");

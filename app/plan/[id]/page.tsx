@@ -29,7 +29,7 @@ export default function PlanDetailPage() {
   const scenario = useQuery(
     api.scenarios.getScenarioById,
     isSignedIn && clerkId && id
-      ? { scenarioId: id as Id<"scenarios">, clerkId }
+      ? { scenarioId: id as Id<"scenarios"> }
       : "skip"
   );
 

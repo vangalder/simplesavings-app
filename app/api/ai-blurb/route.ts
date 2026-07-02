@@ -265,9 +265,16 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: "Rate limit exceeded" }, { status: 429 });
   }
 
+  // Reject oversized payloads before parsing — this route is unauthenticated
+  // and calls paid LLMs, so bound the input an anonymous caller can submit.
+  const raw = await req.text();
+  if (raw.length > 8_000) {
+    return NextResponse.json({ error: "Payload too large" }, { status: 413 });
+  }
+
   let body: Record<string, unknown>;
   try {
-    body = await req.json();
+    body = JSON.parse(raw);
   } catch {
     return NextResponse.json({ error: "Invalid JSON" }, { status: 400 });
   }
@@ -275,7 +282,11 @@ export async function POST(req: NextRequest) {
   const { provider, modelId } = await resolveModel();
 
   // Translation mode: { text: string, targetLocale: string }
-  if (typeof body.text === "string" && typeof body.targetLocale === "string") {
+  if (
+    typeof body.text === "string" &&
+    typeof body.targetLocale === "string" &&
+    body.text.length <= 4_000
+  ) {
     const langName = LOCALE_NAMES[body.targetLocale] ?? body.targetLocale;
     try {
       const t0 = Date.now();

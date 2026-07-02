@@ -1,16 +1,12 @@
 import { query, mutation } from "./_generated/server";
 import { v } from "convex/values";
+import { getCurrentUser, getCurrentUserOrNull } from "./lib/auth";
 
 export const getProviderConfig = query({
-  args: { clerkId: v.string() },
-  handler: async (ctx, args) => {
-    const user = await ctx.db
-      .query("users")
-      .withIndex("by_clerk_id", (q) => q.eq("clerkId", args.clerkId))
-      .first();
-
+  args: {},
+  handler: async (ctx) => {
+    const user = await getCurrentUserOrNull(ctx);
     if (!user) return null;
-
     return await ctx.db
       .query("provider_configs")
       .withIndex("by_user", (q) => q.eq("userId", user._id))
@@ -20,15 +16,10 @@ export const getProviderConfig = query({
 });
 
 export const getAllProviderConfigs = query({
-  args: { clerkId: v.string() },
-  handler: async (ctx, args) => {
-    const user = await ctx.db
-      .query("users")
-      .withIndex("by_clerk_id", (q) => q.eq("clerkId", args.clerkId))
-      .first();
-
+  args: {},
+  handler: async (ctx) => {
+    const user = await getCurrentUserOrNull(ctx);
     if (!user) return [];
-
     return await ctx.db
       .query("provider_configs")
       .withIndex("by_user", (q) => q.eq("userId", user._id))
@@ -38,18 +29,12 @@ export const getAllProviderConfigs = query({
 
 export const upsertProviderConfig = mutation({
   args: {
-    clerkId: v.string(),
     provider: v.string(),
     model: v.string(),
     isDefault: v.boolean(),
   },
   handler: async (ctx, args) => {
-    const user = await ctx.db
-      .query("users")
-      .withIndex("by_clerk_id", (q) => q.eq("clerkId", args.clerkId))
-      .first();
-
-    if (!user) throw new Error("User not found");
+    const user = await getCurrentUser(ctx);
 
     const existing = await ctx.db
       .query("provider_configs")

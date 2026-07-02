@@ -5,7 +5,7 @@ import Link from "next/link";
 import { useRef, useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { useUser, useClerk, SignInButton } from "@clerk/nextjs";
-import { useQuery } from "convex/react";
+import { useQuery, useMutation } from "convex/react";
 import { api } from "@/convex/_generated/api";
 import { useIsAdmin } from "@/hooks/useIsAdmin";
 import CurrencyPicker from "@/components/CurrencyPicker";
@@ -41,9 +41,17 @@ function UserDropdown() {
   const menuRef = useRef<HTMLDivElement>(null);
 
   const clerkId = user?.id ?? "";
+
+  // Provision a Convex user row on sign-in (self-healing; independent of the
+  // Clerk webhook config).
+  const ensureUser = useMutation(api.users.ensureUser);
+  useEffect(() => {
+    if (isSignedIn) ensureUser({}).catch(() => {});
+  }, [isSignedIn, ensureUser]);
+
   const creditBalance = useQuery(
     api.users.getAiCreditBalance,
-    isSignedIn && clerkId ? { clerkId } : "skip"
+    isSignedIn && clerkId ? {} : "skip"
   );
   // Admins can set test mode in the admin panel — read it so the tier badge
   // reflects the active test mode even before a test checkout is triggered.
@@ -53,7 +61,7 @@ function UserDropdown() {
   );
   const tokenStats = useQuery(
     api.users.getTokenStats,
-    isAdmin && isSignedIn && clerkId ? { clerkId } : "skip"
+    isAdmin && isSignedIn && clerkId ? {} : "skip"
   );
 
   // Close on outside click

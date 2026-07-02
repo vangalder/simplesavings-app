@@ -26,7 +26,7 @@ export default function AdminPanel() {
   const { user } = useUser();
   const creditBalance = useQuery(
     api.users.getAiCreditBalance,
-    user?.id ? { clerkId: user.id } : "skip"
+    user?.id ? {} : "skip"
   );
 
   const seedTestCredits = useMutation(api.users.seedTestCredits);
@@ -44,7 +44,7 @@ export default function AdminPanel() {
     // When toggling to Pro Sample, immediately reset the test account to the
     // configured credit limit so the tier badge and usage bar are live.
     if (value === "sample" && user?.id) {
-      await seedTestCredits({ clerkId: user.id, creditsInCents: creditLimitCents });
+      await seedTestCredits({ creditsInCents: creditLimitCents });
     }
   };
 

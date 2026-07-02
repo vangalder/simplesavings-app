@@ -138,12 +138,10 @@ export default function AIChat({
 
   const savedMessages = useQuery(
     api.messages.getMessagesByScenario,
-    clerkId ? { scenarioId, clerkId } : "skip"
+    clerkId ? { scenarioId } : "skip"
   ) as ConvexMessage[] | undefined;
 
   const addMessage = useMutation(api.messages.addMessage);
-  const incrementFreeTokens = useMutation(api.scenarios.incrementFreeTokens);
-  const incrementAiUsage = useMutation(api.users.incrementAiUsage);
 
   // Read the conversation model config saved by AdminPanel as "provider:model"
   const defaultConvoModel = useQuery(api.appConfig.getConfig, { key: "defaultConversationModel" });
@@ -225,7 +223,6 @@ export default function AIChat({
 
       const body = {
         scenarioId,
-        clerkId,
         provider,
         model,
         message: messageText,
@@ -320,11 +317,11 @@ export default function AIChat({
           if (u.field && typeof u.value === "number") onCalculatorUpdate(u.field, u.value);
         }
 
-        // Persist messages
+        // Persist messages (usage/cost + free-budget metering are recorded
+        // server-side by the insights route — the client cannot skip it).
         if (!isOpener && clerkId) {
           await addMessage({
             scenarioId,
-            clerkId,
             role: "user",
             content: messageText,
             provider,
@@ -334,7 +331,6 @@ export default function AIChat({
         if (clerkId && fullText) {
           await addMessage({
             scenarioId,
-            clerkId,
             role: "assistant",
             content: fullText,
             provider,
@@ -344,13 +340,6 @@ export default function AIChat({
             outputTokens,
             costCents,
           }).catch(() => {});
-        }
-
-        // Track token usage against credit balance / free budget
-        if (isPaid && costCents > 0 && clerkId) {
-          await incrementAiUsage({ clerkId, costInCents: costCents }).catch(() => {});
-        } else if (!isPaid && outputTokens > 0) {
-          await incrementFreeTokens({ scenarioId, tokens: outputTokens }).catch(() => {});
         }
       } catch (err: unknown) {
         if (err instanceof Error && err.name === "AbortError") return;
@@ -368,7 +357,7 @@ export default function AIChat({
     [
       isStreaming, messages, scenarioId, clerkId, provider, model, locale,
       calculatorState, results, currency, isPaid,
-      addMessage, incrementFreeTokens, onCalculatorUpdate,
+      addMessage, onCalculatorUpdate,
     ]
   );
 
@@ -478,7 +467,7 @@ export default function AIChat({
           <button
             onClick={async () => {
               if (!clerkId) return;
-              await clearMessages({ scenarioId, clerkId }).catch(() => {});
+              await clearMessages({ scenarioId }).catch(() => {});
               setMessages([]);
               setOpenerStarted(false);
             }}

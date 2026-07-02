@@ -107,11 +107,11 @@ export default function Calculator() {
   const updateBlurbCache = useMutation(api.scenarios.updateBlurbCache);
   const defaultScenario = useQuery(
     api.scenarios.getDefaultScenario,
-    isSignedIn && clerkId ? { clerkId } : "skip"
+    isSignedIn && clerkId ? {} : "skip"
   );
   const creditBalance = useQuery(
     api.users.getAiCreditBalance,
-    isSignedIn && clerkId ? { clerkId } : "skip"
+    isSignedIn && clerkId ? {} : "skip"
   );
   const chatFreeTokenBudget = useQuery(api.appConfig.getConfig, { key: "chatFreeTokenBudget" });
   const freeTokenBudget = chatFreeTokenBudget ? parseInt(chatFreeTokenBudget, 10) : 0;
@@ -122,7 +122,7 @@ export default function Calculator() {
   // Convex deduplicates this subscription with the identical query inside AIChat.
   const scenarioMessages = useQuery(
     api.messages.getMessagesByScenario,
-    clerkId && scenarioId ? { scenarioId, clerkId } : "skip"
+    clerkId && scenarioId ? { scenarioId } : "skip"
   );
   const hasConversation = !!(scenarioMessages && scenarioMessages.length > 0);
   // Load values from URL params, localStorage, or defaults
@@ -302,7 +302,6 @@ export default function Calculator() {
     const id = setTimeout(async () => {
       try {
         const id = await autosaveScenario({
-          clerkId,
           startingAmount: state.startingAmount,
           monthlyContribution: state.monthlyContribution,
           timeframeYears: state.timeframeYears,

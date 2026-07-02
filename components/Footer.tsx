@@ -3,8 +3,14 @@ export default function Footer() {
     <footer className="w-full border-t border-neutral-200 bg-white/80 backdrop-blur-sm py-6 mt-auto relative z-10">
       <div className="container mx-auto px-4">
         <div className="flex flex-col items-center gap-4 text-sm text-neutral-600">
-          <p>© {new Date().getFullYear()} vangalder.com. All rights reserved.</p>
+          <p>© {new Date().getFullYear()} simplesavings.app. All rights reserved.</p>
           <div className="flex gap-4">
+            <a
+              href="/#pricing"
+              className="hover:text-primary-base transition-colors"
+            >
+              Pricing.
+            </a>
             <a
               href="/privacy"
               className="hover:text-primary-base transition-colors"

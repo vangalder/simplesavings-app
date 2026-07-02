@@ -146,9 +146,11 @@ An inline conversational AI thread that lives below the blurb. The AI knows the 
 
 The AI opens every new conversation with a proactive question seeded from the blurb. Past conversations are saved and restored when the user returns.
 
-**Access requirements:** The chat requires sign-in plus one of:
+**Access requirements:** The chat requires sign-in. Every signed-in user gets a
+short free taste (a few messages) before hitting the paywall; beyond that it
+needs one of:
 - A Pro subscription
-- A one-time credit purchase (30 messages)
+- A one-time Pro Sample credit purchase
 - Admin-granted free token budget (used for promotions, demos, or classroom access)
 
 ---
@@ -157,9 +159,9 @@ The AI opens every new conversation with a proactive question seeded from the bl
 
 | Plan | Price | What's included |
 |---|---|---|
-| **Pro Sample** | $4.99 (admin-configurable) | Deep AI analysis on one plan, up to the credit cap |
-| **Pro** | $9.99/month (admin-configurable) | Unlimited AI conversations |
-| **Free tier** | $0 | Full calculator, sharing, narratives, insight blurb — no AI chat |
+| **Pro Sample** | $2.99 (admin-configurable) | Deep AI analysis on one plan, up to the credit cap |
+| **Pro** | $6.99/month (admin-configurable) | Unlimited AI conversations |
+| **Free tier** | $0 | Full calculator, sharing, narratives, insight blurb — plus a short free AI taste |
 
 Payment is handled via Stripe. Users who have not purchased see an upsell prompt when they click the AI chat CTA.
 

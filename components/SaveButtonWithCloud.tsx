@@ -28,7 +28,7 @@ export default function SaveButtonWithCloud({ state, results, onLocalSave }: Pro
   const clerkId = user?.id ?? "";
   const scenarios = useQuery(
     api.scenarios.getScenariosByUser,
-    isSignedIn && clerkId ? { clerkId } : "skip"
+    isSignedIn && clerkId ? {} : "skip"
   );
   const saveScenario = useMutation(api.scenarios.saveScenario);
 
@@ -53,7 +53,6 @@ export default function SaveButtonWithCloud({ state, results, onLocalSave }: Pro
     setSaving(true);
     try {
       await saveScenario({
-        clerkId,
         name,
         description: description || undefined,
         goals: goals || undefined,

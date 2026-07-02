@@ -13,9 +13,13 @@ export default defineSchema({
     // Phase 3: AI credit tracking (in cents, e.g. 199 = $1.99)
     aiCreditsGranted: v.optional(v.number()),
     aiCreditsUsed: v.optional(v.number()),
+    // Free-tier metering: cumulative in+out tokens spent on the free AI taste
+    freeChatTokensUsed: v.optional(v.number()),
     createdAt: v.number(),
     updatedAt: v.number(),
-  }).index("by_clerk_id", ["clerkId"]),
+  })
+    .index("by_clerk_id", ["clerkId"])
+    .index("by_stripe_customer", ["stripeCustomerId"]),
 
   scenarios: defineTable({
     userId: v.id("users"),
@@ -46,8 +50,6 @@ export default defineSchema({
     blurbQuestionEn: v.optional(v.string()),
     blurbPitchEn: v.optional(v.string()),
     blurbInputsHash: v.optional(v.string()),
-    // Free chat token tracking
-    chatTokensUsedFree: v.optional(v.number()),
     createdAt: v.number(),
     updatedAt: v.number(),
   }).index("by_user", ["userId"]),

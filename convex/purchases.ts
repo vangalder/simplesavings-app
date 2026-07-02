@@ -1,7 +1,9 @@
-import { mutation, query } from "./_generated/server";
+import { internalMutation } from "./_generated/server";
 import { v } from "convex/values";
 
-export const completeTasteTestPurchase = mutation({
+// Internal: called only from the Stripe webhook httpAction after signature
+// verification. Grants AI credits for a completed one-time "Pro Sample" purchase.
+export const completeTasteTestPurchase = internalMutation({
   args: {
     clerkId: v.string(),
     stripePaymentIntentId: v.string(),
@@ -48,21 +50,5 @@ export const completeTasteTestPurchase = mutation({
       aiCreditsGranted: (user.aiCreditsGranted ?? 0) + args.creditsGranted,
       updatedAt: now,
     });
-  },
-});
-
-export const getMyPurchases = query({
-  args: { clerkId: v.string() },
-  handler: async (ctx, args) => {
-    const user = await ctx.db
-      .query("users")
-      .withIndex("by_clerk_id", (q) => q.eq("clerkId", args.clerkId))
-      .first();
-    if (!user) return [];
-    return await ctx.db
-      .query("purchases")
-      .withIndex("by_user", (q) => q.eq("userId", user._id))
-      .order("desc")
-      .collect();
   },
 });

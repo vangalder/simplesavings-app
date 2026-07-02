@@ -63,11 +63,11 @@ export default function ProUpsellModal({ open, onClose, insightContext, monthlyC
   const clerkId = user?.id ?? "";
   const proSamplePriceRaw = useQuery(api.appConfig.getConfig, { key: "proSamplePriceDisplay" });
   const proPriceRaw = useQuery(api.appConfig.getConfig, { key: "proPriceDisplay" });
-  const proSamplePrice = proSamplePriceRaw ?? "4.99";
-  const proPrice = proPriceRaw ?? "9.99";
+  const proSamplePrice = proSamplePriceRaw ?? "2.99";
+  const proPrice = proPriceRaw ?? "6.99";
   const creditBalance = useQuery(
     api.users.getAiCreditBalance,
-    isSignedIn && clerkId ? { clerkId } : "skip"
+    isSignedIn && clerkId ? {} : "skip"
   );
   const overlayRef = useRef<HTMLDivElement>(null);
 

@@ -12,15 +12,9 @@ function getStripe() {
   return new Stripe(key, { apiVersion: "2025-02-24.acacia" });
 }
 
-function getConvex() {
-  const url = process.env.NEXT_PUBLIC_CONVEX_URL;
-  if (!url) throw new Error("NEXT_PUBLIC_CONVEX_URL not set");
-  return new ConvexHttpClient(url);
-}
-
 // POST body: { type: "subscription" | "one_time", scenarioId?: string }
 export async function POST(req: NextRequest) {
-  const { userId } = await auth();
+  const { userId, getToken } = await auth();
   if (!userId) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
@@ -37,30 +31,46 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: "Invalid checkout type" }, { status: 400 });
   }
 
-  const convex = getConvex();
+  const convexUrl = process.env.NEXT_PUBLIC_CONVEX_URL;
+  if (!convexUrl) {
+    return NextResponse.json({ error: "Convex not configured" }, { status: 503 });
+  }
+  const convex = new ConvexHttpClient(convexUrl);
+  const token = await getToken({ template: "convex" });
+  if (token) convex.setAuth(token);
+
   const origin = req.headers.get("origin") ?? "https://simplesavings.app";
 
-  // Check payment test mode — admin bypass, skips Stripe entirely
-  // Values: "off" | "sample" (force sample credits) | "pro" (force Pro) | "true" (legacy: respects checkout type)
-  const [testMode, creditLimitRaw] = await Promise.all([
-    convex.query(api.appConfig.getConfig, { key: "paymentTestMode" }),
-    convex.query(api.appConfig.getConfig, { key: "proSampleCreditLimitCents" }),
-  ]);
-  const creditLimitCents = Math.max(1, parseInt(creditLimitRaw ?? "100", 10) || 100);
-  const grantType = testMode === "pro" ? "subscription" : testMode === "sample" ? "one_time" : testMode === "true" ? type : null;
-  if (grantType) {
-    const clerkUser = await currentUser();
-    await convex.mutation(api.users.upsertUser, {
-      clerkId: userId,
-      email: clerkUser?.primaryEmailAddress?.emailAddress ?? undefined,
-      name: clerkUser?.fullName ?? clerkUser?.firstName ?? undefined,
-    });
-    if (grantType === "subscription") {
-      await convex.mutation(api.users.setUserPro, { clerkId: userId });
-    } else {
-      await convex.mutation(api.users.grantAiCredits, { clerkId: userId, creditsInCents: creditLimitCents });
+  // Ensure a Convex user row exists for this authenticated caller.
+  await convex.mutation(api.users.ensureUser, {});
+
+  const clerkUser = await currentUser();
+  const email = clerkUser?.primaryEmailAddress?.emailAddress;
+  const adminEmail = process.env.ADMIN_EMAIL;
+  const isAdmin = !!adminEmail && email === adminEmail;
+
+  // Admin-only test-mode bypass: grants paid state without touching Stripe.
+  // Values: "off" | "sample" (force sample credits) | "pro" (force Pro) |
+  // "true" (legacy: respects checkout type). The grant itself is enforced in
+  // Convex (applyAdminTestGrant → requireAdmin), so a non-admin cannot use it.
+  if (isAdmin) {
+    const [testMode, creditLimitRaw] = await Promise.all([
+      convex.query(api.appConfig.getConfig, { key: "paymentTestMode" }),
+      convex.query(api.appConfig.getConfig, { key: "proSampleCreditLimitCents" }),
+    ]);
+    const creditLimitCents = Math.max(1, parseInt(creditLimitRaw ?? "150", 10) || 150);
+    const grantType =
+      testMode === "pro" ? "subscription"
+      : testMode === "sample" ? "one_time"
+      : testMode === "true" ? type
+      : null;
+    if (grantType) {
+      await convex.mutation(api.users.applyAdminTestGrant, {
+        grantType,
+        creditsInCents: creditLimitCents,
+      });
+      return NextResponse.json({ url: `${origin}/?testPaid=1` });
     }
-    return NextResponse.json({ url: `${origin}/?testPaid=1` });
   }
 
   const stripeKey = process.env.STRIPE_SECRET_KEY;
@@ -82,13 +92,10 @@ export async function POST(req: NextRequest) {
 
   try {
     const stripe = getStripe();
-    const clerkUser = await currentUser();
-    const email = clerkUser?.primaryEmailAddress?.emailAddress;
 
-    // Look up or create Stripe customer
-    let stripeCustomerId: string | undefined;
-    const convexUser = await convex.query(api.users.getMyUser, { clerkId: userId });
-    stripeCustomerId = convexUser?.stripeCustomerId ?? undefined;
+    // Reuse an existing Stripe customer if we have one on file.
+    const convexUser = await convex.query(api.users.getMyUser, {});
+    let stripeCustomerId = convexUser?.stripeCustomerId ?? undefined;
 
     if (!stripeCustomerId) {
       const customer = await stripe.customers.create({
@@ -96,10 +103,7 @@ export async function POST(req: NextRequest) {
         metadata: { clerkId: userId },
       });
       stripeCustomerId = customer.id;
-      await convex.mutation(api.users.updateUserPreferences, {
-        clerkId: userId,
-        stripeCustomerId,
-      });
+      // The Stripe webhook persists this mapping on checkout.session.completed.
     }
 
     const session = await stripe.checkout.sessions.create({

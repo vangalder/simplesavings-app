@@ -1,15 +1,16 @@
 import { mutation, query } from "./_generated/server";
 import { v } from "convex/values";
+import { getIdentity, requireAdmin } from "./lib/auth";
 
 export const recordShare = mutation({
   args: {
-    sharedBy: v.string(),
     sharedWith: v.string(),
     url: v.string(),
   },
   handler: async (ctx, args) => {
+    const identity = await getIdentity(ctx);
     return await ctx.db.insert("shares", {
-      sharedBy: args.sharedBy,
+      sharedBy: identity.email ?? identity.subject,
       sharedWith: args.sharedWith,
       url: args.url,
       createdAt: Date.now(),
@@ -20,6 +21,7 @@ export const recordShare = mutation({
 export const getShareAnalytics = query({
   args: {},
   handler: async (ctx) => {
+    await requireAdmin(ctx);
     const shares = await ctx.db.query("shares").order("desc").collect();
     const users = await ctx.db.query("users").collect();
 

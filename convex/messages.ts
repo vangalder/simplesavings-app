@@ -1,16 +1,11 @@
 import { query, mutation } from "./_generated/server";
 import { v } from "convex/values";
+import { requireScenarioOwner } from "./lib/auth";
 
 export const getMessagesByScenario = query({
-  args: { scenarioId: v.id("scenarios"), clerkId: v.string() },
+  args: { scenarioId: v.id("scenarios") },
   handler: async (ctx, args) => {
-    const user = await ctx.db
-      .query("users")
-      .withIndex("by_clerk_id", (q) => q.eq("clerkId", args.clerkId))
-      .first();
-
-    if (!user) return [];
-
+    await requireScenarioOwner(ctx, args.scenarioId);
     return await ctx.db
       .query("messages")
       .withIndex("by_scenario", (q) => q.eq("scenarioId", args.scenarioId))
@@ -22,7 +17,6 @@ export const getMessagesByScenario = query({
 export const addMessage = mutation({
   args: {
     scenarioId: v.id("scenarios"),
-    clerkId: v.string(),
     role: v.string(),
     content: v.string(),
     provider: v.string(),
@@ -33,16 +27,9 @@ export const addMessage = mutation({
     costCents: v.optional(v.number()),
   },
   handler: async (ctx, args) => {
-    const user = await ctx.db
-      .query("users")
-      .withIndex("by_clerk_id", (q) => q.eq("clerkId", args.clerkId))
-      .first();
-
-    if (!user) throw new Error("User not found");
-
-    const { clerkId, ...data } = args;
+    const { user } = await requireScenarioOwner(ctx, args.scenarioId);
     return await ctx.db.insert("messages", {
-      ...data,
+      ...args,
       userId: user._id,
       createdAt: Date.now(),
     });
@@ -50,20 +37,13 @@ export const addMessage = mutation({
 });
 
 export const clearMessages = mutation({
-  args: { scenarioId: v.id("scenarios"), clerkId: v.string() },
+  args: { scenarioId: v.id("scenarios") },
   handler: async (ctx, args) => {
-    const user = await ctx.db
-      .query("users")
-      .withIndex("by_clerk_id", (q) => q.eq("clerkId", args.clerkId))
-      .first();
-
-    if (!user) throw new Error("User not found");
-
+    await requireScenarioOwner(ctx, args.scenarioId);
     const msgs = await ctx.db
       .query("messages")
       .withIndex("by_scenario", (q) => q.eq("scenarioId", args.scenarioId))
       .collect();
-
     await Promise.all(msgs.map((m) => ctx.db.delete(m._id)));
   },
 });

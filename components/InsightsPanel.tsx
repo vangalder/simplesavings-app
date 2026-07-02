@@ -66,10 +66,11 @@ export default function InsightsPanel({ scenarioId, clerkId, scenarioData }: Pro
   const inputRef = useRef<HTMLInputElement>(null);
 
   // Convex queries & mutations
-  const messages = useQuery(api.messages.getMessagesByScenario, { scenarioId, clerkId }) as ConvexMessage[] | undefined;
-  const creditBalance = useQuery(api.users.getAiCreditBalance, { clerkId });
+  const messages = useQuery(api.messages.getMessagesByScenario, { scenarioId }) as ConvexMessage[] | undefined;
+  const creditBalance = useQuery(api.users.getAiCreditBalance, {});
+  const proSamplePrice = useQuery(api.appConfig.getConfig, { key: "proSamplePriceDisplay" }) ?? "2.99";
+  const proPrice = useQuery(api.appConfig.getConfig, { key: "proPriceDisplay" }) ?? "6.99";
   const addMessage = useMutation(api.messages.addMessage);
-  const incrementAiUsage = useMutation(api.users.incrementAiUsage);
   const updateScenarioAiConfig = useMutation(api.scenarios.updateScenarioAiConfig);
   const upsertProviderConfig = useMutation(api.providerConfigs.upsertProviderConfig);
 
@@ -95,8 +96,8 @@ export default function InsightsPanel({ scenarioId, clerkId, scenarioData }: Pro
       setModel(newModel);
       // Persist to scenario and user default
       try {
-        await updateScenarioAiConfig({ scenarioId, clerkId, aiProvider: newProvider, aiModel: newModel });
-        await upsertProviderConfig({ clerkId, provider: newProvider, model: newModel, isDefault: true });
+        await updateScenarioAiConfig({ scenarioId, aiProvider: newProvider, aiModel: newModel });
+        await upsertProviderConfig({ provider: newProvider, model: newModel, isDefault: true });
       } catch {
         // non-fatal
       }
@@ -108,17 +109,15 @@ export default function InsightsPanel({ scenarioId, clerkId, scenarioData }: Pro
     async (userMsg: string, assistantMsg: string, cost: number) => {
       setPersistError(null);
       try {
-        await addMessage({ scenarioId, clerkId, role: "user", content: userMsg, provider, model, tokensUsed: 0 });
-        await addMessage({ scenarioId, clerkId, role: "assistant", content: assistantMsg, provider, model, tokensUsed: 0 });
-        if (!creditBalance?.isPro) {
-          await incrementAiUsage({ clerkId, costInCents: cost });
-        }
+        await addMessage({ scenarioId, role: "user", content: userMsg, provider, model, tokensUsed: 0 });
+        await addMessage({ scenarioId, role: "assistant", content: assistantMsg, provider, model, tokensUsed: 0 });
+        // Usage/cost is recorded server-side by the insights route; nothing to do here.
       } catch (err) {
         console.error("[insights] persist failed", err);
         setPersistError({ userMsg, assistantMsg, costCents: cost });
       }
     },
-    [scenarioId, clerkId, provider, model, creditBalance, addMessage, incrementAiUsage]
+    [scenarioId, provider, model, addMessage]
   );
 
   const sendMessage = useCallback(
@@ -294,13 +293,13 @@ export default function InsightsPanel({ scenarioId, clerkId, scenarioData }: Pro
                 onClick={() => handleCheckout("one_time")}
                 className="w-full py-2.5 px-4 rounded-xl bg-gradient-to-r from-accent-orange-base to-accent-base text-neutral-900 font-semibold text-sm hover:opacity-90 transition-opacity"
               >
-                Try Pro sample — $4.99
+                Try Pro sample — ${proSamplePrice}
               </button>
               <button
                 onClick={() => handleCheckout("subscription")}
                 className="w-full py-2 px-4 rounded-xl border border-neutral-200 text-neutral-600 text-sm hover:bg-neutral-50 transition-colors"
               >
-                Go Pro — $9.99/month
+                Go Pro — ${proPrice}/month
               </button>
             </div>
           ) : (

@@ -1,6 +1,10 @@
 import { mutation, query } from "./_generated/server";
 import { v } from "convex/values";
+import { requireAdmin } from "./lib/auth";
 
+// Public insert-only telemetry: the ai-blurb route serves anonymous marketing
+// visitors through an unauthenticated server client, so this stays open. It
+// only appends rows and exposes no data.
 export const logBlurbCall = mutation({
   args: {
     provider: v.string(),
@@ -36,6 +40,7 @@ type ModelStats = {
 export const getModelStats = query({
   args: {},
   handler: async (ctx): Promise<ModelStats[]> => {
+    await requireAdmin(ctx);
     const logs = await ctx.db.query("blurb_logs").order("desc").take(5000);
 
     const byKey = new Map<string, {
@@ -85,6 +90,7 @@ export const getModelStats = query({
 export const getRecentLogs = query({
   args: { limit: v.optional(v.number()) },
   handler: async (ctx, args) => {
+    await requireAdmin(ctx);
     return ctx.db.query("blurb_logs").order("desc").take(args.limit ?? 100);
   },
 });

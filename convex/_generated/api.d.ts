@@ -11,6 +11,7 @@
 import type * as appConfig from "../appConfig.js";
 import type * as blurbLogs from "../blurbLogs.js";
 import type * as http from "../http.js";
+import type * as lib_auth from "../lib/auth.js";
 import type * as messages from "../messages.js";
 import type * as providerConfigs from "../providerConfigs.js";
 import type * as purchases from "../purchases.js";
@@ -28,6 +29,7 @@ declare const fullApi: ApiFromModules<{
   appConfig: typeof appConfig;
   blurbLogs: typeof blurbLogs;
   http: typeof http;
+  "lib/auth": typeof lib_auth;
   messages: typeof messages;
   providerConfigs: typeof providerConfigs;
   purchases: typeof purchases;

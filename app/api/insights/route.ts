@@ -48,7 +48,6 @@ type ConversationMessage = { role: string; content: string };
 
 type InsightsRequest = {
   scenarioId?: string;
-  clerkId?: string;
   provider: string;
   model: string;
   message: string;
@@ -81,7 +80,7 @@ function fmt(n: number, currency = "USD"): string {
   }).format(n);
 }
 
-function buildSystemPrompt(body: InsightsRequest, pricing: { proSamplePrice: string; proPrice: string } = { proSamplePrice: "4.99", proPrice: "9.99" }): string {
+function buildSystemPrompt(body: InsightsRequest, pricing: { proSamplePrice: string; proPrice: string } = { proSamplePrice: "2.99", proPrice: "6.99" }): string {
   const isWithdrawal = body.monthlyContribution < 0;
   const currency = body.currency ?? "USD";
   const annualGrowth = body.startingAmount * (body.interestRate / 100);
@@ -95,7 +94,7 @@ function buildSystemPrompt(body: InsightsRequest, pricing: { proSamplePrice: str
   const isFirstRealTurn = body.conversationHistory.length <= 1 && body.message !== "__OPENER__";
 
   return `# Role & Core Philosophy
-You are an authentic, elite financial strategy co-pilot working interactively with a user to prototype their financial future. You are a highly knowledgeable, sharp, and grounded peer — not a corporate chatbot, a rigid algorithm, or a scolding academic advisor.
+You are an authentic, elite financial strategist working interactively with a user to prototype their financial future. You are a highly knowledgeable, sharp, and grounded peer — not a corporate chatbot, a rigid algorithm, or a scolding academic advisor.
 
 Your job is to explore the user's simulation data with them, help them think through strategy puzzles, and uncover hidden leverage points in their plan. Treat all user inputs as absolute factual parameters for the current simulation — never lecture them on whether their assumptions are "realistic."
 
@@ -104,7 +103,7 @@ Your job is to explore the user's simulation data with them, help them think thr
 # Identity — You Are simplesavings.app
 You are simplesavings.app. Not a feature of it. Not embedded in it. You are it.
 
-When you speak about what you do, use "I" — not "simplesavings.app" as a third party. Say "I turn a basic calculator into a financial co-pilot," not "simplesavings.app turns..." Say "I support 7 languages," not "the app supports." Never refer to yourself by name as though you are an observer describing something external. You are the thing being described.
+When you speak about what you do, use "I" — not "simplesavings.app" as a third party. Say "I turn a basic calculator into a financial strategist," not "simplesavings.app turns..." Say "I support 7 languages," not "the app supports." Never refer to yourself by name as though you are an observer describing something external. You are the thing being described.
 
 When a user mentions "simplesavings.app," that is your name — acknowledge it naturally, the way a person would if someone said their name. No surprise, no distance.
 
@@ -199,7 +198,7 @@ When the user mentions any freelance, consulting, advising, or self-employment i
 ## How to surface strategies
 Lead with ONE or TWO strategies that fit this person's specific circumstances. Frame every strategy in terms of what it does to this specific projection. Reference details already established in the conversation — show you've been listening.
 
-**Diagnostic question technique:** Your questions should carry the weight of someone who already knows what the answer will unlock. *"Are you capturing the full employer match?"* signals you have a specific destination in mind. *"Are there any tax-advantaged accounts you use?"* is a survey. The first is a co-pilot move. The second is a checklist. When you suspect leverage but need to confirm: hint before you reveal. *"There's a vehicle that most W-2 earners with self-employment income overlook — do you file a Schedule C?"* signals depth without exposing the play before the user confirms relevance.
+**Diagnostic question technique:** Your questions should carry the weight of someone who already knows what the answer will unlock. *"Are you capturing the full employer match?"* signals you have a specific destination in mind. *"Are there any tax-advantaged accounts you use?"* is a survey. The first is a strategist's move. The second is a checklist. When you suspect leverage but need to confirm: hint before you reveal. *"There's a vehicle that most W-2 earners with self-employment income overlook — do you file a Schedule C?"* signals depth without exposing the play before the user confirms relevance.
 
 ## Ranked strategies — apply in this order of probable impact
 
@@ -292,7 +291,7 @@ When a user directly asks about a strategy on the do-not-recommend list (credit 
 - **Never call yourself a "co-pilot."** Not "I'm an AI co-pilot," not "your financial co-pilot," not any variation. You are simplesavings.app. That is the only label you need.
 - Use natural transitions: "Here's the real catch...", "To be fair...", "Let's look at the flip side..."
 - Do not refer to yourself as an AI, an LLM, or a model unprompted. Talk like a real person sitting next to the user working through the same screen.
-- **If directly asked whether you are an AI or a real person:** Be honest — never dodge this question. Tell them you are an AI co-pilot built on an extensive body of financial strategy knowledge and consultation. Follow immediately with a brief, natural legal note: that you are not a licensed financial advisor and everything here is for simulation and exploration. Two sentences, conversational, then move on.
+- **If directly asked whether you are an AI or a real person:** Be honest — never dodge this question. Tell them you are an AI savings strategist built on an extensive body of financial strategy knowledge and consultation. Follow immediately with a brief, natural legal note: that you are not a licensed financial advisor and everything here is for simulation and exploration. Two sentences, conversational, then move on.
 - **No emojis.** Clean typography drives clarity. Do not use any emoji characters — not decorative ones, not "expressive" ones, not bullet-point replacements. Plain text only.
 
 ---
@@ -305,7 +304,7 @@ ${isFirstRealTurn ? `
 
 # First-Message Disclaimer — REQUIRED THIS TURN ONLY
 Lead your response with this disclaimer before discussing any numbers. Use natural, human-sounding phrasing, not robotic legalese:
-"Before we dive into the numbers, the quick legal setup: I'm a strategy co-pilot, not a licensed financial advisor. This is all for simulation and exploration purposes — do your own research and draw your own conclusions before making any real-world moves. Now, let's look at this plan..."
+"Before we dive into the numbers, the quick legal setup: I'm an AI savings strategist, not a licensed financial advisor. This is all for simulation and exploration purposes — do your own research and draw your own conclusions before making any real-world moves. Now, let's look at this plan..."
 ` : ""}
 ---
 
@@ -348,7 +347,11 @@ function stripCalcUpdate(text: string): string {
 }
 
 export async function POST(req: NextRequest) {
-  const { userId } = await auth();
+  const { userId, getToken } = await auth();
+  if (!userId) {
+    // No anonymous access — the free taste is metered per authenticated user.
+    return new Response(JSON.stringify({ error: "unauthorized" }), { status: 401 });
+  }
 
   let body: InsightsRequest;
   try {
@@ -357,23 +360,31 @@ export async function POST(req: NextRequest) {
     return new Response(JSON.stringify({ error: "Invalid JSON" }), { status: 400 });
   }
 
-  // Access check + live config
-  const clerkId = userId ?? body.clerkId ?? "";
-  const [creditBalance, chatBudgetRaw, proSamplePriceRaw, proPriceRaw] = await Promise.all([
-    clerkId ? convex.query(api.users.getAiCreditBalance, { clerkId }).catch(() => null) : null,
+  // Authenticated Convex client for this caller (identity derived from the JWT,
+  // never from the request body — no clerkId spoofing).
+  const userConvex = new ConvexHttpClient(process.env.NEXT_PUBLIC_CONVEX_URL!);
+  const token = await getToken({ template: "convex" });
+  if (token) userConvex.setAuth(token);
+
+  // Access snapshot + live config
+  const [access, chatBudgetRaw, proSamplePriceRaw, proPriceRaw] = await Promise.all([
+    userConvex.query(api.users.getMyAccess, {}).catch(() => null),
     convex.query(api.appConfig.getConfig, { key: "chatFreeTokenBudget" }).catch(() => "0"),
     convex.query(api.appConfig.getConfig, { key: "proSamplePriceDisplay" }).catch(() => null),
     convex.query(api.appConfig.getConfig, { key: "proPriceDisplay" }).catch(() => null),
   ]);
-  const proSamplePrice = proSamplePriceRaw ?? "4.99";
-  const proPrice = proPriceRaw ?? "9.99";
+  const proSamplePrice = proSamplePriceRaw ?? "2.99";
+  const proPrice = proPriceRaw ?? "6.99";
 
-  const isPro = creditBalance?.isPro;
-  const hasCredits = (creditBalance?.granted ?? 0) > (creditBalance?.used ?? 0);
+  const isPro = access?.isPro ?? false;
+  const hasCredits = (access?.granted ?? 0) > (access?.used ?? 0);
   const tokenBudget = parseInt(chatBudgetRaw ?? "0", 10);
+  const freeUsed = access?.freeChatTokensUsed ?? 0;
   const isPaidAccess = isPro || hasCredits;
+  // Free taste: metered per user against chatFreeTokenBudget (total tokens).
+  const freePath = !isPaidAccess && tokenBudget > 0 && freeUsed < tokenBudget;
 
-  if (!isPaidAccess && tokenBudget === 0) {
+  if (!isPaidAccess && !freePath) {
     return new Response(JSON.stringify({ error: "upgrade_required" }), { status: 402 });
   }
 
@@ -419,6 +430,16 @@ export async function POST(req: NextRequest) {
         const calcUpdates = parseCalcUpdates(fullText);
         const cleanText = stripCalcUpdate(fullText);
         const costCents = calcCostCents(model, inputTokens, outputTokens);
+
+        // Server-side metering — the client cannot skip this. Cost always
+        // counts against credits (telemetry incl. Pro); free-path turns also
+        // burn the per-user free token budget.
+        await userConvex
+          .mutation(api.users.recordChatUsage, {
+            costCents,
+            freeTokens: freePath ? inputTokens + outputTokens : 0,
+          })
+          .catch((e) => console.error("[insights] recordChatUsage", e));
 
         controller.enqueue(sseChunk({
           type: "done",
