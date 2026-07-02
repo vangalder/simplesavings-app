@@ -300,9 +300,11 @@ export default function Calculator() {
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [defaultScenario, isInitialized]);
 
-  // Auto-save to Convex when signed in — immediate on sign-in, debounced on changes
+  // Auto-save to Convex when signed in — immediate on sign-in, debounced on changes.
+  // Gate on isConvexAuthed (token attached), not just Clerk's isSignedIn, or the
+  // mutation fires before auth and throws "Not authenticated".
   useEffect(() => {
-    if (!isSignedIn || !clerkId || !isInitialized || results.totalValue === 0) return;
+    if (!isConvexAuthed || !isInitialized || results.totalValue === 0) return;
     const id = setTimeout(async () => {
       try {
         const id = await autosaveScenario({
@@ -322,7 +324,7 @@ export default function Calculator() {
     }, 4000);
     return () => clearTimeout(id);
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [state, goalAmount, timeframeMode, targetDateStr, isSignedIn, clerkId, isInitialized]);
+  }, [state, goalAmount, timeframeMode, targetDateStr, isConvexAuthed, isInitialized]);
 
   // Debounced real-time AI blurb — fires 1500ms after inputs settle
   useEffect(() => {
@@ -845,12 +847,31 @@ export default function Calculator() {
                 goalMet={goalAmount > 0 ? results.totalValue >= goalAmount : undefined}
                 goalShortfall={goalAmount > 0 ? Math.max(0, goalAmount - results.totalValue) : undefined}
                 currency={currency}
-                onUpsellClick={(ctx) => {
-                  // If the user can actually chat (Pro, credits, or free budget)
-                  // and a scenario exists, drop them into the chat to spend the
-                  // free taste; the paywall appears later when the budget runs
-                  // out. Otherwise (e.g. signed out) open the upsell.
-                  if (isChatEligible && scenarioId) {
+                onUpsellClick={async (ctx) => {
+                  // If the user can chat (Pro, credits, or free budget), drop them
+                  // into the chat to spend the free taste; the paywall appears
+                  // later when the budget runs out. Ensure a scenario exists first
+                  // (create it now if the debounced autosave hasn't run yet).
+                  if (!isChatEligible) { setUpsellContext(ctx); return; }
+                  let sid = scenarioId;
+                  if (!sid && isConvexAuthed && results.totalValue !== 0) {
+                    try {
+                      sid = await autosaveScenario({
+                        startingAmount: state.startingAmount,
+                        monthlyContribution: state.monthlyContribution,
+                        timeframeYears: state.timeframeYears,
+                        interestRate: state.interestRate,
+                        totalValue: results.totalValue,
+                        principalPaid: results.principalPaid,
+                        interestEarned: results.interestEarned,
+                        goalAmount: goalAmount > 0 ? goalAmount : undefined,
+                        targetDate: timeframeMode === "date" && targetDateStr
+                          ? new Date(targetDateStr).getTime() : undefined,
+                      });
+                      setScenarioId(sid);
+                    } catch { /* fall through to upsell */ }
+                  }
+                  if (sid) {
                     setActiveTab("insights");
                     requestAnimationFrame(() =>
                       chatRef.current?.scrollIntoView({ behavior: "smooth", block: "start" })
