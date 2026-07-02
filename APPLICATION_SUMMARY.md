@@ -1,7 +1,29 @@
 # Simple Savings App - Application Summary Overview
 
-**Generated**: 2025-01-08  
-**Status**: MVP Complete, Ready for Deployment
+**Last meaningful update**: 2026-07  
+**Status**: Live in production at https://simplesavings.app (Vercel + Convex)
+
+> ## ⚠️ Current State (2026-07) — read this first
+> Much of the section-by-section detail below dates from the 2025-01 MVP and is
+> retained for architectural context, but the following now reflects production:
+>
+> - **Auth is live.** Clerk (Google OAuth) is configured. Convex enforces
+>   identity server-side via `ctx.auth.getUserIdentity()` (`convex/auth.config.ts`,
+>   `convex/lib/auth.ts`) — functions no longer trust a caller-supplied `clerkId`.
+>   Paid-state writes are `internalMutation`s; admin reads require `requireAdmin`.
+> - **Database is live.** Convex prod deployment `simplesavings-app-ae970`
+>   (tables: users, scenarios, messages, purchases, app_config, shares,
+>   blurb_logs, provider_configs, per `convex/schema.ts`).
+> - **Payments** run through Stripe (webhook is a Convex httpAction at
+>   `/stripe-webhook`). Monetization: a **$2.99** one-time Pro Sample (grants AI
+>   credits) and a **$6.99/mo** Pro subscription — not the legacy $0.99 model.
+>   Free tier = full calculator + sharing + blurbs + a short metered AI taste
+>   (`chatFreeTokenBudget`).
+> - **AI insights chat** is the differentiated product: a multi-provider
+>   (Anthropic/OpenAI/Google/OpenRouter/xAI) savings strategist that can write
+>   changes back into the calculator. System prompt in `app/api/insights/route.ts`.
+> - Design/prep assets have been removed from the repo tree (kept locally; see
+>   `.gitignore`).
 
 ---
 
@@ -182,23 +204,19 @@ simplesavings-app/
 - ⚠️ Placeholder page with "coming soon" message
 - ⚠️ Structure ready for future implementation
 
-### ❌ Not Yet Configured
+### ✅ Configured & Live (as of 2026-07)
 
-**Authentication** (Clerk):
-- ❌ Clerk keys not configured
-- ❌ Middleware is no-op until Clerk is configured
-- ✅ Package installed and ready
+**Authentication** (Clerk): live (Google OAuth). Convex validates the Clerk JWT
+via `convex/auth.config.ts`; identity is derived server-side in every function.
+Note: the deployed site still uses a **development** Clerk instance — migrating
+to production Clerk keys is a pending launch task.
 
-**Database** (Convex):
-- ❌ Convex not initialized (`npx convex dev` not run)
-- ❌ Schema commented out
-- ✅ Schema structure defined
-- ✅ Package installed and ready
+**Database** (Convex): live. Prod deployment `simplesavings-app-ae970`; schema in
+`convex/schema.ts`.
 
-**Payments** (Stripe):
-- ❌ Stripe keys not configured
-- ❌ Payment flows not implemented
-- ✅ Package installed and ready
+**Payments** (Stripe): live keys configured; checkout via `app/api/checkout`,
+webhook via the Convex httpAction `/stripe-webhook`. One-time Pro Sample ($2.99 →
+AI credits) and Pro subscription ($6.99/mo).
 
 ---
 
