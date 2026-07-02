@@ -140,7 +140,8 @@
   "currency": {
     "label": "Currency",
     "fiat": "Fiat",
-    "crypto": "Crypto"
+    "crypto": "Crypto",
+    "displayNote": "Changes display format only — values aren't converted."
   },
   "language": {
     "label": "Language"

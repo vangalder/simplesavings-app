@@ -140,7 +140,8 @@
   "currency": {
     "label": "Devise",
     "fiat": "Monnaie fiduciaire",
-    "crypto": "Crypto"
+    "crypto": "Crypto",
+    "displayNote": "Change uniquement le format d'affichage — les valeurs ne sont pas converties."
   },
   "language": {
     "label": "Langue"

@@ -140,7 +140,8 @@
   "currency": {
     "label": "Valuta",
     "fiat": "Valuta fiat",
-    "crypto": "Cripto"
+    "crypto": "Cripto",
+    "displayNote": "Cambia solo il formato di visualizzazione — i valori non vengono convertiti."
   },
   "language": {
     "label": "Lingua"

@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect, useRef } from "react";
+import { useTranslations } from "next-intl";
 import { SUPPORTED_CURRENCIES, DEFAULT_CURRENCY, CURRENCY_STORAGE_KEY, CURRENCY_CHANGED_EVENT, type CurrencyCode } from "@/lib/currency";
 
 interface CurrencyPickerProps {
@@ -13,6 +14,7 @@ const fiat = SUPPORTED_CURRENCIES.filter((c) => c.group === "fiat");
 const crypto = SUPPORTED_CURRENCIES.filter((c) => c.group === "crypto");
 
 export default function CurrencyPicker({ value, onChange, compact = false }: CurrencyPickerProps) {
+  const t = useTranslations("currency");
   const [isOpen, setIsOpen] = useState(false);
   const [current, setCurrent] = useState<string>(value ?? DEFAULT_CURRENCY);
   const ref = useRef<HTMLDivElement>(null);
@@ -91,6 +93,9 @@ export default function CurrencyPicker({ value, onChange, compact = false }: Cur
               <span className="ml-auto text-neutral-400 text-xs">{c.name}</span>
             </button>
           ))}
+          <p className="px-3 py-2 text-[10px] leading-tight text-neutral-400 border-t border-neutral-100">
+            {t("displayNote")}
+          </p>
         </div>
       )}
     </div>

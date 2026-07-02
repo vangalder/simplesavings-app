@@ -140,7 +140,8 @@
   "currency": {
     "label": "Moeda",
     "fiat": "Moeda fiduciária",
-    "crypto": "Cripto"
+    "crypto": "Cripto",
+    "displayNote": "Muda apenas o formato de exibição — os valores não são convertidos."
   },
   "language": {
     "label": "Idioma"
