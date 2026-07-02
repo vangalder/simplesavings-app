@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect, useRef, useCallback } from "react";
-import { useQuery, useMutation } from "convex/react";
+import { useQuery, useMutation, useConvexAuth } from "convex/react";
 import { api } from "@/convex/_generated/api";
 import type { Id } from "@/convex/_generated/dataModel";
 import type { CalculatorState } from "@/lib/defaultValues";
@@ -136,9 +136,10 @@ export default function AIChat({
   // Frozen at mount — the blurb that seeded this conversation never changes even if inputs update
   const frozenBlurbRef = useRef(blurbContext);
 
+  const { isAuthenticated: isConvexAuthed } = useConvexAuth();
   const savedMessages = useQuery(
     api.messages.getMessagesByScenario,
-    clerkId ? { scenarioId } : "skip"
+    isConvexAuthed ? { scenarioId } : "skip"
   ) as ConvexMessage[] | undefined;
 
   const addMessage = useMutation(api.messages.addMessage);

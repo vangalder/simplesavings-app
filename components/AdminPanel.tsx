@@ -1,7 +1,7 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import { useQuery, useMutation } from "convex/react";
+import { useQuery, useMutation, useConvexAuth } from "convex/react";
 import { useUser } from "@clerk/nextjs";
 import { api } from "@/convex/_generated/api";
 import AdminModelMatrix from "@/components/AdminModelMatrix";
@@ -12,8 +12,13 @@ const ReactECharts = dynamic(() => import("echarts-for-react"), { ssr: false });
 const CHART_COLORS = ["#F58634", "#3B82F6", "#10B981", "#8B5CF6", "#EF4444", "#F59E0B"];
 
 export default function AdminPanel() {
-  const stats = useQuery(api.users.getAdminStats, {});
-  const shareAnalytics = useQuery(api.shares.getShareAnalytics, {});
+  // Admin queries require server-side auth; wait until the Convex token is
+  // attached (isAuthenticated) or they throw "Not authenticated" on first paint
+  // after a navigation — before Clerk's token reaches the Convex client.
+  const { isAuthenticated } = useConvexAuth();
+  const authed = isAuthenticated ? {} : "skip";
+  const stats = useQuery(api.users.getAdminStats, authed);
+  const shareAnalytics = useQuery(api.shares.getShareAnalytics, authed);
   const blurbModel = useQuery(api.appConfig.getConfig, { key: "defaultBlurbModel" });
   const convoModel = useQuery(api.appConfig.getConfig, { key: "defaultConversationModel" });
   const paymentTestMode = useQuery(api.appConfig.getConfig, { key: "paymentTestMode" });
@@ -21,12 +26,12 @@ export default function AdminPanel() {
   const proSamplePriceRaw = useQuery(api.appConfig.getConfig, { key: "proSamplePriceDisplay" });
   const proPriceRaw = useQuery(api.appConfig.getConfig, { key: "proPriceDisplay" });
   const setConfig = useMutation(api.appConfig.setConfig);
-  const modelStats = useQuery(api.blurbLogs.getModelStats, {});
+  const modelStats = useQuery(api.blurbLogs.getModelStats, authed);
 
   const { user } = useUser();
   const creditBalance = useQuery(
     api.users.getAiCreditBalance,
-    user?.id ? {} : "skip"
+    isAuthenticated ? {} : "skip"
   );
 
   const seedTestCredits = useMutation(api.users.seedTestCredits);

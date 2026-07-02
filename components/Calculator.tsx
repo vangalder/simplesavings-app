@@ -16,7 +16,7 @@ import AIBlurb, { type BlurbMeta, type InsightContext } from "@/components/AIBlu
 import ProUpsellModal from "@/components/ProUpsellModal";
 import { useIsAdmin } from "@/hooks/useIsAdmin";
 import { useUser } from "@clerk/nextjs";
-import { useMutation, useQuery } from "convex/react";
+import { useMutation, useQuery, useConvexAuth } from "convex/react";
 import { api } from "@/convex/_generated/api";
 import type { Id } from "@/convex/_generated/dataModel";
 
@@ -103,6 +103,9 @@ export default function Calculator() {
   // Auth + Convex
   const { isSignedIn, user } = useUser();
   const clerkId = user?.id ?? "";
+  // True only once the Convex client has the Clerk token attached — gate any
+  // query that requires server-side auth on this, not on Clerk's isSignedIn.
+  const { isAuthenticated: isConvexAuthed } = useConvexAuth();
   const autosaveScenario = useMutation(api.scenarios.autosaveScenario);
   const updateBlurbCache = useMutation(api.scenarios.updateBlurbCache);
   const defaultScenario = useQuery(
@@ -122,7 +125,7 @@ export default function Calculator() {
   // Convex deduplicates this subscription with the identical query inside AIChat.
   const scenarioMessages = useQuery(
     api.messages.getMessagesByScenario,
-    clerkId && scenarioId ? { scenarioId } : "skip"
+    isConvexAuthed && scenarioId ? { scenarioId } : "skip"
   );
   const hasConversation = !!(scenarioMessages && scenarioMessages.length > 0);
   // Load values from URL params, localStorage, or defaults

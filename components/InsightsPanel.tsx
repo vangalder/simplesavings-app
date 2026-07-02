@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useRef, useEffect, useCallback } from "react";
-import { useQuery, useMutation } from "convex/react";
+import { useQuery, useMutation, useConvexAuth } from "convex/react";
 import { useUser, SignInButton } from "@clerk/nextjs";
 import { api } from "@/convex/_generated/api";
 import type { Id } from "@/convex/_generated/dataModel";
@@ -41,6 +41,7 @@ type LocalMessage = { role: "user" | "assistant"; content: string; streaming?: b
 
 export default function InsightsPanel({ scenarioId, clerkId, scenarioData }: Props) {
   const { isSignedIn } = useUser();
+  const { isAuthenticated: isConvexAuthed } = useConvexAuth();
   const isAdmin = useIsAdmin();
 
   // Provider/model — prefer scenario-level config, then default
@@ -67,7 +68,10 @@ export default function InsightsPanel({ scenarioId, clerkId, scenarioData }: Pro
   const inputRef = useRef<HTMLInputElement>(null);
 
   // Convex queries & mutations
-  const messages = useQuery(api.messages.getMessagesByScenario, { scenarioId }) as ConvexMessage[] | undefined;
+  const messages = useQuery(
+    api.messages.getMessagesByScenario,
+    isConvexAuthed ? { scenarioId } : "skip"
+  ) as ConvexMessage[] | undefined;
   const creditBalance = useQuery(api.users.getAiCreditBalance, {});
   const proSamplePrice = useQuery(api.appConfig.getConfig, { key: "proSamplePriceDisplay" }) ?? "2.99";
   const proPrice = useQuery(api.appConfig.getConfig, { key: "proPriceDisplay" }) ?? "6.99";
