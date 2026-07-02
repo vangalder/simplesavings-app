@@ -74,6 +74,7 @@ export default function Calculator() {
   const [goalAmount, setGoalAmount] = useState<number>(0);
   const [showGoalInput, setShowGoalInput] = useState(false);
   const dateInputRef = useRef<HTMLInputElement>(null);
+  const chatRef = useRef<HTMLDivElement>(null);
   const [aiBlurb, setAiBlurb] = useState("");
   const [aiBlurbQuestion, setAiBlurbQuestion] = useState("");
   const [aiBlurbPitch, setAiBlurbPitch] = useState("");
@@ -844,7 +845,20 @@ export default function Calculator() {
                 goalMet={goalAmount > 0 ? results.totalValue >= goalAmount : undefined}
                 goalShortfall={goalAmount > 0 ? Math.max(0, goalAmount - results.totalValue) : undefined}
                 currency={currency}
-                onUpsellClick={(ctx) => setUpsellContext(ctx)}
+                onUpsellClick={(ctx) => {
+                  // If the user can actually chat (Pro, credits, or free budget)
+                  // and a scenario exists, drop them into the chat to spend the
+                  // free taste; the paywall appears later when the budget runs
+                  // out. Otherwise (e.g. signed out) open the upsell.
+                  if (isChatEligible && scenarioId) {
+                    setActiveTab("insights");
+                    requestAnimationFrame(() =>
+                      chatRef.current?.scrollIntoView({ behavior: "smooth", block: "start" })
+                    );
+                  } else {
+                    setUpsellContext(ctx);
+                  }
+                }}
               />
             </div>
             {/* END RESULTS + BLURB GROUP */}
@@ -867,7 +881,7 @@ export default function Calculator() {
           {/* END white card */}
 
           {/* ── AICHAT (outside white card; mobile: insights tab; desktop: always) ── */}
-          <div className={`lg:mt-2 ${mobileTab("insights")}`}>
+          <div ref={chatRef} className={`lg:mt-2 ${mobileTab("insights")}`}>
             {isConvexConfigured && scenarioId && aiBlurb && isChatEligible ? (
               <AIChat
                 scenarioId={scenarioId}
