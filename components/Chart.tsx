@@ -178,11 +178,13 @@ export default function Chart({ data, chartType = "area", goalAmount = 0, locale
 
     // Graphic overlays
     const graphic: object[] = [];
+    // z:1 keeps the decorative fronds behind the data series, and reduced
+    // opacity ensures they never obscure the line/area near the corners.
     if (svgPaths.lowerLeft?.imageUrl) {
-      graphic.push({ type: "image", left: "12%", bottom: "19.5%", z: 10, silent: true, style: { image: svgPaths.lowerLeft.imageUrl, width: 120, height: 120, opacity: 1 } });
+      graphic.push({ type: "image", left: "12%", bottom: "19.5%", z: 1, silent: true, style: { image: svgPaths.lowerLeft.imageUrl, width: 120, height: 120, opacity: 0.45 } });
     }
     if (svgPaths.lowerRight?.imageUrl) {
-      graphic.push({ type: "image", right: "12%", bottom: "19.5%", z: 10, silent: true, style: { image: svgPaths.lowerRight.imageUrl, width: 120, height: 120, opacity: 1 } });
+      graphic.push({ type: "image", right: "12%", bottom: "19.5%", z: 1, silent: true, style: { image: svgPaths.lowerRight.imageUrl, width: 120, height: 120, opacity: 0.45 } });
     }
 
     // markPoint for doubling milestone on phantom total series
@@ -227,12 +229,18 @@ export default function Chart({ data, chartType = "area", goalAmount = 0, locale
     let mainSeries: object[];
 
     if (isUnstackedLine) {
+      // Plot from the real points (null for any missing year) with connectNulls,
+      // so gaps don't drag the unstacked line down to the axis. Using the same
+      // per-index domain as xCategories keeps it aligned across the full plot.
+      const totalLine = xCategories.map((_, y) => byYear.get(y)?.total ?? null);
+      const principalLine = xCategories.map((_, y) => byYear.get(y)?.principal ?? null);
       mainSeries = [
         {
           name: "Total Value",
           type: "line",
-          data: aligned.map((d) => d.total),
+          data: totalLine,
           smooth: true,
+          connectNulls: true,
           lineStyle: { width: 3, color: COLOR_INTEREST },
           itemStyle: { color: COLOR_INTEREST },
           symbol: "circle",
@@ -242,8 +250,9 @@ export default function Chart({ data, chartType = "area", goalAmount = 0, locale
         {
           name: "Principal",
           type: "line",
-          data: aligned.map((d) => d.principal),
+          data: principalLine,
           smooth: true,
+          connectNulls: true,
           lineStyle: { width: 2, color: COLOR_PRINCIPAL },
           itemStyle: { color: COLOR_PRINCIPAL },
           areaStyle: { color: COLOR_PRINCIPAL, opacity: 0.15 },

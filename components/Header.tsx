@@ -213,7 +213,7 @@ export default function Header() {
   return (
     <header className="w-full bg-header-dark text-white relative z-50">
       <div className="flex items-center justify-between py-2 px-3 md:px-6">
-        <Link href="/" className="flex items-center gap-2 md:gap-3 hover:opacity-90 transition-opacity">
+        <Link href="/" className="flex items-center gap-2 md:gap-3 hover:opacity-90 transition-opacity min-w-0">
           <div className="w-9 h-9 md:w-14 md:h-14 flex items-center justify-center shrink-0">
             <Image
               src="/logo.png"
@@ -224,7 +224,7 @@ export default function Header() {
             />
           </div>
           <span
-            className="text-xl md:text-4xl lg:text-5xl font-display font-semibold text-secondary-light leading-none"
+            className="text-xl md:text-4xl lg:text-5xl font-display font-semibold text-secondary-light leading-none truncate"
             style={{ fontFamily: "var(--font-space-grotesk), 'Space Grotesk', sans-serif" }}
           >
             simplesavings.app

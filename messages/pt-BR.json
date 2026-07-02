@@ -98,7 +98,8 @@
     "narrativeBareBones": "Básico",
     "narrativeError": "Algo deu errado. Tente novamente.",
     "regenerateLeft": "{n} restantes",
-    "tryAgain": "Tentar novamente"
+    "tryAgain": "Tentar novamente",
+    "regenerateHint": "Reescritas de IA gratuitas restantes desta narrativa. Reiniciam ao reabrir o menu de compartilhamento."
   },
   "profile": {
     "title": "Meus Cenários",

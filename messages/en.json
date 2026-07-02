@@ -98,7 +98,8 @@
     "narrativeBareBones": "Bare Bones",
     "narrativeError": "Something went wrong. Try again.",
     "regenerateLeft": "{n} left",
-    "tryAgain": "Try again"
+    "tryAgain": "Try again",
+    "regenerateHint": "Free AI rewrites of this narrative left. Resets when you reopen the share menu."
   },
   "profile": {
     "title": "My Scenarios",

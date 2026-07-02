@@ -267,6 +267,8 @@ export default function ShareModal({ url, snapshot, onClose }: ShareModalProps) 
               <button
                 onClick={() => generateNarrative(narrativeStyle, true)}
                 disabled={!canRefresh || !!narrativeError}
+                title={t("regenerateHint")}
+                aria-label={t("regenerateHint")}
                 className="flex items-center gap-1 text-xs text-neutral-400 hover:text-neutral-600 transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
               >
                 <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">

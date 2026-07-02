@@ -98,7 +98,8 @@
     "narrativeBareBones": "Essentiel",
     "narrativeError": "Une erreur s'est produite. Réessayez.",
     "regenerateLeft": "{n} restants",
-    "tryAgain": "Réessayer"
+    "tryAgain": "Réessayer",
+    "regenerateHint": "Réécritures IA gratuites restantes pour ce récit. Réinitialisées à la réouverture du menu de partage."
   },
   "profile": {
     "title": "Mes scénarios",

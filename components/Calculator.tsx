@@ -642,11 +642,13 @@ export default function Calculator() {
       {/* ─── Main content grid ─── */}
       {/* pb accounts for the fixed bottom nav + iOS safe-area on mobile */}
       <div
-        className="flex flex-col lg:flex-row gap-4 lg:gap-6"
+        className="flex flex-col lg:flex-row gap-4 lg:gap-6 w-full min-w-0"
         style={{ paddingBottom: "calc(5.5rem + env(safe-area-inset-bottom, 0px))" }}
       >
         {/* ══ LEFT COLUMN ══ */}
-        <div className="w-full lg:w-1/2">
+        {/* min-w-0 lets the flex child shrink below its content width so wide
+            currency figures can't force horizontal overflow on narrow screens */}
+        <div className="w-full lg:w-1/2 min-w-0">
 
           {/* White card — hidden on mobile insights tab (AIChat renders below instead) */}
           <div className={`bg-white rounded-2xl p-4 md:p-6 shadow-lg ${activeTab === "insights" ? "hidden lg:block" : ""}`}>
@@ -723,6 +725,7 @@ export default function Calculator() {
                     {timeframeMode === "years" ? (
                       <>
                         <AnimatedNumberInput
+                          key="timeframe-years"
                           value={state.timeframeYears}
                           onChange={(val) => setState({ ...state, timeframeYears: val })}
                           step="0.1"
@@ -738,6 +741,7 @@ export default function Calculator() {
                     ) : (
                       <>
                         <input
+                          key="timeframe-date"
                           ref={dateInputRef}
                           type="date"
                           defaultValue={targetDateStr}
@@ -917,7 +921,7 @@ export default function Calculator() {
         {/* ══ RIGHT COLUMN: Chart ══ */}
         {/* Mobile: visible only on chart tab, uses order-first so it renders above the metrics card */}
         {/* Desktop: always visible as the right column */}
-        <div className={`w-full lg:w-1/2 order-first lg:order-none ${mobileTab("chart")}`}>
+        <div className={`w-full lg:w-1/2 min-w-0 order-first lg:order-none ${mobileTab("chart")}`}>
           <div className="bg-secondary-base rounded-2xl shadow-lg overflow-hidden">
             <div className="p-4 min-h-[280px] lg:min-h-[500px]">
               <Chart

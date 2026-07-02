@@ -98,7 +98,8 @@
     "narrativeBareBones": "Essenziale",
     "narrativeError": "Qualcosa è andato storto. Riprova.",
     "regenerateLeft": "{n} rimasti",
-    "tryAgain": "Riprova"
+    "tryAgain": "Riprova",
+    "regenerateHint": "Riscritture IA gratuite rimaste per questo racconto. Si azzerano riaprendo il menu di condivisione."
   },
   "profile": {
     "title": "I Miei Scenari",
