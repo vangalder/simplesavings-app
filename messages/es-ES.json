@@ -1,7 +1,7 @@
 {
   "app": {
     "name": "simplesavings.app",
-    "tagline": "Calcula el crecimiento de tus ahorros con interés compuesto"
+    "tagline": "Modela tus ahorros y luego traza tu estrategia con IA para alcanzar tu meta antes."
   },
   "header": {
     "share": "Compartir",
@@ -176,5 +176,35 @@
     "goalNotReached": "📈 Amplía tu plazo para alcanzar tu meta de {amount}",
     "months": "Meses",
     "goalLabel": "Meta"
+  },
+  "pricing": {
+    "headline": "Tu estratega de ahorro con IA",
+    "subhead": "La calculadora es gratis. El estratega te ayuda a cerrar la distancia hasta tu meta.",
+    "current": "Tienes créditos",
+    "onPro": "Tienes Pro",
+    "disclaimer": "Simulación educativa, no asesoramiento financiero. Cancela cuando quieras.",
+    "free": {
+      "title": "Gratis",
+      "cadence": "para siempre",
+      "f1": "Calculadora de ahorro y gráficos completos",
+      "f2": "Guarda y comparte tu plan",
+      "f3": "Una breve muestra gratis de la IA",
+      "cta": "Incluido"
+    },
+    "sample": {
+      "title": "Muestra Pro",
+      "cadence": "pago único",
+      "f1": "Análisis profundo con IA de un plan",
+      "f2": "Créditos para una conversación completa",
+      "cta": "Probar"
+    },
+    "pro": {
+      "title": "Pro",
+      "cadence": "/mes",
+      "f1": "Conversaciones con IA ilimitadas",
+      "f2": "Estrategia en todos tus planes",
+      "f3": "Acceso prioritario al modelo",
+      "cta": "Hazte Pro"
+    }
   }
 }

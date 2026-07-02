@@ -136,7 +136,7 @@ The **Share** button opens the Share Modal with two options:
 
 Every time the calculator inputs change, a short AI-generated insight appears below the results (after a ~1.5 second pause). It highlights what's interesting or notable about the specific numbers — not generic advice. Below the blurb is a CTA button that opens the AI chat. If a goal is set and the projection falls short, the button labels the specific shortfall amount.
 
-### AI Chat (Co-Pilot)
+### AI Chat (Savings Strategist)
 
 An inline conversational AI thread that lives below the blurb. The AI knows the user's exact calculator state at all times and can:
 - Answer questions about the plan

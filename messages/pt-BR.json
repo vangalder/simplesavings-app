@@ -1,7 +1,7 @@
 {
   "app": {
     "name": "simplesavings.app",
-    "tagline": "Calcule o crescimento das suas economias com juros compostos"
+    "tagline": "Modele suas economias e trace a estratégia com IA para alcançar sua meta mais rápido."
   },
   "header": {
     "share": "Compartilhar",
@@ -176,5 +176,35 @@
     "goalNotReached": "📈 Aumente o prazo para atingir sua meta de {amount}",
     "months": "Meses",
     "goalLabel": "Meta"
+  },
+  "pricing": {
+    "headline": "Seu estrategista de poupança com IA",
+    "subhead": "A calculadora é grátis. O estrategista ajuda a fechar a distância até sua meta.",
+    "current": "Você tem créditos",
+    "onPro": "Você é Pro",
+    "disclaimer": "Simulação educativa, não é aconselhamento financeiro. Cancele quando quiser.",
+    "free": {
+      "title": "Grátis",
+      "cadence": "para sempre",
+      "f1": "Calculadora de poupança e gráficos completos",
+      "f2": "Salve e compartilhe seu plano",
+      "f3": "Uma breve amostra grátis da IA",
+      "cta": "Incluído"
+    },
+    "sample": {
+      "title": "Amostra Pro",
+      "cadence": "pagamento único",
+      "f1": "Análise profunda com IA de um plano",
+      "f2": "Créditos para uma conversa completa",
+      "cta": "Experimentar"
+    },
+    "pro": {
+      "title": "Pro",
+      "cadence": "/mês",
+      "f1": "Conversas com IA ilimitadas",
+      "f2": "Estratégia em todos os planos",
+      "f3": "Acesso prioritário ao modelo",
+      "cta": "Assinar Pro"
+    }
   }
 }

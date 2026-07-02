@@ -1,7 +1,7 @@
 {
   "app": {
     "name": "simplesavings.app",
-    "tagline": "Calculez la croissance de votre épargne avec les intérêts composés"
+    "tagline": "Modélisez votre épargne, puis élaborez votre stratégie avec l'IA pour atteindre votre objectif plus vite."
   },
   "header": {
     "share": "Partager",
@@ -176,5 +176,35 @@
     "goalNotReached": "📈 Prolongez votre horizon pour atteindre votre objectif de {amount}",
     "months": "Mois",
     "goalLabel": "Objectif"
+  },
+  "pricing": {
+    "headline": "Votre stratège d'épargne IA",
+    "subhead": "La calculatrice est gratuite. Le stratège vous aide à combler l'écart avec votre objectif.",
+    "current": "Vous avez des crédits",
+    "onPro": "Vous êtes Pro",
+    "disclaimer": "Simulation éducative, pas un conseil financier. Annulable à tout moment.",
+    "free": {
+      "title": "Gratuit",
+      "cadence": "pour toujours",
+      "f1": "Calculatrice d'épargne et graphiques complets",
+      "f2": "Enregistrez et partagez votre plan",
+      "f3": "Un court aperçu gratuit de l'IA",
+      "cta": "Inclus"
+    },
+    "sample": {
+      "title": "Échantillon Pro",
+      "cadence": "paiement unique",
+      "f1": "Analyse IA approfondie d'un plan",
+      "f2": "Des crédits pour une conversation complète",
+      "cta": "Essayer"
+    },
+    "pro": {
+      "title": "Pro",
+      "cadence": "/mois",
+      "f1": "Conversations IA illimitées",
+      "f2": "Une stratégie sur tous vos plans",
+      "f3": "Accès prioritaire au modèle",
+      "cta": "Passer Pro"
+    }
   }
 }

@@ -2,6 +2,7 @@ import { Suspense } from "react";
 import Calculator from "@/components/Calculator";
 import Header from "@/components/Header";
 import Footer from "@/components/Footer";
+import PricingSection from "@/components/PricingSection";
 
 export default function Home() {
   return (
@@ -11,6 +12,7 @@ export default function Home() {
         <Suspense fallback={<div>Loading...</div>}>
           <Calculator />
         </Suspense>
+        <PricingSection />
       </main>
       <Footer />
     </div>

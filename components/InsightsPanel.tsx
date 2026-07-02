@@ -7,6 +7,7 @@ import { api } from "@/convex/_generated/api";
 import type { Id } from "@/convex/_generated/dataModel";
 import ProviderPicker, { PROVIDERS } from "@/components/ProviderPicker";
 import { useIsAdmin } from "@/hooks/useIsAdmin";
+import { startCheckout as handleCheckout } from "@/lib/checkout";
 
 type ConvexMessage = {
   _id: string;
@@ -427,18 +428,4 @@ function CreditBar({ granted, used, isAdmin }: { granted: number; used: number; 
       </div>
     </div>
   );
-}
-
-async function handleCheckout(type: "one_time" | "subscription") {
-  try {
-    const res = await fetch("/api/checkout", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ type }),
-    });
-    const data = await res.json();
-    if (data.url) window.location.href = data.url;
-  } catch {
-    // noop
-  }
 }

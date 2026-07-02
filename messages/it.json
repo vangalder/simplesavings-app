@@ -1,7 +1,7 @@
 {
   "app": {
     "name": "simplesavings.app",
-    "tagline": "Calcola la crescita dei tuoi risparmi con l'interesse composto"
+    "tagline": "Modella i tuoi risparmi, poi definisci la strategia con l'IA per raggiungere il tuo obiettivo prima."
   },
   "header": {
     "share": "Condividi",
@@ -176,5 +176,35 @@
     "goalNotReached": "📈 Estendi il periodo per raggiungere il tuo obiettivo di {amount}",
     "months": "Mesi",
     "goalLabel": "Obiettivo"
+  },
+  "pricing": {
+    "headline": "Il tuo stratega del risparmio con IA",
+    "subhead": "La calcolatrice è gratis. Lo stratega ti aiuta a colmare la distanza dal tuo obiettivo.",
+    "current": "Hai dei crediti",
+    "onPro": "Sei Pro",
+    "disclaimer": "Simulazione didattica, non consulenza finanziaria. Disdici quando vuoi.",
+    "free": {
+      "title": "Gratis",
+      "cadence": "per sempre",
+      "f1": "Calcolatrice del risparmio e grafici completi",
+      "f2": "Salva e condividi il tuo piano",
+      "f3": "Un breve assaggio gratuito dell'IA",
+      "cta": "Incluso"
+    },
+    "sample": {
+      "title": "Assaggio Pro",
+      "cadence": "una tantum",
+      "f1": "Analisi IA approfondita su un piano",
+      "f2": "Crediti per una conversazione completa",
+      "cta": "Prova"
+    },
+    "pro": {
+      "title": "Pro",
+      "cadence": "/mese",
+      "f1": "Conversazioni IA illimitate",
+      "f2": "Strategia su ogni piano",
+      "f3": "Accesso prioritario al modello",
+      "cta": "Passa a Pro"
+    }
   }
 }

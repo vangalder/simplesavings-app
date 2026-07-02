@@ -28,8 +28,9 @@ const robotoMono = Roboto_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "Simple Savings Calculator",
-  description: "Calculate your savings growth with compound interest",
+  title: "simplesavings.app — Your AI Savings Strategist",
+  description:
+    "A savings calculator with an AI strategist built in: model your money, then talk through how to reach your goal faster. Free to start.",
   other: { google: "notranslate" },
 };
 

@@ -1,7 +1,7 @@
 {
   "app": {
     "name": "simplesavings.app",
-    "tagline": "Calculate your savings growth with compound interest"
+    "tagline": "Model your savings, then strategize with AI to reach your goal faster."
   },
   "header": {
     "share": "Share",
@@ -176,5 +176,35 @@
     "goalNotReached": "📈 Extend your timeframe to reach your goal of {amount}",
     "months": "Months",
     "goalLabel": "Goal"
+  },
+  "pricing": {
+    "headline": "Meet your AI savings strategist",
+    "subhead": "The calculator is free. The strategist helps you close the gap to your goal.",
+    "current": "You have credits",
+    "onPro": "You're on Pro",
+    "disclaimer": "Educational simulation, not financial advice. Cancel anytime.",
+    "free": {
+      "title": "Free",
+      "cadence": "forever",
+      "f1": "Full savings calculator & charts",
+      "f2": "Save and share your plan",
+      "f3": "A short free AI taste",
+      "cta": "Included"
+    },
+    "sample": {
+      "title": "Pro Sample",
+      "cadence": "one-time",
+      "f1": "Deep AI analysis on one plan",
+      "f2": "Credits for a full conversation",
+      "cta": "Try it"
+    },
+    "pro": {
+      "title": "Pro",
+      "cadence": "/month",
+      "f1": "Unlimited AI conversations",
+      "f2": "Strategy across every plan",
+      "f3": "Priority model access",
+      "cta": "Go Pro"
+    }
   }
 }

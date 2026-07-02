@@ -5,7 +5,7 @@ import { useUser, SignInButton } from "@clerk/nextjs";
 import { useQuery } from "convex/react";
 import { useTranslations } from "next-intl";
 import { api } from "@/convex/_generated/api";
-import { toast } from "sonner";
+import { startCheckout as handleCheckout } from "@/lib/checkout";
 
 type InsightContext = {
   question: string;
@@ -30,25 +30,7 @@ function suggestedContribStep(monthly: number): string {
   return `$${step.toLocaleString()}`;
 }
 
-async function handleCheckout(type: "one_time" | "subscription") {
-  try {
-    const res = await fetch("/api/checkout", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ type }),
-    });
-    const data = await res.json();
-    if (data.url) {
-      window.location.href = data.url;
-    } else {
-      toast.error(data.error ?? "Checkout failed — please try again.");
-    }
-  } catch {
-    toast.error("Network error — please try again.");
-  }
-}
-
-const FALLBACK_SUBTITLE = "An interactive, intelligent co-pilot for your financial strategy.";
+const FALLBACK_SUBTITLE = "An interactive, intelligent strategist for your financial future.";
 
 const HOOK_COUNT = 4;
 
