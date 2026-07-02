@@ -3,6 +3,7 @@ import { auth, currentUser } from "@clerk/nextjs/server";
 import Stripe from "stripe";
 import { ConvexHttpClient } from "convex/browser";
 import { api } from "@/convex/_generated/api";
+import { getConvexToken } from "@/lib/serverAuth";
 
 export const dynamic = "force-dynamic";
 
@@ -36,7 +37,7 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: "Convex not configured" }, { status: 503 });
   }
   const convex = new ConvexHttpClient(convexUrl);
-  const token = await getToken({ template: "convex" });
+  const token = await getConvexToken(getToken);
   if (token) convex.setAuth(token);
 
   const origin = req.headers.get("origin") ?? "https://simplesavings.app";

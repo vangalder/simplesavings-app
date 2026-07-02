@@ -4,6 +4,7 @@ import Anthropic from "@anthropic-ai/sdk";
 import OpenAI from "openai";
 import { ConvexHttpClient } from "convex/browser";
 import { api } from "@/convex/_generated/api";
+import { getConvexToken } from "@/lib/serverAuth";
 import fs from "fs";
 import path from "path";
 
@@ -363,7 +364,7 @@ export async function POST(req: NextRequest) {
   // Authenticated Convex client for this caller (identity derived from the JWT,
   // never from the request body — no clerkId spoofing).
   const userConvex = new ConvexHttpClient(process.env.NEXT_PUBLIC_CONVEX_URL!);
-  const token = await getToken({ template: "convex" });
+  const token = await getConvexToken(getToken);
   if (token) userConvex.setAuth(token);
 
   // Access snapshot + live config
