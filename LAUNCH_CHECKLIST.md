@@ -63,13 +63,15 @@ deleted/paused/resumed`. Copy the signing secret to Convex prod env
    npx convex run appConfig:setConfigInternal '{"key":"chatFreeTokenBudget","value":"40000"}' --prod
    ```
    Leave `paymentTestMode` at `sample` for now.
-5. **Adversarial security pre-flight** (from an UNauthenticated ConvexHttpClient
-   and a non-admin account) — all must fail:
-   - `api.users.setUserPro / grantAiCredits`, `api.purchases.completeTasteTestPurchase`
-     → "function not found" (they're internal).
-   - `api.appConfig.setConfig`, `api.users.getAdminStats`, `api.shares.getShareAnalytics`
-     → throw for non-admin/unauth.
-   - `POST /api/insights` with no session + `{"clerkId":"<id>"}` in the body → 401.
+5. **Adversarial security pre-flight** — ✅ VERIFIED locally 2026-07-02 against
+   the running dev backend (re-run against prod after deploy as a final check):
+   - `setUserPro / grantAiCredits / completeTasteTestPurchase / setConfigInternal`
+     via public client → `FunctionPathNotFound` (internal, unreachable). ✅
+   - `applyAdminTestGrant` / `setConfig` (paymentTestMode escalation) anon/non-admin
+     → rejected. ✅  `getAdminStats / getShareAnalytics / getModelStats` → blocked. ✅
+   - `getMyAccess / getAiCreditBalance` anonymous → null (no leak). ✅
+   - `POST /api/insights` (no session + spoofed `clerkId`), `/api/checkout`,
+     `/api/shares/record` → all **401**. ✅
 6. **Flip live** (config only, no deploy):
    `npx convex run appConfig:setConfigInternal '{"key":"paymentTestMode","value":"off"}' --prod`
 7. **Live-card test** (real card, then refund): fresh account → ~4 free AI
