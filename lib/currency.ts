@@ -69,16 +69,15 @@ export function formatCurrencyCompact(
     }).format(value);
     return `${meta.symbol} ${formatted}`;
   }
-  try {
-    return new Intl.NumberFormat(locale, {
-      style: 'currency',
-      currency: meta.code,
-      notation: 'compact',
-      maximumFractionDigits: 1,
-    }).format(value);
-  } catch {
-    return formatCurrency(value, currency, locale);
-  }
+  // Fiat compact: format the NUMBER compactly and prepend our own symbol. Using
+  // Intl's currency+compact style rendered the code with a stray space in some
+  // locales (e.g. "EUR 2.1 M"); this guarantees a consistent "€2.1M" everywhere
+  // and never mixes symbol and code for the same currency.
+  const formatted = new Intl.NumberFormat(locale, {
+    notation: 'compact',
+    maximumFractionDigits: 1,
+  }).format(value);
+  return `${meta.symbol}${formatted}`;
 }
 
 export const DEFAULT_CURRENCY = 'USD';

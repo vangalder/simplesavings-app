@@ -37,7 +37,10 @@
     "extendForGoal": "Prolongez de {years} ans pour atteindre votre objectif",
     "switchToDateMode": "Passer à la date cible",
     "switchToYearsMode": "Passer aux années",
-    "cryptoNotice": "Les montants sont en {symbol}. Saisissez votre investissement en unités {symbol}."
+    "cryptoNotice": "Les montants sont en {symbol}. Saisissez votre investissement en unités {symbol}.",
+    "goalAmountLabel": "Objectif",
+    "optional": "facultatif",
+    "goalTargetLineHint": "Ajoute une ligne d'objectif sur le graphique"
   },
   "results": {
     "totalValue": "Valeur totale",
@@ -60,7 +63,8 @@
     "goals": "Objectifs",
     "goalsPlaceholder": "Que souhaitez-vous accomplir ?",
     "cancel": "Annuler",
-    "confirm": "Enregistrer le scénario"
+    "confirm": "Enregistrer le scénario",
+    "saveCalculation": "Enregistrer le calcul"
   },
   "share": {
     "share": "Partager",
@@ -118,7 +122,10 @@
     "model": "Modèle",
     "cryptoNote": "Les rendements des actifs crypto sont très volatils. Les analyses tiendront compte de ce risque.",
     "blurbCta": "Optimisons votre horizon d'épargne",
-    "blurbCtaGoalGap": "Travaillons à combler votre écart de {amount}"
+    "blurbCtaGoalGap": "Travaillons à combler votre écart de {amount}",
+    "blurbFallbackGoalMet": "Vous êtes en bonne voie pour atteindre votre objectif dans les délais.",
+    "blurbFallbackGoalGap": "Il manque environ {amount} à votre plan pour atteindre l'objectif — ajustez les versements ou l'échéance pour combler l'écart.",
+    "blurbFallbackGeneric": "Voici comment votre épargne progresse au fil du temps."
   },
   "tiers": {
     "anonymous": "Gratuit",

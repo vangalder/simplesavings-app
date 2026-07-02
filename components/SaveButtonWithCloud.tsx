@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { useUser } from "@clerk/nextjs";
 import { useMutation, useQuery } from "convex/react";
+import { useTranslations } from "next-intl";
 import { toast } from "sonner";
 import { api } from "@/convex/_generated/api";
 import SaveScenarioModal from "@/components/SaveScenarioModal";
@@ -22,6 +23,7 @@ type Props = {
 
 export default function SaveButtonWithCloud({ state, results, onLocalSave }: Props) {
   const { isSignedIn, user } = useUser();
+  const tSave = useTranslations("save");
   const [showModal, setShowModal] = useState(false);
   const [saving, setSaving] = useState(false);
 
@@ -79,7 +81,7 @@ export default function SaveButtonWithCloud({ state, results, onLocalSave }: Pro
         onClick={handleClick}
         className="w-full py-3 bg-gradient-orange-yellow rounded-xl text-white font-semibold text-lg shadow-lg hover:shadow-xl transition-shadow mt-2"
       >
-        Save Calculation
+        {tSave("saveCalculation")}
       </button>
 
       {showModal && (

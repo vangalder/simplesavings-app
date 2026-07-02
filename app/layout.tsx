@@ -63,7 +63,7 @@ export default async function RootLayout({
           <Providers>
             <SvgPalmOverlays />
             {children}
-            <Toaster richColors position="top-right" />
+            <Toaster richColors position="bottom-right" duration={3000} closeButton />
             <Analytics />
           </Providers>
         </NextIntlClientProvider>

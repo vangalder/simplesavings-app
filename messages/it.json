@@ -37,7 +37,10 @@
     "extendForGoal": "Estendi di altri {years} anni per raggiungere il tuo obiettivo",
     "switchToDateMode": "Passa alla data obiettivo",
     "switchToYearsMode": "Passa agli anni",
-    "cryptoNotice": "Gli importi sono in {symbol}. Inserisci il tuo investimento in unità {symbol}."
+    "cryptoNotice": "Gli importi sono in {symbol}. Inserisci il tuo investimento in unità {symbol}.",
+    "goalAmountLabel": "Obiettivo",
+    "optional": "facoltativo",
+    "goalTargetLineHint": "Imposta una linea obiettivo sul grafico"
   },
   "results": {
     "totalValue": "Valore Totale",
@@ -60,7 +63,8 @@
     "goals": "Obiettivi",
     "goalsPlaceholder": "Cosa vuoi raggiungere?",
     "cancel": "Annulla",
-    "confirm": "Salva scenario"
+    "confirm": "Salva scenario",
+    "saveCalculation": "Salva il calcolo"
   },
   "share": {
     "share": "Condividi",
@@ -118,7 +122,10 @@
     "model": "Modello",
     "cryptoNote": "I rendimenti degli asset cripto sono molto volatili. L'analisi terrà conto di questo rischio.",
     "blurbCta": "Ottimizziamo il tuo piano di risparmio",
-    "blurbCtaGoalGap": "Lavoriamo per colmare il divario di {amount}"
+    "blurbCtaGoalGap": "Lavoriamo per colmare il divario di {amount}",
+    "blurbFallbackGoalMet": "Sei sulla buona strada per raggiungere il tuo obiettivo nei tempi previsti.",
+    "blurbFallbackGoalGap": "Al tuo piano mancano circa {amount} per l'obiettivo — modifica i versamenti o la scadenza per colmare il divario.",
+    "blurbFallbackGeneric": "Ecco come crescono i tuoi risparmi nel tempo."
   },
   "tiers": {
     "anonymous": "Gratuito",

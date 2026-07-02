@@ -37,7 +37,10 @@
     "extendForGoal": "Estenda mais {years} anos para atingir sua meta",
     "switchToDateMode": "Mudar para data objetivo",
     "switchToYearsMode": "Mudar para anos",
-    "cryptoNotice": "Os valores estão em {symbol}. Insira seu investimento em unidades de {symbol}."
+    "cryptoNotice": "Os valores estão em {symbol}. Insira seu investimento em unidades de {symbol}.",
+    "goalAmountLabel": "Meta",
+    "optional": "opcional",
+    "goalTargetLineHint": "Define uma linha de meta no gráfico"
   },
   "results": {
     "totalValue": "Valor Total",
@@ -60,7 +63,8 @@
     "goals": "Objetivos",
     "goalsPlaceholder": "O que você quer alcançar?",
     "cancel": "Cancelar",
-    "confirm": "Salvar cenário"
+    "confirm": "Salvar cenário",
+    "saveCalculation": "Salvar cálculo"
   },
   "share": {
     "share": "Compartilhar",
@@ -118,7 +122,10 @@
     "model": "Modelo",
     "cryptoNote": "Os rendimentos de ativos cripto são muito voláteis. Os insights levarão em conta esse risco.",
     "blurbCta": "Vamos otimizar seu horizonte de poupança",
-    "blurbCtaGoalGap": "Vamos trabalhar para fechar sua lacuna de {amount}"
+    "blurbCtaGoalGap": "Vamos trabalhar para fechar sua lacuna de {amount}",
+    "blurbFallbackGoalMet": "Você está no caminho para alcançar sua meta dentro do prazo.",
+    "blurbFallbackGoalGap": "Faltam cerca de {amount} para o seu plano atingir a meta — ajuste os aportes ou o prazo para fechar a diferença.",
+    "blurbFallbackGeneric": "Veja como suas economias crescem ao longo do tempo."
   },
   "tiers": {
     "anonymous": "Gratuito",

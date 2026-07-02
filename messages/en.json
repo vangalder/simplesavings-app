@@ -37,7 +37,10 @@
     "extendForGoal": "Extend {years} more years to reach your goal",
     "switchToDateMode": "Switch to target date",
     "switchToYearsMode": "Switch to years",
-    "cryptoNotice": "Amounts are in {symbol}. Enter your investment in {symbol} units."
+    "cryptoNotice": "Amounts are in {symbol}. Enter your investment in {symbol} units.",
+    "goalAmountLabel": "Goal amount",
+    "optional": "optional",
+    "goalTargetLineHint": "Sets a target line on the chart"
   },
   "results": {
     "totalValue": "Total Value",
@@ -60,7 +63,8 @@
     "goals": "Goals",
     "goalsPlaceholder": "What are you trying to achieve?",
     "cancel": "Cancel",
-    "confirm": "Save scenario"
+    "confirm": "Save scenario",
+    "saveCalculation": "Save Calculation"
   },
   "share": {
     "share": "Share",
@@ -118,7 +122,10 @@
     "model": "Model",
     "cryptoNote": "Crypto asset returns are highly volatile. Insights will factor in this risk.",
     "blurbCta": "Let's optimize your savings timeline",
-    "blurbCtaGoalGap": "Let's work out how to close your {amount} gap"
+    "blurbCtaGoalGap": "Let's work out how to close your {amount} gap",
+    "blurbFallbackGoalMet": "You're on track to reach your goal within your timeframe.",
+    "blurbFallbackGoalGap": "Your plan is about {amount} short of your goal — adjust contributions or timeframe to close the gap.",
+    "blurbFallbackGeneric": "Here's how your savings grow over time."
   },
   "tiers": {
     "anonymous": "Free",

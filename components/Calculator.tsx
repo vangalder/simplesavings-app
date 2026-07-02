@@ -934,7 +934,7 @@ export default function Calculator() {
             {/* Goal amount — inside green container, below chart */}
             <div className="px-4 pb-4">
               <label className="block text-sm font-medium text-white/80 mb-1.5">
-                Goal amount <span className="text-white/50 font-normal text-xs">(optional)</span>
+                {t("goalAmountLabel")} <span className="text-white/50 font-normal text-xs">({t("optional")})</span>
               </label>
               <input
                 type="text"
@@ -959,7 +959,7 @@ export default function Calculator() {
                 placeholder="0"
                 className="w-full px-4 py-3 bg-white/95 border-2 border-accent-orange-base rounded-xl text-center text-4xl font-display font-semibold text-accent-orange-base focus:outline-none focus:ring-2 focus:ring-accent-orange-base focus:border-accent-orange-base placeholder:text-accent-orange-base/30 placeholder:text-xl"
               />
-              <p className="text-xs text-white/60 mt-0.5 text-center">Sets a target line on the chart</p>
+              <p className="text-xs text-white/60 mt-0.5 text-center">{t("goalTargetLineHint")}</p>
             </div>
           </div>
 
