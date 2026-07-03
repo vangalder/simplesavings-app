@@ -76,6 +76,12 @@ export default function Calculator() {
   const dateInputRef = useRef<HTMLInputElement>(null);
   const chatRef = useRef<HTMLDivElement>(null);
   const calcRef = useRef<HTMLDivElement>(null);
+  // Briefly ring the field the AI just changed when the user jumps back to it.
+  const [highlightField, setHighlightField] = useState<string | null>(null);
+  const hl = (field: string) =>
+    highlightField === field
+      ? " ring-4 ring-primary-base/60 border-primary-base"
+      : "";
   const [aiBlurb, setAiBlurb] = useState("");
   const [aiBlurbQuestion, setAiBlurbQuestion] = useState("");
   const [aiBlurbPitch, setAiBlurbPitch] = useState("");
@@ -679,7 +685,7 @@ export default function Calculator() {
                   onChange={(val) => setState({ ...state, startingAmount: val })}
                   step="0.01"
                   placeholder="$0.00"
-                  className="w-full px-4 py-3 border-2 border-accent-orange-base rounded-xl text-center text-4xl font-display font-semibold text-accent-orange-base focus:outline-none focus:ring-2 focus:ring-accent-orange-base focus:border-accent-orange-base"
+                  className={"w-full px-4 py-3 border-2 border-accent-orange-base rounded-xl text-center text-4xl font-display font-semibold text-accent-orange-base focus:outline-none focus:ring-2 focus:ring-accent-orange-base focus:border-accent-orange-base" + hl("startingAmount")}
                   shouldAnimate={shouldAnimateInputs}
                 />
                 <p className="text-xs text-neutral-600 mt-0.5 text-center">{t("startingAmountHint")}</p>
@@ -695,7 +701,7 @@ export default function Calculator() {
                   onChange={(val) => setState({ ...state, monthlyContribution: val })}
                   step="0.01"
                   placeholder="$0.00"
-                  className="w-full px-4 py-3 border-2 border-accent-orange-base rounded-xl text-center text-4xl font-display font-semibold text-accent-orange-base focus:outline-none focus:ring-2 focus:ring-accent-orange-base focus:border-accent-orange-base"
+                  className={"w-full px-4 py-3 border-2 border-accent-orange-base rounded-xl text-center text-4xl font-display font-semibold text-accent-orange-base focus:outline-none focus:ring-2 focus:ring-accent-orange-base focus:border-accent-orange-base" + hl("monthlyContribution")}
                   shouldAnimate={shouldAnimateInputs}
                 />
                 <p className="text-xs text-neutral-600 mt-0.5 text-center">
@@ -738,7 +744,7 @@ export default function Calculator() {
                           step="0.1"
                           min={0}
                           placeholder="0"
-                          className="w-full px-4 py-3 border-2 border-accent-orange-base rounded-xl text-center text-4xl font-display font-semibold text-accent-orange-base focus:outline-none focus:ring-2 focus:ring-accent-orange-base focus:border-accent-orange-base"
+                          className={"w-full px-4 py-3 border-2 border-accent-orange-base rounded-xl text-center text-4xl font-display font-semibold text-accent-orange-base focus:outline-none focus:ring-2 focus:ring-accent-orange-base focus:border-accent-orange-base" + hl("timeframeYears")}
                           shouldAnimate={shouldAnimateInputs}
                         />
                         <p className="text-xs text-neutral-600 mt-0.5 text-center">
@@ -790,7 +796,7 @@ export default function Calculator() {
                       step="0.1"
                       max={100}
                       placeholder="0"
-                      className="w-full px-4 py-3 border-2 border-accent-orange-base rounded-xl text-center text-4xl font-display font-semibold text-accent-orange-base focus:outline-none focus:ring-2 focus:ring-accent-orange-base focus:border-accent-orange-base"
+                      className={"w-full px-4 py-3 border-2 border-accent-orange-base rounded-xl text-center text-4xl font-display font-semibold text-accent-orange-base focus:outline-none focus:ring-2 focus:ring-accent-orange-base focus:border-accent-orange-base" + hl("interestRate")}
                       shouldAnimate={shouldAnimateInputs}
                     />
                     <p className="text-xs text-neutral-600 mt-0.5 text-center">
@@ -917,13 +923,16 @@ export default function Calculator() {
                 freeTokenBudget={freeTokenBudget}
                 creditBalance={creditBalance ? { granted: creditBalance.granted, used: creditBalance.used, isPro: creditBalance.isPro } : null}
                 onUpsellNeeded={() => setUpsellContext({ question: aiBlurbQuestion, pitch: aiBlurbPitch })}
-                onOpenCalculator={() => {
+                onOpenCalculator={(field) => {
                   // Take the user to the calculator to see the AI's change:
-                  // switch to the Inputs tab on mobile, scroll to it on desktop.
+                  // switch to the Inputs tab on mobile, scroll to it on desktop,
+                  // and briefly ring the field that changed.
                   setActiveTab("calculator");
+                  if (field) setHighlightField(field);
                   requestAnimationFrame(() =>
                     calcRef.current?.scrollIntoView({ behavior: "smooth", block: "start" })
                   );
+                  window.setTimeout(() => setHighlightField(null), 2000);
                 }}
                 onCalculatorUpdate={(field, value) => {
                   if (field === "goalAmount") {
@@ -1008,7 +1017,7 @@ export default function Calculator() {
                   e.target.value = parsed ? parsed.toLocaleString() : "";
                 }}
                 placeholder="0"
-                className="w-full px-4 py-3 bg-white/95 border-2 border-accent-orange-base rounded-xl text-center text-4xl font-display font-semibold text-accent-orange-base focus:outline-none focus:ring-2 focus:ring-accent-orange-base focus:border-accent-orange-base placeholder:text-accent-orange-base/30 placeholder:text-xl"
+                className={"w-full px-4 py-3 bg-white/95 border-2 border-accent-orange-base rounded-xl text-center text-4xl font-display font-semibold text-accent-orange-base focus:outline-none focus:ring-2 focus:ring-accent-orange-base focus:border-accent-orange-base placeholder:text-accent-orange-base/30 placeholder:text-xl" + hl("goalAmount")}
               />
               <p className="text-xs text-white/60 mt-0.5 text-center">{t("goalTargetLineHint")}</p>
             </div>

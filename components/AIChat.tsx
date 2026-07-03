@@ -35,7 +35,7 @@ type Props = {
   creditBalance?: { granted: number; used: number; isPro?: boolean } | null;
   onUpsellNeeded: () => void;
   onCalculatorUpdate: (field: string, value: number) => void;
-  onOpenCalculator?: () => void;
+  onOpenCalculator?: (field?: string) => void;
 };
 
 function renderInline(text: string): React.ReactNode {
@@ -420,17 +420,15 @@ export default function AIChat({
                     <button
                       key={i}
                       type="button"
-                      onClick={onOpenCalculator}
+                      onClick={() => onOpenCalculator?.(u.field)}
                       title="View the change in the calculator"
-                      className="group text-xs text-primary-base/90 hover:text-primary-base flex items-center gap-1.5 text-left transition-colors"
+                      className="group inline-flex items-center gap-1.5 self-start rounded-full border border-primary-base/30 bg-primary-base/10 px-3 py-1.5 text-xs font-semibold text-primary-base hover:bg-primary-base/20 hover:border-primary-base/50 transition-colors"
                     >
                       <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" className="shrink-0">
                         <path d="M12 20h9M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"/>
                       </svg>
-                      <span className="underline decoration-primary-base/30 group-hover:decoration-primary-base/70 underline-offset-2">
-                        Calculator updated: {u.reason}
-                      </span>
-                      <span aria-hidden className="opacity-60 group-hover:translate-x-0.5 transition-transform">→</span>
+                      <span>Calculator updated: {u.reason}</span>
+                      <span aria-hidden className="opacity-70 group-hover:translate-x-0.5 transition-transform">→</span>
                     </button>
                   ))}
                 </div>
