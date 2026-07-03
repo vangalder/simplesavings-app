@@ -190,9 +190,9 @@ const SYSTEM_PROMPT = `You are a conversational financial strategist for simples
 3. PITCH (MAX 25 words — this is the teaser subtitle shown in the upgrade modal the instant the user clicks): Write one punchy, conversion-focused sentence using EXACT numbers from the FACT MATRIX or simulation data.
 
 FORBIDDEN PHRASES: "I can show you how", "Explore your", "Let me help", "We can look at", "changing numbers", "your financial freedom targets", any phrase that could apply to ANY user.
-REQUIRED: Cite specific dollar amounts, percentages, dates, or gaps. Make the user feel this was written for their exact scenario.
+REQUIRED: Cite specific amounts, percentages, dates, or gaps. Make the user feel this was written for their exact scenario. ALWAYS express monetary amounts in the user's currency (given in the facts) — never assume US dollars.
 
-Pitch examples by scenario type (match the closest one):
+Pitch examples by scenario type (match the closest one — the "$" figures are illustrative USD; always use the user's actual currency and symbol):
 • Goal missed over short horizon: "You're $93k shy of $1.5M — let's find the exact monthly increase to close that gap by January without banking on a 25% return."
 • High return rate + large principal: "A 25% return is carrying your $1.18M — let's stress-test what a single correction year does to your January runway."
 • No goal, strong accumulation: "Your balance is generating serious monthly interest — let's map your exact safe withdrawal limit and tax minimization paths from here."
@@ -482,7 +482,7 @@ export async function POST(req: NextRequest) {
     ]);
     questionHook = pick([
       `Do you know exactly how a single lump-sum addition today would shift that arrival date?`,
-      `What's the gap in dollars between today's balance and the goal, and what's the fastest way to close it?`,
+      `What's the gap between today's balance and the goal, and what's the fastest way to close it?`,
     ]);
   } else if (hasGoal && yearsToGoal) {
     const yearsToGoalNum = parseFloat(yearsToGoal);
@@ -578,7 +578,16 @@ export async function POST(req: NextRequest) {
     ? `\nMEDIUM TIMEFRAME (${timeframeYears.toFixed(1)} years): Avoid retirement/lifecycle framing. Stick to near-term milestones and momentum.`
     : "";
 
-  const userMessage = `PRE-CALCULATED FACTS — ground truth, do not alter:
+  // Currency directive: the facts below are already formatted in the user's currency,
+  // but the system prompt's examples are in USD, so the model tends to default to "$".
+  // For any non-USD currency, force it to mirror the real currency (symbol + format)
+  // using concrete examples, and explicitly forbid "$"/"dollars".
+  const currencyDirective =
+    currency === "USD"
+      ? ""
+      : `CURRENCY — CRITICAL: every monetary amount in this scenario is in ${currency}. Write EVERY money figure in ${currency}, matching the symbol and number format of these examples exactly: ${formatCurrency(1500, currency)}, ${formatCurrency(18000, currency)}, ${formatCurrency(250000, currency)}. NEVER write "$" or the words "dollar"/"dollars" — the figures below are already in ${currency}.\n\n`;
+
+  const userMessage = `${currencyDirective}PRE-CALCULATED FACTS — ground truth, do not alter:
 - Starting balance: ${formatCurrency(startingAmount, currency)}
 - Monthly ${isWithdrawal ? "withdrawal" : "contribution"}: ${formatCurrency(contributionAbs, currency)}
 - Annual ${isWithdrawal ? "withdrawal" : "contribution"}: ${formatCurrency(annualFlow, currency)}

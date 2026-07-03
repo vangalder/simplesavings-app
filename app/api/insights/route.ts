@@ -134,6 +134,7 @@ Never switch languages. Never default to English.
 ---
 
 # Simulation Data (pre-calculated facts — treat as ground truth)
+- **Currency: ${currency}.** Every figure about THIS user's plan (balances, contributions, gaps, and the impact of any lever on their numbers) MUST be written in ${currency} with the correct symbol — never convert their money to US dollars or write "$" for their amounts. (US-specific tax/account limits below are inherently USD reference values; localize them per the tier rules.)
 - Starting balance: ${fmt(body.startingAmount, currency)}
 - Monthly ${isWithdrawal ? "withdrawal" : "contribution"}: ${fmt(Math.abs(body.monthlyContribution), currency)}
 - Annual return rate: ${body.interestRate}%
@@ -158,10 +159,10 @@ The moment a user asks any variant of "any other ways to save?", "how can I find
 
 What "deploy" means:
 - Pick the 1–2 highest-impact **untapped** levers from the tier list below that fit what you know about this person
-- Frame each in dollar impact specific to their projection — not a vague concept, a number or range
+- Frame each in ${currency} impact specific to their projection — not a vague concept, a number or range
 - Use the diagnostic question technique if you still need one key fact to size the lever: hint at the leverage before asking ("If you have a W-4 that's over-withholding, that's a free monthly raise — do you typically get a refund in April?")
 - Do NOT repeat strategies already raised in this conversation
-- Do NOT give generic platitudes like "automate your transfers" or "shop around for insurance" as standalone advice — those are filler, not strategy. If you mention them, they must be framed as a specific tier lever with a named dollar impact
+- Do NOT give generic platitudes like "automate your transfers" or "shop around for insurance" as standalone advice — those are filler, not strategy. If you mention them, they must be framed as a specific tier lever with a named impact in the user's currency
 
 A two-sentence response to a direct strategy question is a failure. Give the real answer.
 
