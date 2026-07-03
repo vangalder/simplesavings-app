@@ -1,7 +1,7 @@
 "use client";
 
 import ReactECharts from "echarts-for-react";
-import { useMemo, useEffect, useState } from "react";
+import { useMemo, useEffect, useState, useRef } from "react";
 import { useTranslations } from "next-intl";
 import * as echarts from "echarts";
 import { formatCurrency, formatCurrencyCompact } from "@/lib/currency";
@@ -45,6 +45,21 @@ const TYPE_ICONS: Record<ChartType, string> = {
 };
 
 export default function Chart({ data, chartType = "area", goalAmount = 0, locale = "en", currency = "USD", xAxisUnit = "years", onChartTypeChange }: ChartProps) {
+  // The chart can live inside a hidden tab, so it may mount at 0×0 (ECharts then
+  // warns "Can't get DOM width or height" and can mis-size). Watch the wrapper and
+  // resize the instance whenever it gains a real size (i.e. its tab becomes active).
+  const chartRef = useRef<ReactECharts>(null);
+  const wrapRef = useRef<HTMLDivElement>(null);
+  useEffect(() => {
+    const el = wrapRef.current;
+    if (!el || typeof ResizeObserver === "undefined") return;
+    const ro = new ResizeObserver((entries) => {
+      const { width, height } = entries[0].contentRect;
+      if (width > 0 && height > 0) chartRef.current?.getEchartsInstance()?.resize();
+    });
+    ro.observe(el);
+    return () => ro.disconnect();
+  }, []);
   const t = useTranslations("chart");
   const [svgPaths, setSvgPaths] = useState<{ lowerLeft: SvgPath | null; lowerRight: SvgPath | null }>({
     lowerLeft: null,
@@ -399,8 +414,9 @@ export default function Chart({ data, chartType = "area", goalAmount = 0, locale
       </div>
 
       {/* ECharts canvas */}
-      <div className="relative w-full rounded-2xl overflow-hidden" style={{ minHeight: "400px" }}>
+      <div ref={wrapRef} className="relative w-full rounded-2xl overflow-hidden" style={{ minHeight: "400px" }}>
         <ReactECharts
+          ref={chartRef}
           key={dataKey}
           option={option}
           style={{ height: "100%", minHeight: "400px", width: "100%" }}
