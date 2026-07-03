@@ -104,9 +104,10 @@ export default function Calculator() {
     setActiveTab(tab);
     window.scrollTo(0, 0);
   };
-  // Returns "hidden lg:block" when the given tab is not active on mobile (desktop always shows all)
+  // Tab-based single-column layout at ALL sizes (the tablet layout): only the
+  // active tab's section is shown; the others are hidden.
   const mobileTab = (tab: "calculator" | "chart" | "insights") =>
-    activeTab === tab ? "" : "hidden lg:block";
+    activeTab === tab ? "" : "hidden";
 
   // Auth + Convex
   const { isSignedIn, user } = useUser();
@@ -685,16 +686,16 @@ export default function Calculator() {
       {/* ─── Main content grid ─── */}
       {/* pb accounts for the fixed bottom nav + iOS safe-area on mobile */}
       <div
-        className="flex flex-col lg:flex-row gap-4 lg:gap-6 w-full min-w-0"
+        className="flex flex-col gap-4 w-full min-w-0 max-w-2xl mx-auto"
         style={{ paddingBottom: "calc(5.5rem + env(safe-area-inset-bottom, 0px))" }}
       >
         {/* ══ LEFT COLUMN ══ */}
         {/* min-w-0 lets the flex child shrink below its content width so wide
             currency figures can't force horizontal overflow on narrow screens */}
-        <div ref={calcRef} className="w-full lg:w-1/2 min-w-0">
+        <div ref={calcRef} className="w-full min-w-0">
 
           {/* White card — hidden on mobile insights tab (AIChat renders below instead) */}
-          <div className={`bg-white rounded-2xl p-4 md:p-6 shadow-lg ${activeTab === "insights" ? "hidden lg:block" : ""}`}>
+          <div className={`bg-white rounded-2xl p-4 md:p-6 shadow-lg ${activeTab === "insights" ? "hidden" : ""}`}>
 
             {/* Crypto notice — always visible when the card is shown */}
             {isCryptoCurrency(currency) && (
@@ -942,7 +943,7 @@ export default function Calculator() {
           {/* END white card */}
 
           {/* ── AICHAT (outside white card; mobile: insights tab; desktop: always) ── */}
-          <div ref={chatRef} className={`lg:mt-2 ${mobileTab("insights")}`}>
+          <div ref={chatRef} className={`mt-2 ${mobileTab("insights")}`}>
             {isConvexConfigured && scenarioId && aiBlurb && isChatEligible ? (
               <AIChat
                 scenarioId={scenarioId}
@@ -1011,9 +1012,9 @@ export default function Calculator() {
         {/* ══ RIGHT COLUMN: Chart ══ */}
         {/* Mobile: visible only on chart tab, uses order-first so it renders above the metrics card */}
         {/* Desktop: always visible as the right column */}
-        <div className={`w-full lg:w-1/2 min-w-0 order-first lg:order-none ${mobileTab("chart")}`}>
+        <div className={`w-full min-w-0 ${mobileTab("chart")}`}>
           <div className="bg-secondary-base rounded-2xl shadow-lg overflow-hidden">
-            <div className="p-4 min-h-[280px] lg:min-h-[500px]">
+            <div className="p-4 min-h-[360px]">
               <Chart
                 data={results.chartData}
                 chartType={chartType}
@@ -1063,9 +1064,9 @@ export default function Calculator() {
       </div>
       {/* END main flex */}
 
-      {/* ─── Sticky bottom navigation — mobile only ─── */}
+      {/* ─── Sticky bottom navigation — shown at all sizes, centered on wide screens ─── */}
       <nav
-        className="fixed bottom-0 left-0 right-0 z-50 bg-white border-t-2 border-neutral-200 flex lg:hidden justify-around shadow-[0_-4px_16px_rgba(0,0,0,0.08)]"
+        className="fixed bottom-0 left-1/2 -translate-x-1/2 w-full max-w-2xl z-50 bg-white border-t-2 border-neutral-200 flex justify-around shadow-[0_-4px_16px_rgba(0,0,0,0.08)]"
         style={{
           height: `calc(4rem + env(safe-area-inset-bottom, 0px))`,
           paddingBottom: `env(safe-area-inset-bottom, 0px)`,
