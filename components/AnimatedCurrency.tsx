@@ -20,6 +20,14 @@ function getDecimalSeparator(locale: string): string {
   );
 }
 
+function getGroupSeparator(locale: string): string {
+  return (
+    new Intl.NumberFormat(locale).formatToParts(1234567).find((p) => p.type === "group")?.value ?? ","
+  );
+}
+
+const DISPLAY_FONT = { fontFamily: "var(--font-space-grotesk), 'Space Grotesk', sans-serif" };
+
 interface FiatSymbolInfo {
   symbol: string;
   position: "before" | "after";
@@ -71,6 +79,12 @@ export default function AnimatedCurrency({
   const decimalSep = getDecimalSeparator(locale);
   const { symbol, position, spacing } = getFiatSymbolInfo(locale, meta.code);
 
+  // When a locale groups thousands with a space (fr, ru, pl, sv…), react-animated-numbers
+  // renders that space in a full digit-width column, leaving an oversized gap. For those
+  // locales we render the integer digit-by-digit with a tight, native-width separator.
+  // Comma/period locales stay on the library path (the glyph fills the column fine).
+  const sepIsSpace = /\s/.test(getGroupSeparator(locale));
+
   const integerValue = Math.floor(safeValue);
   const decimalValue = Math.round((safeValue - integerValue) * 100);
   const decimalTens = Math.floor(decimalValue / 10);
@@ -86,14 +100,35 @@ export default function AnimatedCurrency({
   return (
     <div className={`inline-flex items-baseline font-display ${sizeClasses[size]} ${className}`}>
       {position === "before" && <span className="mr-0.5">{symbol}{spacing}</span>}
-      <AnimatedNumber
-        key={`int-${integerValue}`}
-        animateToNumber={integerValue}
-        useThousandsSeparator={true}
-        locale={locale}
-        fontStyle={{ fontFamily: "var(--font-space-grotesk), 'Space Grotesk', sans-serif" }}
-        transitions={springProps}
-      />
+      {sepIsSpace ? (
+        // Space-separator locales: render digit-by-digit with a tight native gap.
+        <span className="inline-flex items-baseline">
+          {String(integerValue).split("").map((d, i, arr) => (
+            <span key={`ig-${i}`} className="inline-flex items-baseline">
+              {i > 0 && (arr.length - i) % 3 === 0 && (
+                <span aria-hidden style={{ display: "inline-block", width: "0.22em" }} />
+              )}
+              <AnimatedNumber
+                key={`id-${i}-${d}`}
+                animateToNumber={Number(d)}
+                useThousandsSeparator={false}
+                locale={locale}
+                fontStyle={DISPLAY_FONT}
+                transitions={springProps}
+              />
+            </span>
+          ))}
+        </span>
+      ) : (
+        <AnimatedNumber
+          key={`int-${integerValue}`}
+          animateToNumber={integerValue}
+          useThousandsSeparator={true}
+          locale={locale}
+          fontStyle={DISPLAY_FONT}
+          transitions={springProps}
+        />
+      )}
       <span className="mx-0.5">{decimalSep}</span>
       <span className="inline-flex">
         <AnimatedNumber
