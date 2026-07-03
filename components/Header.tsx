@@ -109,7 +109,7 @@ function UserDropdown() {
       >
         {avatarUrl ? (
           // eslint-disable-next-line @next/next/no-img-element
-          <img src={avatarUrl} alt={user.fullName ?? "Account"} className="w-full h-full object-cover" />
+          <img src={avatarUrl} alt={user.fullName ?? "Account"} referrerPolicy="no-referrer" className="w-full h-full object-cover" />
         ) : (
           <div className="w-full h-full bg-primary-base/40 flex items-center justify-center">
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2">
@@ -128,7 +128,7 @@ function UserDropdown() {
           <div className="px-4 pt-4 pb-3 flex items-center gap-3 border-b border-neutral-100">
             {avatarUrl ? (
               // eslint-disable-next-line @next/next/no-img-element
-              <img src={avatarUrl} alt="" className="w-10 h-10 rounded-full object-cover shrink-0" />
+              <img src={avatarUrl} alt="" referrerPolicy="no-referrer" className="w-10 h-10 rounded-full object-cover shrink-0" />
             ) : (
               <div className="w-10 h-10 rounded-full bg-primary-base/20 flex items-center justify-center shrink-0">
                 <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="text-primary-base">
