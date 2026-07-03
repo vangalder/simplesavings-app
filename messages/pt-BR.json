@@ -215,5 +215,13 @@
       "f3": "Acesso prioritário ao modelo",
       "cta": "Assinar Pro"
     }
+  },
+  "chat": {
+    "calculatorUpdated": "Calculadora atualizada",
+    "viewInCalculator": "Ver a alteração na calculadora",
+    "freeChatUsed": "Você usou seu chat grátis — desbloqueie ilimitado",
+    "clearConversation": "limpar conversa",
+    "inputPlaceholder": "Pergunte sobre seu plano…",
+    "send": "Enviar"
   }
 }

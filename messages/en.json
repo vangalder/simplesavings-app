@@ -215,5 +215,13 @@
       "f3": "Priority model access",
       "cta": "Go Pro"
     }
+  },
+  "chat": {
+    "calculatorUpdated": "Calculator updated",
+    "viewInCalculator": "View the change in the calculator",
+    "freeChatUsed": "You've used your free chat — unlock unlimited",
+    "clearConversation": "clear conversation",
+    "inputPlaceholder": "Ask about your plan…",
+    "send": "Send"
   }
 }

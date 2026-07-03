@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect, useRef, useCallback } from "react";
+import { useTranslations } from "next-intl";
 import { useQuery, useMutation, useConvexAuth } from "convex/react";
 import { api } from "@/convex/_generated/api";
 import type { Id } from "@/convex/_generated/dataModel";
@@ -128,6 +129,7 @@ export default function AIChat({
   onOpenCalculator,
   focusSignal,
 }: Props) {
+  const tChat = useTranslations("chat");
   const [messages, setMessages] = useState<Message[]>([]);
   const [input, setInput] = useState("");
   const [isStreaming, setIsStreaming] = useState(false);
@@ -432,13 +434,13 @@ export default function AIChat({
                       key={i}
                       type="button"
                       onClick={() => onOpenCalculator?.(u.field)}
-                      title="View the change in the calculator"
+                      title={tChat("viewInCalculator")}
                       className="group inline-flex items-center gap-1.5 self-start rounded-full border border-primary-base/30 bg-primary-base/10 px-3 py-1.5 text-xs font-semibold text-primary-base hover:bg-primary-base/20 hover:border-primary-base/50 transition-colors"
                     >
                       <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" className="shrink-0">
                         <path d="M12 20h9M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"/>
                       </svg>
-                      <span>Calculator updated: {u.reason}</span>
+                      <span>{tChat("calculatorUpdated")}: {u.reason}</span>
                       <span aria-hidden className="opacity-70 group-hover:translate-x-0.5 transition-transform">→</span>
                     </button>
                   ))}
@@ -474,7 +476,7 @@ export default function AIChat({
               className="inline-flex items-center gap-1.5 px-4 py-2 rounded-full bg-gradient-to-r from-accent-orange-base to-accent-base text-neutral-900 text-xs font-semibold hover:opacity-90 transition-opacity"
             >
               <span>✦</span>
-              <span>You&apos;ve used your free chat — unlock unlimited →</span>
+              <span>{tChat("freeChatUsed")} →</span>
             </button>
           </div>
         )}
@@ -494,7 +496,7 @@ export default function AIChat({
             }}
             className="text-[10px] text-neutral-400 hover:text-red-400 transition-colors font-mono"
           >
-            clear conversation ↺
+            {tChat("clearConversation")} ↺
           </button>
         </div>
       )}
@@ -517,7 +519,7 @@ export default function AIChat({
           value={input}
           onChange={(e) => setInput(e.target.value)}
           onKeyDown={handleKeyDown}
-          placeholder="Ask about your plan…"
+          placeholder={tChat("inputPlaceholder")}
           rows={1}
           disabled={isStreaming || showUpsellChip}
           className="flex-1 resize-none rounded-xl border-2 border-slate-300 px-3 py-2 focus:outline-none focus:ring-2 focus:ring-primary-base/50 focus:border-primary-base placeholder:text-slate-400 disabled:opacity-50 leading-5 max-h-28 overflow-y-auto text-slate-800"
@@ -527,7 +529,7 @@ export default function AIChat({
           type="submit"
           disabled={!input.trim() || isStreaming || showUpsellChip}
           className="shrink-0 w-10 h-10 rounded-xl bg-accent-orange-base text-white flex items-center justify-center hover:brightness-110 transition-all shadow-md disabled:opacity-30 disabled:shadow-none"
-          aria-label="Send"
+          aria-label={tChat("send")}
         >
           {isStreaming ? (
             <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor" className="animate-spin opacity-90">

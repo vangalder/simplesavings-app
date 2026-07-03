@@ -215,5 +215,13 @@
       "f3": "Acceso prioritario al modelo",
       "cta": "Hazte Pro"
     }
+  },
+  "chat": {
+    "calculatorUpdated": "Calculadora actualizada",
+    "viewInCalculator": "Ver el cambio en la calculadora",
+    "freeChatUsed": "Has usado tu chat gratis — desbloquea ilimitado",
+    "clearConversation": "borrar conversación",
+    "inputPlaceholder": "Pregunta sobre tu plan…",
+    "send": "Enviar"
   }
 }
