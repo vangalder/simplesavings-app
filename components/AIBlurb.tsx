@@ -37,7 +37,8 @@ function fmtCurrency(n: number, currency = "USD"): string {
 }
 
 export default function AIBlurb({ blurb, question, pitch, loading, meta, error, isAdmin, goalMet, goalShortfall, currency, onUpsellClick }: AIBlurbProps) {
-  const [visible, setVisible] = useState(false);
+  const [text, setText] = useState(blurb);
+  const [opacity, setOpacity] = useState(blurb ? 1 : 0);
   const [loadTimedOut, setLoadTimedOut] = useState(false);
   const t = useTranslations("insights");
 
@@ -56,13 +57,26 @@ export default function AIBlurb({ blurb, question, pitch, loading, meta, error, 
         ? t("blurbFallbackGoalGap", { amount: fmtCurrency(goalShortfall, currency) })
         : t("blurbFallbackGeneric");
 
+  // A fresh blurb arrived — swap it in and fade it up.
   useEffect(() => {
-    if (blurb) {
-      setVisible(false);
-      const timer = setTimeout(() => setVisible(true), 50);
+    if (!loading && blurb) {
+      setText(blurb);
+      setOpacity(0);
+      const timer = setTimeout(() => setOpacity(1), 40);
       return () => clearTimeout(timer);
     }
-  }, [blurb]);
+  }, [blurb, loading]);
+
+  // The user started changing numbers (regeneration began): fade the now-stale
+  // blurb out, then clear it so the skeleton bridges the gap until the new one
+  // arrives — never leave a stale blurb sitting there.
+  useEffect(() => {
+    if (loading) {
+      setOpacity(0);
+      const timer = setTimeout(() => setText(""), 280);
+      return () => clearTimeout(timer);
+    }
+  }, [loading]);
 
   // Bound the loading state: if the blurb hasn't arrived within 12s, stop the
   // skeleton and fall back to the deterministic summary.
@@ -74,10 +88,10 @@ export default function AIBlurb({ blurb, question, pitch, loading, meta, error, 
     }
   }, [loading, blurb]);
 
-  const showSkeleton = loading && !blurb && !loadTimedOut;
-  // When not loading (or timed out) with no blurb, show the deterministic
+  const showSkeleton = loading && !text && !loadTimedOut;
+  // When there's no text and we're not mid-fade, show the deterministic
   // fallback instead of hiding — the user always gets a coherent line.
-  const showFallback = !blurb && (loadTimedOut || (!loading && !blurb));
+  const showFallback = !text && (loadTimedOut || (!loading && !blurb));
 
   return (
     <div className="mt-3 flex flex-col gap-1">
@@ -90,12 +104,12 @@ export default function AIBlurb({ blurb, question, pitch, loading, meta, error, 
             <div className="h-3 bg-neutral-200 rounded-full animate-pulse w-3/4" />
             <div className="h-3 bg-neutral-200 rounded-full animate-pulse w-1/2" />
           </div>
-        ) : blurb ? (
+        ) : text ? (
           <p
-            className="flex-1 text-sm text-neutral-500 italic leading-snug transition-opacity duration-500 -ml-0.5 pl-0.5"
-            style={{ opacity: visible ? 1 : 0 }}
+            className="flex-1 text-sm text-neutral-500 italic leading-snug transition-opacity duration-300 -ml-0.5 pl-0.5"
+            style={{ opacity }}
           >
-            {blurb}
+            {text}
           </p>
         ) : showFallback ? (
           <p className="flex-1 text-sm text-neutral-500 italic leading-snug -ml-0.5 pl-0.5">

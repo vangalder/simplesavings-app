@@ -86,7 +86,15 @@ function UserDropdown() {
     );
   }
 
-  const avatarUrl = user.imageUrl;
+  // Only use imageUrl when it's a real photo (uploaded or from Google), not
+  // Clerk's generated default — for photo-less accounts we render initials.
+  const avatarUrl = user.hasImage ? user.imageUrl : null;
+  const initials = (
+    user.firstName?.[0] ??
+    user.fullName?.[0] ??
+    user.primaryEmailAddress?.emailAddress?.[0] ??
+    "?"
+  ).toUpperCase();
   // Admins: if test mode is active, show the test tier rather than the real balance tier
   const baseTier = resolveTier(creditBalance);
   const isProSampleTestMode = testMode === "sample" || testMode === "true";
@@ -111,11 +119,8 @@ function UserDropdown() {
           // eslint-disable-next-line @next/next/no-img-element
           <img src={avatarUrl} alt={user.fullName ?? "Account"} referrerPolicy="no-referrer" className="w-full h-full object-cover" />
         ) : (
-          <div className="w-full h-full bg-primary-base/40 flex items-center justify-center">
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2">
-              <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/>
-              <circle cx="12" cy="7" r="4"/>
-            </svg>
+          <div className="w-full h-full bg-gradient-to-br from-primary-base to-secondary-base flex items-center justify-center text-white text-sm font-semibold">
+            {initials}
           </div>
         )}
       </button>
@@ -130,11 +135,8 @@ function UserDropdown() {
               // eslint-disable-next-line @next/next/no-img-element
               <img src={avatarUrl} alt="" referrerPolicy="no-referrer" className="w-10 h-10 rounded-full object-cover shrink-0" />
             ) : (
-              <div className="w-10 h-10 rounded-full bg-primary-base/20 flex items-center justify-center shrink-0">
-                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="text-primary-base">
-                  <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/>
-                  <circle cx="12" cy="7" r="4"/>
-                </svg>
+              <div className="w-10 h-10 rounded-full bg-gradient-to-br from-primary-base to-secondary-base flex items-center justify-center shrink-0 text-white font-semibold">
+                {initials}
               </div>
             )}
             <div className="min-w-0">
