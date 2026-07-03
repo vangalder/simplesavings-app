@@ -345,13 +345,43 @@ export default function Calculator() {
       defaultScenario.blurbEn &&
       !aiBlurb // only use cache on first load (not on subsequent input changes)
     ) {
-      aiBlurbOriginalBodyRef.current = defaultScenario.blurbEn;
-      aiBlurbOriginalQuestionRef.current = defaultScenario.blurbQuestionEn ?? "";
-      aiBlurbOriginalPitchRef.current = defaultScenario.blurbPitchEn ?? "";
-      setAiBlurb(defaultScenario.blurbEn);
-      setAiBlurbQuestion(defaultScenario.blurbQuestionEn ?? "");
-      setAiBlurbPitch(defaultScenario.blurbPitchEn ?? "");
+      const enBody = defaultScenario.blurbEn;
+      const enQuestion = defaultScenario.blurbQuestionEn ?? "";
+      const enPitch = defaultScenario.blurbPitchEn ?? "";
+      aiBlurbOriginalBodyRef.current = enBody;
+      aiBlurbOriginalQuestionRef.current = enQuestion;
+      aiBlurbOriginalPitchRef.current = enPitch;
       setAiBlurbMeta({ provider: "cache", model: "cached", tokensIn: 0, tokensOut: 0, latencyMs: 0, costUsd: 0 });
+      const currentLocale = localeRef.current;
+      if (currentLocale !== "en") {
+        // Cached blurb is the English source of truth — translate it for the
+        // active locale instead of showing English.
+        setAiBlurbLoading(true);
+        (async () => {
+          try {
+            const combined = [enBody, enQuestion, enPitch].filter(Boolean).join("\n---\n");
+            const tRes = await fetch("/api/ai-blurb", {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({ text: combined, targetLocale: currentLocale }),
+            });
+            const tData = await tRes.json();
+            setAiBlurb(tData.blurb ?? enBody);
+            setAiBlurbQuestion(tData.question ?? enQuestion);
+            setAiBlurbPitch(tData.pitch ?? enPitch);
+          } catch {
+            setAiBlurb(enBody);
+            setAiBlurbQuestion(enQuestion);
+            setAiBlurbPitch(enPitch);
+          } finally {
+            setAiBlurbLoading(false);
+          }
+        })();
+      } else {
+        setAiBlurb(enBody);
+        setAiBlurbQuestion(enQuestion);
+        setAiBlurbPitch(enPitch);
+      }
       return;
     }
 
