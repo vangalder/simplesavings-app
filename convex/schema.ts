@@ -50,6 +50,9 @@ export default defineSchema({
     blurbQuestionEn: v.optional(v.string()),
     blurbPitchEn: v.optional(v.string()),
     blurbInputsHash: v.optional(v.string()),
+    // Deprecated: free-tier metering moved to users.freeChatTokensUsed. Kept as
+    // optional so existing prod docs that still carry it pass schema validation.
+    chatTokensUsedFree: v.optional(v.number()),
     createdAt: v.number(),
     updatedAt: v.number(),
   }).index("by_user", ["userId"]),
