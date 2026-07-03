@@ -49,6 +49,10 @@ type ConversationMessage = { role: string; content: string };
 
 type InsightsRequest = {
   scenarioId?: string;
+  // SECURITY (known gap): provider/model are client-supplied and trusted directly —
+  // the model allowlist is enforced only client-side. An authed user could point the
+  // chat at an arbitrary/expensive model. Enforce a server-side allowlist here before
+  // it matters. See SECURITY.md "Known gaps".
   provider: string;
   model: string;
   message: string;

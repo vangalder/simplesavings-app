@@ -70,7 +70,7 @@ Three labeled buttons sit at the top-left of the chart — **Area**, **Bar**, **
 - **Bar** — stacked columns per period; easy to compare principal vs. interest at any specific year
 - **Line** — clean single trend line; best for a quick read of the trajectory
 
-On mobile, the chart is on the **Chart** tab (second tab at the bottom). On desktop it's always visible on the right side of the screen.
+The chart lives on the **Chart** tab (the middle tab at the bottom) at every screen size — desktop, tablet, and mobile all use the same tabbed layout.
 
 - The X-axis auto-scales: months for projections under 2 years, years for longer ones
 - Principal (blue) and interest earned (orange) are shown as separate stacked layers so users can visually see the compounding effect grow over time
@@ -177,6 +177,5 @@ Payment is handled via Stripe. Users who have not purchased see an upsell prompt
 
 ## Layout
 
-- **Desktop:** Two-column layout. Left column: calculator inputs + results + AI chat. Right column: chart + goal input.
-- **Mobile:** Three tabs at the bottom: **Inputs**, **Chart**, **Insights** (AI chat or upsell prompt). The chat input bar sticks above the keyboard when typing.
+- **All screen sizes:** A single, centered column with three tabs at the bottom — **Inputs** (calculator + results + save), **Chart**, and **Insights** (AI chat or upsell prompt). The same tabbed layout is used on desktop, tablet, and mobile (there is no separate two-column desktop view). The chat input bar sticks above the keyboard when typing.
 - **Keyboard shortcut:** Cmd-S / Ctrl-S saves the current calculation.

@@ -98,6 +98,11 @@ Plan:
 ${lines}`;
 }
 
+// SECURITY (known gap): this route is intentionally public (the share narrative
+// is generated for signed-out users too), but unlike app/api/ai-blurb/route.ts it
+// currently has NO per-IP rate limit and NO payload size cap, while it calls a paid
+// LLM (Anthropic). That's a cost-abuse surface — add the ai-blurb limiter + size cap
+// before this sees real traffic. See SECURITY.md "Known gaps".
 export async function POST(req: NextRequest) {
   let body: {
     startingAmount: number;

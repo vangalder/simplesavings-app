@@ -1,9 +1,32 @@
 # Launch Checklist — simplesavings.app first-dollar readiness
 
-All code for the monetization/security/UX plan is committed on `main` (not yet
-pushed). **Do not `git push` until the external gates below are done** — the new
-Next app calls Convex functions and a Clerk `convex` JWT template that must exist
-in production first, or the live site's signed-in features will break.
+> **✅ STATUS: LAUNCHED (2026-07-02). This is now a historical record of the
+> launch, not a to-do list.** The app is live at https://simplesavings.app with
+> production Clerk, real Stripe payments, and a verified first purchase. The
+> "external gates" and "launch sequence" below are kept for provenance.
+>
+> **Corrected production facts (these supersede any stale value below):**
+> - Prod Convex deployment: **`patient-crane-902`** → webhook host
+>   **`patient-crane-902.convex.site/stripe-webhook`** (NOT `simplesavings-app-ae970`,
+>   which is only the project id / local dev deployment name).
+> - Stripe: **live**, on the dedicated **simplesavings.app** account
+>   **`acct_1TYxy4Pwai2zIs5e`** (NOT the old `boat.bot` account). Live prices:
+>   Pro `price_1ToyqYPwai2zIs5eji5MgKNN` ($6.99/mo), Sample
+>   `price_1ToyqYPwai2zIs5ejgLeo3M2` ($2.99). Webhook `we_1ToyqYPwai2zIs5eCZjB6cMv`.
+> - Clerk: **production** instance on `clerk.simplesavings.app`. The Convex integration
+>   puts `aud:"convex"` on the **default** session token (no named JWT template needed);
+>   the session token also carries an `email` claim so `requireAdmin` works.
+> - `app_config` (prod): `6.99 / 2.99 / 150¢ / 40000`, `paymentTestMode=off`,
+>   both models `openrouter:anthropic/claude-haiku-4.5`.
+>
+> For current architecture see [`ARCHITECTURE.md`](./ARCHITECTURE.md) and
+> [`SECURITY.md`](./SECURITY.md).
+
+---
+
+_Original pre-launch runbook (historical):_ all code was committed on `main` and
+not pushed until the external gates were done, because the new Next app calls Convex
+functions that required production auth to be wired first.
 
 ## What's done (code, committed locally)
 - Convex backend fully re-authed (`ctx.auth`); paid-state writes are internal;

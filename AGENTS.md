@@ -26,7 +26,42 @@ These are critical mistakes that must be avoided in all circumstances across the
 
 ---
 
-## IV. Rule Loading Logic
+## IV. Project Docs & Maintenance (read before building)
+
+This is a **live production** app (savings calculator + AI strategist chat, Clerk auth,
+Stripe payments). Read the right doc before touching a subsystem, and **keep docs in sync
+with code** — a stale agent-facing claim wastes hours.
+
+| Doc | Read it before you… |
+|---|---|
+| [`ARCHITECTURE.md`](./ARCHITECTURE.md) | touch any subsystem — it's the system map + data model + config keys (single source of truth for deployment names, `app_config`, env vars) |
+| [`USER-FLOWS.md`](./USER-FLOWS.md) | change how an actor moves through the app |
+| [`SECURITY.md`](./SECURITY.md) | change auth, webhooks, a public route, or anything money-related — preserve the invariants |
+| [`docs/simplesavings-product-reference.md`](./docs/simplesavings-product-reference.md) | change user-facing behavior — **this file is live-injected into every AI prompt**, so errors here mislead users directly |
+
+### Docs maintenance table — when you change X, update Y
+
+| You change… | Update… |
+|---|---|
+| a Convex function / table / index (`convex/`) | `ARCHITECTURE.md` (functions/data model tables) |
+| an API route or its auth (`app/api/`) | `ARCHITECTURE.md` §2 + `SECURITY.md` if auth/exposure changes |
+| pricing / `app_config` keys or values | `ARCHITECTURE.md` config table + `docs/simplesavings-product-reference.md` |
+| a user/actor flow | `USER-FLOWS.md` |
+| auth, webhooks, secrets, or a public LLM route | `SECURITY.md` (invariants + known-gaps) |
+| the calculator layout | `docs/simplesavings-product-reference.md` (Layout) + `README.md` |
+| the active AI model/provider default | `ARCHITECTURE.md` config table |
+| deployment target / Stripe account / prod host | `ARCHITECTURE.md` + `APPLICATION_SUMMARY.md` (state block) |
+
+### Facts that are easy to get wrong (verify, don't assume)
+- Prod Convex deployment/host = **`patient-crane-902`** (`ae970` is only the project id).
+- Stripe = live, dedicated **simplesavings.app** account `acct_1TYxy4Pwai2zIs5e` (not boat.bot).
+- Layout = single-column tabbed at **all** sizes (no two-column desktop view).
+- Charts = **ECharts**, never Recharts. Copy **de-emphasizes "AI"**; "co-pilot" is **banned**.
+- Deploy convention: `git push origin main` → `npx convex deploy --yes`.
+
+---
+
+## V. Rule Loading Logic
 
 The agent must use **just-in-time context indexing** for rule application:
 
