@@ -12,6 +12,9 @@ interface AnimatedNumberInputProps {
   placeholder?: string;
   className?: string;
   shouldAnimate?: boolean;
+  // When set, display up to this many decimals with trailing zeros trimmed
+  // (e.g. 5.25 → "5.25", 10 → "10"). Overrides the step-based formatting.
+  maxFractionDigits?: number;
 }
 
 export default function AnimatedNumberInput({
@@ -23,33 +26,29 @@ export default function AnimatedNumberInput({
   placeholder = "0",
   className = "",
   shouldAnimate = false,
+  maxFractionDigits,
 }: AnimatedNumberInputProps) {
-  const formatValue = useCallback((val: number): string => {
-    let formatted: string;
-    if (step === "1") {
-      formatted = Math.floor(val).toString();
-    } else if (step === "0.1") {
-      formatted = val.toFixed(1);
-    } else {
-      formatted = val.toFixed(2);
+  const rawFormat = useCallback((val: number): string => {
+    if (maxFractionDigits !== undefined) {
+      return parseFloat(val.toFixed(maxFractionDigits)).toString();
     }
+    if (step === "1") return Math.floor(val).toString();
+    if (step === "0.1") return val.toFixed(1);
+    return val.toFixed(2);
+  }, [step, maxFractionDigits]);
+
+  const withSeparators = (formatted: string): string => {
     const parts = formatted.split(".");
     parts[0] = parts[0].replace(/\B(?=(\d{3})+(?!\d))/g, ",");
     return parts.join(".");
-  }, [step]);
+  };
+
+  const formatValue = useCallback((val: number): string => {
+    return withSeparators(rawFormat(val));
+  }, [rawFormat]);
 
   const getInitialValue = (val: number): string => {
-    let formatted: string;
-    if (step === "1") {
-      formatted = Math.floor(val).toString();
-    } else if (step === "0.1") {
-      formatted = val.toFixed(1);
-    } else {
-      formatted = val.toFixed(2);
-    }
-    const parts = formatted.split(".");
-    parts[0] = parts[0].replace(/\B(?=(\d{3})+(?!\d))/g, ",");
-    return parts.join(".");
+    return withSeparators(rawFormat(val));
   };
 
   const [showAnimation, setShowAnimation] = useState(false);

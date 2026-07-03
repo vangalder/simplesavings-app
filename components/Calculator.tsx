@@ -81,9 +81,7 @@ export default function Calculator() {
   // Briefly ring the field the AI just changed when the user jumps back to it.
   const [highlightField, setHighlightField] = useState<string | null>(null);
   const hl = (field: string) =>
-    highlightField === field
-      ? " ring-4 ring-primary-base/60 border-primary-base"
-      : "";
+    highlightField === field ? " field-highlight" : "";
   const [aiBlurb, setAiBlurb] = useState("");
   const [aiBlurbQuestion, setAiBlurbQuestion] = useState("");
   const [aiBlurbPitch, setAiBlurbPitch] = useState("");
@@ -744,6 +742,7 @@ export default function Calculator() {
                           value={state.timeframeYears}
                           onChange={(val) => setState({ ...state, timeframeYears: val })}
                           step="0.1"
+                          maxFractionDigits={2}
                           min={0}
                           placeholder="0"
                           className={"w-full px-4 py-3 border-2 border-accent-orange-base rounded-xl text-center text-4xl font-display font-semibold text-accent-orange-base focus:outline-none focus:ring-2 focus:ring-accent-orange-base focus:border-accent-orange-base" + hl("timeframeYears")}
@@ -937,7 +936,7 @@ export default function Calculator() {
                   requestAnimationFrame(() =>
                     calcRef.current?.scrollIntoView({ behavior: "smooth", block: "start" })
                   );
-                  window.setTimeout(() => setHighlightField(null), 2000);
+                  window.setTimeout(() => setHighlightField(null), 2900);
                 }}
                 onCalculatorUpdate={(field, value) => {
                   if (field === "goalAmount") {
