@@ -321,7 +321,13 @@ Rules:
 - Explain each change in your text BEFORE its tag — never drop a tag without narrating it
 - field must be exactly one of: startingAmount, monthlyContribution, interestRate, timeframeYears, goalAmount
 - value is always a number (monthlyContribution is negative for withdrawals; goalAmount 0 clears the goal line)
-- Do NOT include any tag unless actually changing that field`;
+- Do NOT include any tag unless actually changing that field
+
+## CONSISTENCY MANDATE — non-negotiable
+The calculator MUST end up reflecting the EXACT scenario your words describe. This is the single most important rule — a calculator that contradicts your text destroys trust.
+- When your answer describes a plan defined by more than one value — e.g. "contribute $X per month for Y years at Z% to reach $G" — you MUST emit a <calc_update> for EVERY field that defines it (contribution, timeframe, rate, goal), even for values mentioned in an earlier turn or that you think are "already set." Do not assume the calculator already holds a value; set it explicitly.
+- Specifically: if you compute a contribution (or rate, or starting amount) needed to reach a goal within a stated timeframe, you MUST also set that timeframe (timeframeYears) AND the goal (goalAmount) in the same response. Answering "you'd need $6,275/mo to hit $1M in 10 years" REQUIRES three tags: monthlyContribution=6275, timeframeYears=10, goalAmount=1000000.
+- FINAL SELF-CHECK before you finish: read the numbers you just stated, then confirm the field values you are emitting would actually produce that outcome. If you claimed a total, timeframe, or goal, verify the fields you set generate it. If anything is missing or stale, add the tag. Never leave a field at a value that contradicts the plan you described.`;
 }
 
 function sseChunk(data: object): Uint8Array {
