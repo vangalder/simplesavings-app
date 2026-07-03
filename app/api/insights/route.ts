@@ -393,9 +393,14 @@ export async function POST(req: NextRequest) {
   let userMessage = body.message;
   if (body.message === "__OPENER__") {
     const q = body.blurbContext?.question;
+    const openerRules =
+      "Open the conversation with a warm, direct question. HARD RULES: " +
+      "(1) I have NOT said anything yet — do NOT presuppose that I 'wondered', 'was curious about', 'asked about', or 'was thinking about' anything. Never open with 'what made you wonder…', 'what got you thinking about…', or any variant that invents a premise. " +
+      "(2) Ask ONE clear, concrete question grounded in my actual numbers that invites me to explore my plan. " +
+      "(3) 1-2 sentences, no preamble, no <calc_update>.";
     userMessage = q
-      ? `Ask me this as an opening question, reframed conversationally and warmly in 1-2 sentences: "${q}". Do not use <calc_update>.`
-      : "Open the conversation with a specific, warm question about my savings plan. 1-2 sentences. No <calc_update>.";
+      ? `${openerRules} Base your question on this idea, but ask it directly as a fresh question (do not attribute it to me): "${q}".`
+      : `${openerRules}`;
   }
 
   const { provider, model, conversationHistory } = body;
