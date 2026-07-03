@@ -36,6 +36,7 @@ type Props = {
   onUpsellNeeded: () => void;
   onCalculatorUpdate: (field: string, value: number) => void;
   onOpenCalculator?: (field?: string) => void;
+  focusSignal?: number;
 };
 
 function renderInline(text: string): React.ReactNode {
@@ -125,6 +126,7 @@ export default function AIChat({
   onUpsellNeeded,
   onCalculatorUpdate,
   onOpenCalculator,
+  focusSignal,
 }: Props) {
   const [messages, setMessages] = useState<Message[]>([]);
   const [input, setInput] = useState("");
@@ -191,6 +193,15 @@ export default function AIChat({
       scrollToBottom();
     }
   }, [messages, isStreaming, scrollToBottom]);
+
+  // Focus the message input when the parent opens the chat (e.g. the blurb CTA),
+  // so the user can start typing immediately. Skip the initial mount (signal 0/undefined).
+  useEffect(() => {
+    if (focusSignal) {
+      // Wait a frame so the tab switch / scroll settles before focusing.
+      requestAnimationFrame(() => inputRef.current?.focus());
+    }
+  }, [focusSignal]);
 
   // Focus input when AI finishes responding (streaming true → false only, not on mount)
   useEffect(() => {

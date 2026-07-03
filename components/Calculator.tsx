@@ -76,6 +76,8 @@ export default function Calculator() {
   const dateInputRef = useRef<HTMLInputElement>(null);
   const chatRef = useRef<HTMLDivElement>(null);
   const calcRef = useRef<HTMLDivElement>(null);
+  // Bumped to tell AIChat to focus its input when we open the chat.
+  const [chatFocusSignal, setChatFocusSignal] = useState(0);
   // Briefly ring the field the AI just changed when the user jumps back to it.
   const [highlightField, setHighlightField] = useState<string | null>(null);
   const hl = (field: string) =>
@@ -883,6 +885,8 @@ export default function Calculator() {
                     requestAnimationFrame(() =>
                       chatRef.current?.scrollIntoView({ behavior: "smooth", block: "start" })
                     );
+                    // Focus the chat input so the user can type right away.
+                    setChatFocusSignal((s) => s + 1);
                   } else {
                     setUpsellContext(ctx);
                   }
@@ -922,6 +926,7 @@ export default function Calculator() {
                 isPaid={!!(isPro || hasCredits)}
                 freeTokenBudget={freeTokenBudget}
                 creditBalance={creditBalance ? { granted: creditBalance.granted, used: creditBalance.used, isPro: creditBalance.isPro } : null}
+                focusSignal={chatFocusSignal}
                 onUpsellNeeded={() => setUpsellContext({ question: aiBlurbQuestion, pitch: aiBlurbPitch })}
                 onOpenCalculator={(field) => {
                   // Take the user to the calculator to see the AI's change:
