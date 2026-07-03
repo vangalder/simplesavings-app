@@ -75,6 +75,7 @@ export default function Calculator() {
   const [showGoalInput, setShowGoalInput] = useState(false);
   const dateInputRef = useRef<HTMLInputElement>(null);
   const chatRef = useRef<HTMLDivElement>(null);
+  const calcRef = useRef<HTMLDivElement>(null);
   const [aiBlurb, setAiBlurb] = useState("");
   const [aiBlurbQuestion, setAiBlurbQuestion] = useState("");
   const [aiBlurbPitch, setAiBlurbPitch] = useState("");
@@ -654,7 +655,7 @@ export default function Calculator() {
         {/* ══ LEFT COLUMN ══ */}
         {/* min-w-0 lets the flex child shrink below its content width so wide
             currency figures can't force horizontal overflow on narrow screens */}
-        <div className="w-full lg:w-1/2 min-w-0">
+        <div ref={calcRef} className="w-full lg:w-1/2 min-w-0">
 
           {/* White card — hidden on mobile insights tab (AIChat renders below instead) */}
           <div className={`bg-white rounded-2xl p-4 md:p-6 shadow-lg ${activeTab === "insights" ? "hidden lg:block" : ""}`}>
@@ -916,6 +917,14 @@ export default function Calculator() {
                 freeTokenBudget={freeTokenBudget}
                 creditBalance={creditBalance ? { granted: creditBalance.granted, used: creditBalance.used, isPro: creditBalance.isPro } : null}
                 onUpsellNeeded={() => setUpsellContext({ question: aiBlurbQuestion, pitch: aiBlurbPitch })}
+                onOpenCalculator={() => {
+                  // Take the user to the calculator to see the AI's change:
+                  // switch to the Inputs tab on mobile, scroll to it on desktop.
+                  setActiveTab("calculator");
+                  requestAnimationFrame(() =>
+                    calcRef.current?.scrollIntoView({ behavior: "smooth", block: "start" })
+                  );
+                }}
                 onCalculatorUpdate={(field, value) => {
                   if (field === "goalAmount") {
                     setGoalAmount(value);

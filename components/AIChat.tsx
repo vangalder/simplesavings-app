@@ -35,6 +35,7 @@ type Props = {
   creditBalance?: { granted: number; used: number; isPro?: boolean } | null;
   onUpsellNeeded: () => void;
   onCalculatorUpdate: (field: string, value: number) => void;
+  onOpenCalculator?: () => void;
 };
 
 function renderInline(text: string): React.ReactNode {
@@ -123,6 +124,7 @@ export default function AIChat({
   creditBalance,
   onUpsellNeeded,
   onCalculatorUpdate,
+  onOpenCalculator,
 }: Props) {
   const [messages, setMessages] = useState<Message[]>([]);
   const [input, setInput] = useState("");
@@ -415,12 +417,21 @@ export default function AIChat({
               {msg.calcUpdates && msg.calcUpdates.length > 0 && (
                 <div className="mt-2 pt-2 border-t border-neutral-200/60 flex flex-col gap-1">
                   {msg.calcUpdates.map((u, i) => (
-                    <div key={i} className="text-xs text-neutral-500 flex items-center gap-1.5">
-                      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" className="shrink-0 text-primary-base">
+                    <button
+                      key={i}
+                      type="button"
+                      onClick={onOpenCalculator}
+                      title="View the change in the calculator"
+                      className="group text-xs text-primary-base/90 hover:text-primary-base flex items-center gap-1.5 text-left transition-colors"
+                    >
+                      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" className="shrink-0">
                         <path d="M12 20h9M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"/>
                       </svg>
-                      <span>Calculator updated: {u.reason}</span>
-                    </div>
+                      <span className="underline decoration-primary-base/30 group-hover:decoration-primary-base/70 underline-offset-2">
+                        Calculator updated: {u.reason}
+                      </span>
+                      <span aria-hidden className="opacity-60 group-hover:translate-x-0.5 transition-transform">→</span>
+                    </button>
                   ))}
                 </div>
               )}
