@@ -222,6 +222,7 @@
     "freeChatUsed": "Você usou seu chat grátis — desbloqueie ilimitado",
     "clearConversation": "limpar conversa",
     "inputPlaceholder": "Pergunte sobre seu plano…",
-    "send": "Enviar"
+    "send": "Enviar",
+    "nChanges": "{n} {n, plural, one {alteração} other {alterações}}"
   }
 }

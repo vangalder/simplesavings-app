@@ -78,10 +78,10 @@ export default function Calculator() {
   const calcRef = useRef<HTMLDivElement>(null);
   // Bumped to tell AIChat to focus its input when we open the chat.
   const [chatFocusSignal, setChatFocusSignal] = useState(0);
-  // Briefly ring the field the AI just changed when the user jumps back to it.
-  const [highlightField, setHighlightField] = useState<string | null>(null);
+  // Briefly ring the field(s) the AI just changed when the user jumps back.
+  const [highlightFields, setHighlightFields] = useState<string[]>([]);
   const hl = (field: string) =>
-    highlightField === field ? " field-highlight" : "";
+    highlightFields.includes(field) ? " field-highlight" : "";
   const [aiBlurb, setAiBlurb] = useState("");
   const [aiBlurbQuestion, setAiBlurbQuestion] = useState("");
   const [aiBlurbPitch, setAiBlurbPitch] = useState("");
@@ -927,16 +927,16 @@ export default function Calculator() {
                 creditBalance={creditBalance ? { granted: creditBalance.granted, used: creditBalance.used, isPro: creditBalance.isPro } : null}
                 focusSignal={chatFocusSignal}
                 onUpsellNeeded={() => setUpsellContext({ question: aiBlurbQuestion, pitch: aiBlurbPitch })}
-                onOpenCalculator={(field) => {
-                  // Take the user to the calculator to see the AI's change:
+                onOpenCalculator={(fields) => {
+                  // Take the user to the calculator to see the AI's change(s):
                   // switch to the Inputs tab on mobile, scroll to it on desktop,
-                  // and briefly ring the field that changed.
+                  // and briefly ring every field that changed.
                   setActiveTab("calculator");
-                  if (field) setHighlightField(field);
+                  if (fields && fields.length) setHighlightFields(fields);
                   requestAnimationFrame(() =>
                     calcRef.current?.scrollIntoView({ behavior: "smooth", block: "start" })
                   );
-                  window.setTimeout(() => setHighlightField(null), 2900);
+                  window.setTimeout(() => setHighlightFields([]), 2900);
                 }}
                 onCalculatorUpdate={(field, value) => {
                   if (field === "goalAmount") {

@@ -222,6 +222,7 @@
     "freeChatUsed": "You've used your free chat — unlock unlimited",
     "clearConversation": "clear conversation",
     "inputPlaceholder": "Ask about your plan…",
-    "send": "Send"
+    "send": "Send",
+    "nChanges": "{n} {n, plural, one {change} other {changes}}"
   }
 }

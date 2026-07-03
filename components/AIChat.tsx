@@ -36,7 +36,7 @@ type Props = {
   creditBalance?: { granted: number; used: number; isPro?: boolean } | null;
   onUpsellNeeded: () => void;
   onCalculatorUpdate: (field: string, value: number) => void;
-  onOpenCalculator?: (field?: string) => void;
+  onOpenCalculator?: (fields?: string[]) => void;
   focusSignal?: number;
 };
 
@@ -428,22 +428,28 @@ export default function AIChat({
                   : <span className="whitespace-pre-wrap">{renderInline(msg.content)}</span>
               )}
               {msg.calcUpdates && msg.calcUpdates.length > 0 && (
-                <div className="mt-2 pt-2 border-t border-neutral-200/60 flex flex-col gap-1">
-                  {msg.calcUpdates.map((u, i) => (
-                    <button
-                      key={i}
-                      type="button"
-                      onClick={() => onOpenCalculator?.(u.field)}
-                      title={tChat("viewInCalculator")}
-                      className="group inline-flex items-center gap-1.5 self-start rounded-full border border-primary-base/30 bg-primary-base/10 px-3 py-1.5 text-xs font-semibold text-primary-base hover:bg-primary-base/20 hover:border-primary-base/50 transition-colors"
-                    >
-                      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" className="shrink-0">
-                        <path d="M12 20h9M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"/>
-                      </svg>
-                      <span>{tChat("calculatorUpdated")}: {u.reason}</span>
-                      <span aria-hidden className="opacity-70 group-hover:translate-x-0.5 transition-transform">→</span>
-                    </button>
-                  ))}
+                <div className="mt-2 pt-2 border-t border-neutral-200/60">
+                  {(() => {
+                    const fields = msg.calcUpdates.map((u) => u.field);
+                    const label =
+                      msg.calcUpdates.length === 1
+                        ? `${tChat("calculatorUpdated")}: ${msg.calcUpdates[0].reason}`
+                        : `${tChat("calculatorUpdated")} · ${tChat("nChanges", { n: msg.calcUpdates.length })}`;
+                    return (
+                      <button
+                        type="button"
+                        onClick={() => onOpenCalculator?.(fields)}
+                        title={tChat("viewInCalculator")}
+                        className="group inline-flex items-center gap-1.5 self-start rounded-full border border-primary-base/30 bg-primary-base/10 px-3 py-1.5 text-xs font-semibold text-primary-base hover:bg-primary-base/20 hover:border-primary-base/50 transition-colors"
+                      >
+                        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" className="shrink-0">
+                          <path d="M12 20h9M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"/>
+                        </svg>
+                        <span>{label}</span>
+                        <span aria-hidden className="opacity-70 group-hover:translate-x-0.5 transition-transform">→</span>
+                      </button>
+                    );
+                  })()}
                 </div>
               )}
             </div>
