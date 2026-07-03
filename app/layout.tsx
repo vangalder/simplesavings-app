@@ -28,9 +28,9 @@ const robotoMono = Roboto_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "simplesavings.app — Your AI Savings Strategist",
+  title: "simplesavings.app — Plan your savings, reach your goal faster",
   description:
-    "A savings calculator with an AI strategist built in: model your money, then talk through how to reach your goal faster. Free to start.",
+    "A savings calculator that shows your money's future — and helps you plan how to reach your goal faster. Free to start.",
   other: { google: "notranslate" },
 };
 

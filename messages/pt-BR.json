@@ -1,7 +1,7 @@
 {
   "app": {
     "name": "simplesavings.app",
-    "tagline": "Modele suas economias e trace a estratégia com IA para alcançar sua meta mais rápido."
+    "tagline": "Veja suas economias crescerem e planeje como alcançar sua meta mais rápido."
   },
   "header": {
     "share": "Compartilhar",
@@ -99,7 +99,7 @@
     "narrativeError": "Algo deu errado. Tente novamente.",
     "regenerateLeft": "{n} restantes",
     "tryAgain": "Tentar novamente",
-    "regenerateHint": "Reescritas de IA gratuitas restantes desta narrativa. Reiniciam ao reabrir o menu de compartilhamento."
+    "regenerateHint": "Reescritas gratuitas desta narrativa restantes. Reiniciam ao reabrir o menu de compartilhamento."
   },
   "profile": {
     "title": "Meus Cenários",
@@ -119,7 +119,7 @@
     "askPlaceholder": "Pergunte sobre seu plano de economia…",
     "send": "Enviar",
     "refresh": "Atualizar insights",
-    "provider": "Provedor de IA",
+    "provider": "Provedor",
     "model": "Modelo",
     "cryptoNote": "Os rendimentos de ativos cripto são muito voláteis. Os insights levarão em conta esse risco.",
     "blurbCta": "Vamos otimizar seu horizonte de poupança",
@@ -187,8 +187,8 @@
     "goalLabel": "Meta"
   },
   "pricing": {
-    "headline": "Seu estrategista de poupança com IA",
-    "subhead": "A calculadora é grátis. O estrategista ajuda a fechar a distância até sua meta.",
+    "headline": "Mais que uma calculadora de poupança",
+    "subhead": "Veja o futuro do seu dinheiro e planeje como alcançar sua meta mais rápido.",
     "current": "Você tem créditos",
     "onPro": "Você é Pro",
     "disclaimer": "Simulação educativa, não é aconselhamento financeiro. Cancele quando quiser.",
@@ -197,20 +197,20 @@
       "cadence": "para sempre",
       "f1": "Calculadora de poupança e gráficos completos",
       "f2": "Salve e compartilhe seu plano",
-      "f3": "Uma breve amostra grátis da IA",
+      "f3": "Algumas conversas de planejamento grátis",
       "cta": "Incluído"
     },
     "sample": {
       "title": "Amostra Pro",
       "cadence": "pagamento único",
-      "f1": "Análise profunda com IA de um plano",
+      "f1": "Uma análise aprofundada de um plano",
       "f2": "Créditos para uma conversa completa",
       "cta": "Experimentar"
     },
     "pro": {
       "title": "Pro",
       "cadence": "/mês",
-      "f1": "Conversas com IA ilimitadas",
+      "f1": "Conversas de planejamento ilimitadas",
       "f2": "Estratégia em todos os planos",
       "f3": "Acesso prioritário ao modelo",
       "cta": "Assinar Pro"

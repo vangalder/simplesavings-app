@@ -1,7 +1,7 @@
 {
   "app": {
     "name": "simplesavings.app",
-    "tagline": "Modella i tuoi risparmi, poi definisci la strategia con l'IA per raggiungere il tuo obiettivo prima."
+    "tagline": "Guarda crescere i tuoi risparmi, poi pianifica come raggiungere il tuo obiettivo prima."
   },
   "header": {
     "share": "Condividi",
@@ -99,7 +99,7 @@
     "narrativeError": "Qualcosa è andato storto. Riprova.",
     "regenerateLeft": "{n} rimasti",
     "tryAgain": "Riprova",
-    "regenerateHint": "Riscritture IA gratuite rimaste per questo racconto. Si azzerano riaprendo il menu di condivisione."
+    "regenerateHint": "Riscritture gratuite di questo racconto rimaste. Si azzerano riaprendo il menu di condivisione."
   },
   "profile": {
     "title": "I Miei Scenari",
@@ -119,7 +119,7 @@
     "askPlaceholder": "Chiedi del tuo piano di risparmio…",
     "send": "Invia",
     "refresh": "Aggiorna analisi",
-    "provider": "Provider IA",
+    "provider": "Fornitore",
     "model": "Modello",
     "cryptoNote": "I rendimenti degli asset cripto sono molto volatili. L'analisi terrà conto di questo rischio.",
     "blurbCta": "Ottimizziamo il tuo piano di risparmio",
@@ -187,8 +187,8 @@
     "goalLabel": "Obiettivo"
   },
   "pricing": {
-    "headline": "Il tuo stratega del risparmio con IA",
-    "subhead": "La calcolatrice è gratis. Lo stratega ti aiuta a colmare la distanza dal tuo obiettivo.",
+    "headline": "Più di una calcolatrice del risparmio",
+    "subhead": "Guarda il futuro dei tuoi soldi, poi definisci come raggiungere l'obiettivo prima.",
     "current": "Hai dei crediti",
     "onPro": "Sei Pro",
     "disclaimer": "Simulazione didattica, non consulenza finanziaria. Disdici quando vuoi.",
@@ -197,20 +197,20 @@
       "cadence": "per sempre",
       "f1": "Calcolatrice del risparmio e grafici completi",
       "f2": "Salva e condividi il tuo piano",
-      "f3": "Un breve assaggio gratuito dell'IA",
+      "f3": "Alcune chat di pianificazione gratuite",
       "cta": "Incluso"
     },
     "sample": {
       "title": "Assaggio Pro",
       "cadence": "una tantum",
-      "f1": "Analisi IA approfondita su un piano",
+      "f1": "Un'analisi approfondita di un piano",
       "f2": "Crediti per una conversazione completa",
       "cta": "Prova"
     },
     "pro": {
       "title": "Pro",
       "cadence": "/mese",
-      "f1": "Conversazioni IA illimitate",
+      "f1": "Conversazioni di pianificazione illimitate",
       "f2": "Strategia su ogni piano",
       "f3": "Accesso prioritario al modello",
       "cta": "Passa a Pro"

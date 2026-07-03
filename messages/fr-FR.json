@@ -1,7 +1,7 @@
 {
   "app": {
     "name": "simplesavings.app",
-    "tagline": "Modélisez votre épargne, puis élaborez votre stratégie avec l'IA pour atteindre votre objectif plus vite."
+    "tagline": "Regardez votre épargne grandir, puis planifiez comment atteindre votre objectif plus vite."
   },
   "header": {
     "share": "Partager",
@@ -99,7 +99,7 @@
     "narrativeError": "Une erreur s'est produite. Réessayez.",
     "regenerateLeft": "{n} restants",
     "tryAgain": "Réessayer",
-    "regenerateHint": "Réécritures IA gratuites restantes pour ce récit. Réinitialisées à la réouverture du menu de partage."
+    "regenerateHint": "Réécritures gratuites de ce récit restantes. Réinitialisées à la réouverture du menu de partage."
   },
   "profile": {
     "title": "Mes scénarios",
@@ -119,7 +119,7 @@
     "askPlaceholder": "Posez une question sur votre plan d'épargne…",
     "send": "Envoyer",
     "refresh": "Actualiser les analyses",
-    "provider": "Fournisseur IA",
+    "provider": "Fournisseur",
     "model": "Modèle",
     "cryptoNote": "Les rendements des actifs crypto sont très volatils. Les analyses tiendront compte de ce risque.",
     "blurbCta": "Optimisons votre horizon d'épargne",
@@ -187,8 +187,8 @@
     "goalLabel": "Objectif"
   },
   "pricing": {
-    "headline": "Votre stratège d'épargne IA",
-    "subhead": "La calculatrice est gratuite. Le stratège vous aide à combler l'écart avec votre objectif.",
+    "headline": "Plus qu'une calculatrice d'épargne",
+    "subhead": "Voyez l'avenir de votre argent, puis élaborez comment atteindre votre objectif plus vite.",
     "current": "Vous avez des crédits",
     "onPro": "Vous êtes Pro",
     "disclaimer": "Simulation éducative, pas un conseil financier. Annulable à tout moment.",
@@ -197,20 +197,20 @@
       "cadence": "pour toujours",
       "f1": "Calculatrice d'épargne et graphiques complets",
       "f2": "Enregistrez et partagez votre plan",
-      "f3": "Un court aperçu gratuit de l'IA",
+      "f3": "Quelques échanges de planification gratuits",
       "cta": "Inclus"
     },
     "sample": {
       "title": "Échantillon Pro",
       "cadence": "paiement unique",
-      "f1": "Analyse IA approfondie d'un plan",
+      "f1": "Une analyse approfondie d'un plan",
       "f2": "Des crédits pour une conversation complète",
       "cta": "Essayer"
     },
     "pro": {
       "title": "Pro",
       "cadence": "/mois",
-      "f1": "Conversations IA illimitées",
+      "f1": "Conversations de planification illimitées",
       "f2": "Une stratégie sur tous vos plans",
       "f3": "Accès prioritaire au modèle",
       "cta": "Passer Pro"

@@ -149,7 +149,7 @@ export default function ProUpsellModal({ open, onClose, insightContext, monthlyC
                 className="w-full py-3 px-4 rounded-xl bg-gradient-to-r from-accent-orange-base to-accent-base text-neutral-900 font-bold text-sm hover:opacity-90 transition-opacity"
               >
                 Try it — ${proSamplePrice}
-                <span className="block text-xs font-normal opacity-70 mt-0.5">Deep AI analysis on one plan</span>
+                <span className="block text-xs font-normal opacity-70 mt-0.5">A deep dive on one plan</span>
               </button>
               <button
                 onClick={() => handleCheckout("subscription")}

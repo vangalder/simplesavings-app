@@ -1,7 +1,7 @@
 {
   "app": {
     "name": "simplesavings.app",
-    "tagline": "Model your savings, then strategize with AI to reach your goal faster."
+    "tagline": "See how your savings grow — then plan your way to your goal faster."
   },
   "header": {
     "share": "Share",
@@ -99,7 +99,7 @@
     "narrativeError": "Something went wrong. Try again.",
     "regenerateLeft": "{n} left",
     "tryAgain": "Try again",
-    "regenerateHint": "Free AI rewrites of this narrative left. Resets when you reopen the share menu."
+    "regenerateHint": "Free rewrites of this narrative left. Resets when you reopen the share menu."
   },
   "profile": {
     "title": "My Scenarios",
@@ -119,7 +119,7 @@
     "askPlaceholder": "Ask about your savings plan…",
     "send": "Send",
     "refresh": "Refresh insights",
-    "provider": "AI Provider",
+    "provider": "Provider",
     "model": "Model",
     "cryptoNote": "Crypto asset returns are highly volatile. Insights will factor in this risk.",
     "blurbCta": "Let's optimize your savings timeline",
@@ -187,8 +187,8 @@
     "goalLabel": "Goal"
   },
   "pricing": {
-    "headline": "Meet your AI savings strategist",
-    "subhead": "The calculator is free. The strategist helps you close the gap to your goal.",
+    "headline": "More than a savings calculator",
+    "subhead": "See your money's future, then work through how to reach your goal faster.",
     "current": "You have credits",
     "onPro": "You're on Pro",
     "disclaimer": "Educational simulation, not financial advice. Cancel anytime.",
@@ -197,20 +197,20 @@
       "cadence": "forever",
       "f1": "Full savings calculator & charts",
       "f2": "Save and share your plan",
-      "f3": "A short free AI taste",
+      "f3": "A few free planning chats",
       "cta": "Included"
     },
     "sample": {
       "title": "Pro Sample",
       "cadence": "one-time",
-      "f1": "Deep AI analysis on one plan",
+      "f1": "A deep dive on one plan",
       "f2": "Credits for a full conversation",
       "cta": "Try it"
     },
     "pro": {
       "title": "Pro",
       "cadence": "/month",
-      "f1": "Unlimited AI conversations",
+      "f1": "Unlimited planning conversations",
       "f2": "Strategy across every plan",
       "f3": "Priority model access",
       "cta": "Go Pro"

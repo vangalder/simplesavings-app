@@ -1,7 +1,7 @@
 {
   "app": {
     "name": "simplesavings.app",
-    "tagline": "Modela tus ahorros y luego arma tu estrategia con IA para llegar a tu meta más rápido."
+    "tagline": "Mira crecer tus ahorros y planea cómo llegar a tu meta más rápido."
   },
   "header": {
     "share": "Compartir",
@@ -99,7 +99,7 @@
     "narrativeError": "Algo salió mal. Inténtalo de nuevo.",
     "regenerateLeft": "{n} restantes",
     "tryAgain": "Intentar de nuevo",
-    "regenerateHint": "Reescrituras de IA gratis de esta narrativa que te quedan. Se reinician al reabrir el menú de compartir."
+    "regenerateHint": "Reescrituras gratis de esta narrativa que te quedan. Se reinician al reabrir el menú de compartir."
   },
   "profile": {
     "title": "Mis Escenarios",
@@ -119,7 +119,7 @@
     "askPlaceholder": "Pregunta sobre tu plan de ahorro…",
     "send": "Enviar",
     "refresh": "Actualizar análisis",
-    "provider": "Proveedor de IA",
+    "provider": "Proveedor",
     "model": "Modelo",
     "cryptoNote": "Los rendimientos de activos cripto son muy volátiles. El análisis considerará este riesgo.",
     "blurbCta": "Optimicemos tu horizonte de ahorro",
@@ -187,8 +187,8 @@
     "goalLabel": "Meta"
   },
   "pricing": {
-    "headline": "Tu estratega de ahorro con IA",
-    "subhead": "La calculadora es gratis. El estratega te ayuda a cerrar la brecha hacia tu meta.",
+    "headline": "Más que una calculadora de ahorro",
+    "subhead": "Mira el futuro de tu dinero y arma cómo llegar a tu meta más rápido.",
     "current": "Tienes créditos",
     "onPro": "Ya tienes Pro",
     "disclaimer": "Simulación educativa, no es asesoría financiera. Cancela cuando quieras.",
@@ -197,20 +197,20 @@
       "cadence": "para siempre",
       "f1": "Calculadora de ahorro y gráficas completas",
       "f2": "Guarda y comparte tu plan",
-      "f3": "Una probadita gratis de la IA",
+      "f3": "Algunas pláticas de planeación gratis",
       "cta": "Incluido"
     },
     "sample": {
       "title": "Muestra Pro",
       "cadence": "pago único",
-      "f1": "Análisis profundo con IA de un plan",
+      "f1": "Un análisis a fondo de un plan",
       "f2": "Créditos para una conversación completa",
       "cta": "Probar"
     },
     "pro": {
       "title": "Pro",
       "cadence": "/mes",
-      "f1": "Conversaciones con IA ilimitadas",
+      "f1": "Pláticas de planeación ilimitadas",
       "f2": "Estrategia en todos tus planes",
       "f3": "Acceso prioritario al modelo",
       "cta": "Hazte Pro"

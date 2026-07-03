@@ -239,7 +239,7 @@ export default function InsightsPanel({ scenarioId, clerkId, scenarioData }: Pro
     return (
       <div className="flex flex-col bg-white rounded-2xl border border-neutral-200 overflow-hidden">
         <div className="px-4 py-3 border-b border-neutral-100 bg-neutral-50">
-          <h3 className="text-sm font-semibold text-neutral-700">AI Insights ✦</h3>
+          <h3 className="text-sm font-semibold text-neutral-700">Insights ✦</h3>
           <p className="text-xs text-neutral-500 mt-0.5">Tell us a bit about your situation to get personalized advice.</p>
         </div>
         <div className="p-4 space-y-4">
@@ -326,7 +326,7 @@ export default function InsightsPanel({ scenarioId, clerkId, scenarioData }: Pro
       {/* Header */}
       <div className="flex items-center justify-between px-4 py-3 border-b border-neutral-100 bg-neutral-50 gap-3">
         <div className="flex items-center gap-2 min-w-0">
-          <h3 className="text-sm font-semibold text-neutral-700 shrink-0">AI Insights ✦</h3>
+          <h3 className="text-sm font-semibold text-neutral-700 shrink-0">Insights ✦</h3>
           <span className="text-xs text-neutral-400 truncate italic">{intentGoal}</span>
         </div>
         <ProviderPicker
