@@ -15,6 +15,7 @@ import type * as lib_auth from "../lib/auth.js";
 import type * as messages from "../messages.js";
 import type * as providerConfigs from "../providerConfigs.js";
 import type * as purchases from "../purchases.js";
+import type * as rateLimit from "../rateLimit.js";
 import type * as scenarios from "../scenarios.js";
 import type * as shares from "../shares.js";
 import type * as users from "../users.js";
@@ -33,6 +34,7 @@ declare const fullApi: ApiFromModules<{
   messages: typeof messages;
   providerConfigs: typeof providerConfigs;
   purchases: typeof purchases;
+  rateLimit: typeof rateLimit;
   scenarios: typeof scenarios;
   shares: typeof shares;
   users: typeof users;
