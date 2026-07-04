@@ -159,6 +159,7 @@ fallback.
 | `paymentTestMode` | `off` | admin-only Stripe bypass (`off`/`sample`/`pro`) |
 | `defaultBlurbModel` | `openrouter:anthropic/claude-haiku-4.5` | blurb model |
 | `defaultConversationModel` | `openrouter:anthropic/claude-haiku-4.5` | chat model |
+| `publicLlmDailyCap` | `6000` | global daily circuit breaker for public LLM routes (`convex/rateLimit.ts`) |
 
 ## Environment variables
 

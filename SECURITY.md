@@ -37,8 +37,15 @@
 
 ## Input validation & data exposure
 
-- `app/api/ai-blurb/route.ts`: **per-IP rate limit (10/min)** + **8k-char payload cap (413)** —
-  it's public and calls paid LLMs.
+- **Public LLM routes are rate-limited + globally spend-capped** via `convex/rateLimit.ts`
+  (`checkPublicLlm`): a durable **per-IP fixed window (20/min)** that survives across
+  serverless instances, plus a **global daily circuit breaker** that hard-caps total public
+  LLM calls per UTC day (`app_config.publicLlmDailyCap`, default 6000 — tune at runtime, no
+  deploy). Applied to `ai-blurb` and `narrative`. This is the "bill cannot exceed ~$X/day"
+  guarantee even against rotating IPs. Both routes fail **open** on a limiter error (a Convex
+  blip shouldn't break the funnel) — the global cap holds under normal operation.
+- `app/api/ai-blurb/route.ts`: also keeps a fast in-memory per-IP check + an **8k-char payload
+  cap (413)**. `app/api/narrative/route.ts`: **4k-char payload cap (413)**.
 - `convex/appConfig.ts` `getConfig` is intentionally public (non-secret display values only:
   prices, budgets, model names). `setConfig` is admin-gated; `setConfigInternal` is CLI-only.
 - `blurbLogs.logBlurbCall` is public but insert-only (exposes no data). Read functions are admin-gated.
@@ -55,12 +62,15 @@
    Convex via `requireAdmin`. A forged non-admin call is rejected server-side.
 4. **Authed routes 401 without a session** — `insights`, `checkout`, `shares/record`.
 5. **Webhooks verify signatures** before doing any work.
+6. **Public LLM routes are rate-limited and globally spend-capped** (`convex/rateLimit.ts`);
+   the daily cap bounds worst-case spend regardless of how traffic is distributed.
 
 ## Known gaps (documented risks — fix before they matter)
 
 | Gap | File | Risk | Mitigation idea |
 |---|---|---|---|
-| `narrative` is fully public with **no rate limit and no payload cap**, yet calls a paid LLM | `app/api/narrative/route.ts` | cost-abuse / DoS on the Anthropic bill | add the same per-IP limiter + size cap as `ai-blurb` |
-| `insights` **trusts client-supplied `provider`/`model`** | `app/api/insights/route.ts` | an authed user could point chat at an arbitrary/expensive model | enforce a server-side model allowlist |
+| `insights` **trusts client-supplied `provider`/`model`** | `app/api/insights/route.ts` | an authed user could point chat at an arbitrary/expensive model (bounded by the free-token meter / 402, so blast radius is small) | enforce a server-side model allowlist |
+| Account farming on the free chat taste | `app/api/insights/route.ts` | each new Google account grants ~4 free messages; many accounts = some cost | acceptable for now (OAuth friction); add per-account/global chat caps if abused |
 
-Neither is a data-exposure hole; both are cost/abuse surfaces gated only client-side today.
+Not data-exposure holes; cost/abuse surfaces. The previously wide-open `narrative` route is now
+behind the durable rate limiter + global daily cap (see Input validation above).

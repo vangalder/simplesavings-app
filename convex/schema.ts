@@ -123,4 +123,14 @@ export default defineSchema({
   })
     .index("by_provider_model", ["provider", "model"])
     .index("by_created_at", ["createdAt"]),
+
+  // Durable rate-limit + global-spend counters for the public LLM routes
+  // (ai-blurb, narrative). Fixed-window buckets keyed by a string; see
+  // convex/rateLimit.ts. Survives across serverless instances, unlike an
+  // in-memory limiter.
+  rate_limits: defineTable({
+    bucket: v.string(),
+    count: v.number(),
+    windowStart: v.number(),
+  }).index("by_bucket", ["bucket"]),
 });

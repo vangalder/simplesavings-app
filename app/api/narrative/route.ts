@@ -1,9 +1,12 @@
 import { NextRequest } from "next/server";
 import Anthropic from "@anthropic-ai/sdk";
+import { ConvexHttpClient } from "convex/browser";
+import { api } from "@/convex/_generated/api";
 
 export const dynamic = "force-dynamic";
 
 const client = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
+const convex = new ConvexHttpClient(process.env.NEXT_PUBLIC_CONVEX_URL!);
 
 const LOCALE_LANGUAGE: Record<string, string> = {
   "en":    "English",
@@ -98,12 +101,33 @@ Plan:
 ${lines}`;
 }
 
-// SECURITY (known gap): this route is intentionally public (the share narrative
-// is generated for signed-out users too), but unlike app/api/ai-blurb/route.ts it
-// currently has NO per-IP rate limit and NO payload size cap, while it calls a paid
-// LLM (Anthropic). That's a cost-abuse surface — add the ai-blurb limiter + size cap
-// before this sees real traffic. See SECURITY.md "Known gaps".
+// This route is intentionally public (the share narrative is generated for
+// signed-out users too) and calls a paid LLM, so it's defended by the durable
+// Convex rate limiter (per-IP + global daily spend cap) and a payload size cap
+// below. See convex/rateLimit.ts and SECURITY.md.
 export async function POST(req: NextRequest) {
+  const ip =
+    req.headers.get("x-forwarded-for")?.split(",")[0]?.trim() ??
+    req.headers.get("x-real-ip") ??
+    "unknown";
+
+  // Durable per-IP rate limit + global daily spend cap (this route calls a paid
+  // LLM). Fail-open on a Convex error so a blip doesn't break sharing.
+  try {
+    const rl = await convex.mutation(api.rateLimit.checkPublicLlm, { ip, endpoint: "narrative" });
+    if (!rl.ok) {
+      return Response.json({ error: "Rate limit exceeded" }, { status: 429 });
+    }
+  } catch {
+    /* fail open on limiter error */
+  }
+
+  // Bound the input an anonymous caller can submit before we parse it.
+  const rawText = await req.text();
+  if (rawText.length > 4_000) {
+    return Response.json({ error: "Payload too large" }, { status: 413 });
+  }
+
   let body: {
     startingAmount: number;
     monthlyContribution: number;
@@ -118,7 +142,7 @@ export async function POST(req: NextRequest) {
   };
 
   try {
-    body = await req.json();
+    body = JSON.parse(rawText);
   } catch {
     return Response.json({ error: "Invalid JSON" }, { status: 400 });
   }

@@ -266,6 +266,19 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: "Rate limit exceeded" }, { status: 429 });
   }
 
+  // Durable, cross-instance rate limit + global daily spend cap (the in-memory
+  // check above is only a fast first line; this is the real defense). Fail-open
+  // on a Convex error so a transient blip doesn't break the marketing funnel —
+  // the global cap still holds under normal operation.
+  try {
+    const rl = await convex.mutation(api.rateLimit.checkPublicLlm, { ip, endpoint: "ai-blurb" });
+    if (!rl.ok) {
+      return NextResponse.json({ error: "Rate limit exceeded" }, { status: 429 });
+    }
+  } catch {
+    /* fail open on limiter error */
+  }
+
   // Reject oversized payloads before parsing — this route is unauthenticated
   // and calls paid LLMs, so bound the input an anonymous caller can submit.
   const raw = await req.text();
