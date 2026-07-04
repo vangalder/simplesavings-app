@@ -1,4 +1,5 @@
-import { mutation } from "./_generated/server";
+import { mutation, internalAction } from "./_generated/server";
+import { internal, api } from "./_generated/api";
 import { v } from "convex/values";
 
 // Abuse / cost defense for the PUBLIC LLM routes (ai-blurb, narrative).
@@ -60,7 +61,52 @@ export const checkPublicLlm = mutation({
       return { ok: true };
     }
     if (gRow.count >= cap) return { ok: false, reason: "global_cap" };
-    await ctx.db.patch(gRow._id, { count: gRow.count + 1 });
+    const prev = gRow.count;
+    const next = prev + 1;
+    await ctx.db.patch(gRow._id, { count: next });
+    // Alert once, immediately, the moment the day's count crosses 50/80/100% of the
+    // cap — so a spike in public LLM traffic reaches you in real time, not on the bill.
+    for (const t of [Math.floor(cap * 0.5), Math.floor(cap * 0.8), cap]) {
+      if (prev < t && next >= t) {
+        await ctx.scheduler.runAfter(0, internal.rateLimit.sendAbuseAlert, {
+          count: next,
+          cap,
+          threshold: t,
+          endpoint,
+        });
+      }
+    }
     return { ok: true };
+  },
+});
+
+// Best-effort abuse alert. Reads a Slack/Discord (or any) incoming-webhook URL from
+// app_config key `alertWebhookUrl`; no-ops if unset, so it ships dormant and is
+// activated by setting that one config value — no deploy needed. The JSON body
+// carries both `text` (Slack) and `content` (Discord) so either works.
+export const sendAbuseAlert = internalAction({
+  args: {
+    count: v.number(),
+    cap: v.number(),
+    threshold: v.number(),
+    endpoint: v.string(),
+  },
+  handler: async (ctx, { count, cap, threshold, endpoint }) => {
+    const url = await ctx.runQuery(api.appConfig.getConfig, { key: "alertWebhookUrl" });
+    if (!url) return;
+    const pct = Math.round((threshold / cap) * 100);
+    const msg =
+      `⚠️ simplesavings.app — public LLM traffic hit ${pct}% of today's cap ` +
+      `(${count}/${cap} calls; latest: /${endpoint}). If this isn't organic, ` +
+      `lower publicLlmDailyCap or investigate.`;
+    try {
+      await fetch(url, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ text: msg, content: msg }),
+      });
+    } catch {
+      /* alerting is best-effort — never block the request path */
+    }
   },
 });

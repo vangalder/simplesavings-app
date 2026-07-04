@@ -65,6 +65,17 @@
 6. **Public LLM routes are rate-limited and globally spend-capped** (`convex/rateLimit.ts`);
    the daily cap bounds worst-case spend regardless of how traffic is distributed.
 
+## Monitoring & alerting
+
+- **In-app spike alert:** `convex/rateLimit.ts` `sendAbuseAlert` fires the moment the day's
+  public-LLM count crosses **50% / 80% / 100%** of `publicLlmDailyCap`. It POSTs to the
+  incoming-webhook URL in `app_config.alertWebhookUrl` (Slack- and Discord-compatible body).
+  Ships **dormant** — set `alertWebhookUrl` to activate; no deploy needed.
+- **Provider-side backstop (configure in dashboards):** set a usage limit + email alert at
+  **Anthropic** (Console → Billing) and keep the **OpenRouter** prepaid balance low so it
+  self-caps. These stop spend and notify you regardless of app logic.
+- **Telemetry:** `blurb_logs` records per-call provider/model/cost (visible in the admin panel).
+
 ## Known gaps (documented risks — fix before they matter)
 
 | Gap | File | Risk | Mitigation idea |
