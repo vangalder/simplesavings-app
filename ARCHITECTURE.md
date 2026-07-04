@@ -167,6 +167,7 @@ fallback.
 **Server — AI:** `ANTHROPIC_API_KEY`, `OPENAI_API_KEY`, `GOOGLE_API_KEY`, `XAI_API_KEY`, `OPENROUTER_API_KEY`.
 **Server — Stripe:** `STRIPE_SECRET_KEY`, `STRIPE_PRO_PRICE_ID`, `STRIPE_PRO_SAMPLE_PRICE_ID`, `STRIPE_WEBHOOK_SECRET`.
 **Server — auth/admin:** `ADMIN_EMAIL`, `CLERK_JWT_ISSUER_DOMAIN`, `CLERK_WEBHOOK_SECRET`.
+**Server — alerting (optional):** `RESEND_API_KEY` (Convex; enables email abuse alerts via `convex/rateLimit.ts`).
 Set on Vercel (Next.js runtime) and Convex (backend) separately; `STRIPE_SECRET_KEY` lives in both.
 
 ## Brand tokens (`tailwind.config.ts`)

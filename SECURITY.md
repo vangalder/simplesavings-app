@@ -68,9 +68,11 @@
 ## Monitoring & alerting
 
 - **In-app spike alert:** `convex/rateLimit.ts` `sendAbuseAlert` fires the moment the day's
-  public-LLM count crosses **50% / 80% / 100%** of `publicLlmDailyCap`. It POSTs to the
-  incoming-webhook URL in `app_config.alertWebhookUrl` (Slack- and Discord-compatible body).
-  Ships **dormant** — set `alertWebhookUrl` to activate; no deploy needed.
+  public-LLM count crosses **50% / 80% / 100%** of `publicLlmDailyCap`. Two channels, both
+  **dormant until configured** (no deploy needed):
+  - **Webhook** — set `app_config.alertWebhookUrl` (Slack/Discord/Google Chat-compatible body).
+  - **Email (Resend)** — set Convex env `RESEND_API_KEY`; sends to `app_config.alertEmail`
+    (or `ADMIN_EMAIL`) from `app_config.alertEmailFrom` (or Resend's shared onboarding sender).
 - **Provider-side backstop (configure in dashboards):** set a usage limit + email alert at
   **Anthropic** (Console → Billing) and keep the **OpenRouter** prepaid balance low so it
   self-caps. These stop spend and notify you regardless of app logic.

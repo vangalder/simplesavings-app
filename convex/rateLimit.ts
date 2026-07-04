@@ -92,21 +92,51 @@ export const sendAbuseAlert = internalAction({
     endpoint: v.string(),
   },
   handler: async (ctx, { count, cap, threshold, endpoint }) => {
-    const url = await ctx.runQuery(api.appConfig.getConfig, { key: "alertWebhookUrl" });
-    if (!url) return;
     const pct = Math.round((threshold / cap) * 100);
     const msg =
       `⚠️ simplesavings.app — public LLM traffic hit ${pct}% of today's cap ` +
       `(${count}/${cap} calls; latest: /${endpoint}). If this isn't organic, ` +
       `lower publicLlmDailyCap or investigate.`;
-    try {
-      await fetch(url, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ text: msg, content: msg }),
-      });
-    } catch {
-      /* alerting is best-effort — never block the request path */
+
+    // Channel 1 — incoming webhook (Slack/Discord/Google Chat). No-op if unset.
+    const url = await ctx.runQuery(api.appConfig.getConfig, { key: "alertWebhookUrl" });
+    if (url) {
+      try {
+        await fetch(url, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ text: msg, content: msg }),
+        });
+      } catch {
+        /* best-effort */
+      }
+    }
+
+    // Channel 2 — email via Resend. No-op until RESEND_API_KEY is set (Convex env).
+    // Sends to `alertEmail` (config) or ADMIN_EMAIL; from `alertEmailFrom` (config)
+    // or Resend's shared onboarding sender, which can email the account owner without
+    // domain verification. Once simplesavings.app is verified in Resend, set
+    // alertEmailFrom to e.g. alerts@simplesavings.app.
+    const resendKey = process.env.RESEND_API_KEY;
+    if (resendKey) {
+      const to = (await ctx.runQuery(api.appConfig.getConfig, { key: "alertEmail" })) ?? process.env.ADMIN_EMAIL;
+      const from = (await ctx.runQuery(api.appConfig.getConfig, { key: "alertEmailFrom" })) ?? "onboarding@resend.dev";
+      if (to) {
+        try {
+          await fetch("https://api.resend.com/emails", {
+            method: "POST",
+            headers: { "Content-Type": "application/json", Authorization: `Bearer ${resendKey}` },
+            body: JSON.stringify({
+              from,
+              to,
+              subject: `⚠️ simplesavings.app — LLM traffic at ${pct}% of daily cap`,
+              text: msg,
+            }),
+          });
+        } catch {
+          /* best-effort */
+        }
+      }
     }
   },
 });
