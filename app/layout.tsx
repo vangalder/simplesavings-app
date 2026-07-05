@@ -27,11 +27,31 @@ const robotoMono = Roboto_Mono({
   display: "swap",
 });
 
+const OG_TITLE = "simplesavings.app — Plan your savings, reach your goal faster";
+const OG_DESC =
+  "A savings calculator that shows your money's future — and helps you plan how to reach your goal faster. Free to start.";
+
 export const metadata: Metadata = {
-  title: "simplesavings.app — Plan your savings, reach your goal faster",
-  description:
-    "A savings calculator that shows your money's future — and helps you plan how to reach your goal faster. Free to start.",
+  metadataBase: new URL("https://simplesavings.app"),
+  title: OG_TITLE,
+  description: OG_DESC,
   other: { google: "notranslate" },
+  openGraph: {
+    type: "website",
+    siteName: "simplesavings.app",
+    url: "https://simplesavings.app",
+    title: OG_TITLE,
+    description: OG_DESC,
+    // Default card; the home page overrides this per shared scenario (see
+    // app/page.tsx generateMetadata) so a shared link shows that plan's number.
+    images: [{ url: "/og", width: 1200, height: 630, alt: "simplesavings.app" }],
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: OG_TITLE,
+    description: OG_DESC,
+    images: ["/og"],
+  },
 };
 
 export default async function RootLayout({
