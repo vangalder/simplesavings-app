@@ -27,7 +27,7 @@ const robotoMono = Roboto_Mono({
   display: "swap",
 });
 
-const OG_TITLE = "simplesavings.app — Plan your savings, reach your goal faster";
+const OG_TITLE = "simplesavings.app — Plan your savings, hit your goal faster";
 const OG_DESC =
   "A savings calculator that shows your money's future — and helps you plan how to reach your goal faster. Free to start.";
 

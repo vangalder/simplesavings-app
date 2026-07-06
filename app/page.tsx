@@ -20,8 +20,14 @@ export async function generateMetadata({
   }
   if (!qs.toString()) return {};
   const ogUrl = `/og?${qs.toString()}`;
+  // Next replaces (does not deep-merge) the parent's `openGraph` object when a
+  // page sets one, so restate siteName/type here or scenario shares lose og:site_name.
   return {
-    openGraph: { images: [{ url: ogUrl, width: 1200, height: 630 }] },
+    openGraph: {
+      type: "website",
+      siteName: "simplesavings.app",
+      images: [{ url: ogUrl, width: 1200, height: 630 }],
+    },
     twitter: { card: "summary_large_image", images: [ogUrl] },
   };
 }
